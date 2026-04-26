@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 interface IVault {
     function rebalance(address[] memory, uint256[] memory) external;
@@ -159,7 +158,7 @@ contract StrategyManager {
         require(!usedSignatures[strategyHash], "SECURITY: Signature already used (Replay Attack)");
         usedSignatures[strategyHash] = true; // Burn the signature so it can never be used again
         
-        // 2. Convert it to an Ethereum signed message hash standard
+        // 2. Convert it to an Ethereum signed message hash standard (professional implementation)
         bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", strategyHash));
         
         // 3. Recover the address that signed this payload

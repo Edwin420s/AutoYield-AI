@@ -144,25 +144,39 @@ contract AutoYieldVault is ERC20 {
     /**
      * @dev Liquidate assets from external protocols to meet withdrawal demands
      */
-    function _liquidateForWithdrawal(uint256 _amount) internal {
+    function _liquidateForWithdrawal(uint256 _shortfall) internal {
         if (currentAllocations.length == 0) return;
         
-        // For simplicity, liquidate from the first protocol
-        address protocol = currentAllocations[0].protocol;
-        uint256 sharesBalance = IERC20(protocol).balanceOf(address(this));
-        
-        if (sharesBalance > 0) {
-            // Calculate how many shares to redeem to get the required amount
-            // This is a simplified calculation - in production you'd need more precise logic
-            uint256 sharesToRedeem = (_amount * sharesBalance) / IERC4626(protocol).totalAssets();
+        uint256 remainingShortfall = _shortfall;
+
+        // Loop through protocols until we have enough cash to pay the user
+        for (uint i = 0; i < currentAllocations.length; i++) {
+            if (remainingShortfall == 0) break; // Stop if we have enough
+
+            address protocol = currentAllocations[i].protocol;
+            uint256 sharesBalance = IERC20(protocol).balanceOf(address(this));
             
-            if (sharesToRedeem > sharesBalance) {
-                sharesToRedeem = sharesBalance;
+            if (sharesBalance > 0) {
+                // How much is our position worth?
+                uint256 positionValue = IERC4626(protocol).previewRedeem(sharesBalance);
+                
+                uint256 sharesToRedeem;
+                if (positionValue <= remainingShortfall) {
+                    // Liquidate the whole position
+                    sharesToRedeem = sharesBalance;
+                    remainingShortfall -= positionValue;
+                } else {
+                    // Liquidate just enough to cover the remaining shortfall
+                    sharesToRedeem = (remainingShortfall * sharesBalance) / positionValue;
+                    remainingShortfall = 0;
+                }
+                
+                // Redeem shares for underlying assets
+                IERC4626(protocol).redeem(sharesToRedeem, address(this), address(this));
             }
-            
-            // Redeem shares for underlying assets
-            IERC4626(protocol).redeem(sharesToRedeem, address(this), address(this));
         }
+        
+        require(remainingShortfall == 0, "AutoYield: Insufficient liquidity across all protocols");
     }
 
     // ==========================================
