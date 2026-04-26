@@ -1,5 +1,4 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("@openzeppelin/hardhat-upgradeable");
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -23,9 +22,7 @@ module.exports = {
     og: {
       url: process.env.ZERO_G_RPC_URL || "https://rpc.0g.ai",
       chainId: 1666600000,
-      accounts: {
-        mnemonic: process.env.MNEMONIC,
-      },
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
   },
   etherscan: {

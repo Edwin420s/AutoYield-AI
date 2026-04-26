@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC4626.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/interfaces/IERC4626.sol";
  * @dev An autonomous, ERC-4626 inspired vault that physically routes underlying assets 
  * into external DeFi protocols based on AI agent strategies.
  */
-contract AutoYieldVault is ERC20, IERC4626 {
+contract AutoYieldVault is ERC20 {
     using SafeERC20 for IERC20;
 
     // The underlying asset (e.g., USDC, WETH) this vault manages
@@ -135,6 +135,34 @@ contract AutoYieldVault is ERC20, IERC4626 {
         emit Withdraw(msg.sender, receiver, msg.sender, assets, shares);
 
         return assets;
+    }
+
+    // ==========================================
+    // 2.5. LIQUIDATION HELPER
+    // ==========================================
+    
+    /**
+     * @dev Liquidate assets from external protocols to meet withdrawal demands
+     */
+    function _liquidateForWithdrawal(uint256 _amount) internal {
+        if (currentAllocations.length == 0) return;
+        
+        // For simplicity, liquidate from the first protocol
+        address protocol = currentAllocations[0].protocol;
+        uint256 sharesBalance = IERC20(protocol).balanceOf(address(this));
+        
+        if (sharesBalance > 0) {
+            // Calculate how many shares to redeem to get the required amount
+            // This is a simplified calculation - in production you'd need more precise logic
+            uint256 sharesToRedeem = (_amount * sharesBalance) / IERC4626(protocol).totalAssets();
+            
+            if (sharesToRedeem > sharesBalance) {
+                sharesToRedeem = sharesBalance;
+            }
+            
+            // Redeem shares for underlying assets
+            IERC4626(protocol).redeem(sharesToRedeem, address(this), address(this));
+        }
     }
 
     // ==========================================
