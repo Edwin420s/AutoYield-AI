@@ -102,32 +102,6 @@ export async function cancelProposal(proposalId) {
   }
 }
 
-export async function getProposalDetails(proposalId) {
-  try {
-    const contract = new ethers.Contract(
-      process.env.MANAGER_ADDRESS,
-      managerAbi,
-      wallet
-    );
-
-    const proposal = await contract.getProposal(proposalId);
-    
-    return {
-      protocols: proposal[0],
-      percentages: proposal[1].map(p => Number(p)),
-      executionTime: Number(proposal[2]),
-      executed: proposal[3],
-      canceled: proposal[4],
-      proposedBy: proposal[5],
-      totalApy: Number(proposal[6]),
-      portfolioRisk: Number(proposal[7])
-    };
-    
-  } catch (error) {
-    console.error("❌ Failed to get proposal:", error);
-    throw error;
-  }
-}
 
 export async function getProposalDetails(proposalId) {
   const wallet = getWallet();

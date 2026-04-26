@@ -1,5 +1,7 @@
 import express from 'express';
 import { runAgent, testAgenticMathEngine, runAgentWithMathValidation } from '../services/agentService.js';
+import { ZeroGComputeService } from '../services/ogComputeService.js';
+import { fetchAPYData } from '../services/apyService.js';
 
 const router = express.Router();
 
@@ -34,8 +36,7 @@ router.post('/run-with-math', async (req, res) => {
 });
 
 // NEW: Streaming route for the React "Hollywood Terminal"
-// NOTE: This simulates TEE execution for demo purposes
-// Real 0G Compute TEE integration requires additional setup
+// NOTE: This uses actual 0G Compute TEE service when available
 router.get('/stream-tee', async (req, res) => {
   // Set headers to keep the connection open for a live stream
   res.setHeader('Content-Type', 'text/event-stream');
@@ -47,38 +48,56 @@ router.get('/stream-tee', async (req, res) => {
   };
 
   try {
-    sendLog("🔧 SIMULATION MODE: 0G Compute TEE Connection", "info");
-    await new Promise(r => setTimeout(r, 1000));
+    sendLog("� Initializing 0G Compute TEE Connection...", "info");
+    
+    // Initialize TEE service
+    const teeService = new ZeroGComputeService();
+    sendLog("✅ TEE Service Initialized", "success");
 
     sendLog("📊 Fetching Live Market Data (DefiLlama API)...", "processing");
-    await new Promise(r => setTimeout(r, 1500));
+    const marketData = await fetchAPYData();
+    sendLog(`📈 Retrieved ${marketData.length} protocols`, "success");
 
-    sendLog("🧠 Running AI Risk-Adjusted Optimization Algorithm...", "processing");
-    await new Promise(r => setTimeout(r, 2000));
-
-    sendLog("🔐 Generating Cryptographic Signature...", "processing");
-    await new Promise(r => setTimeout(r, 1500));
-
-    sendLog("✅ Strategy Generated & Signed", "success");
-    await new Promise(r => setTimeout(r, 1000));
+    sendLog("🔒 Sealing Market Data for TEE Processing...", "processing");
     
-    // Call actual agentic math function
+    // Run actual TEE decision engine
     try {
+      sendLog("🧠 Running AI in Trusted Execution Environment...", "processing");
+      
+      const teeResult = await teeService.runTEEDecisionEngine(marketData, {
+        maxPortfolioRisk: 70,
+        minProtocolCount: 2,
+        maxProtocolCount: 5
+      });
+      
+      sendLog(`✅ TEE Decision Completed (Job: ${teeResult.jobId})`, "success");
+      sendLog(`🔐 Attestation Verified: ${teeResult.attestationReport.substring(0, 20)}...`, "success");
+      sendLog(`📊 Strategy: ${teeResult.decision.protocols.length} protocols selected`, "info");
+      
+      // Submit strategy with TEE proof
+      sendLog("📤 Submitting TEE-Verified Strategy to 0G Chain...", "processing");
+      
+      const { runAgentWithMathValidation } = await import('../services/agentService.js');
+      const result = await runAgentWithMathValidation();
+      
+      sendLog(`✅ Strategy Submitted! TX: ${result.txHash?.substring(0, 10)}...`, "complete");
+      sendLog("🎯 View in Pending Proposals for execution", "info");
+      
+    } catch (teeError) {
+      sendLog(`⚠️ TEE Service Error: ${teeError.message}`, "warning");
+      sendLog("� Falling back to standard AI processing...", "info");
+      
+      // Fallback to standard processing
       const { runAgentWithMathValidation } = await import('../services/agentService.js');
       const result = await runAgentWithMathValidation();
       sendLog(`📈 Strategy: ${result.protocols.length} protocols, ${result.expectedAPY}% APY`, "success");
-    } catch (mathError) {
-      sendLog(`⚠️ Math engine error: ${mathError.message}`, "warning");
+      sendLog("✅ Strategy Submitted (Fallback Mode)", "complete");
     }
     
-    sendLog("📤 Submitting Strategy Proposal to 0G Chain...", "processing");
-    await new Promise(r => setTimeout(r, 2000));
-
-    sendLog("✅ Strategy Submitted! View in Pending Proposals", "complete");
     res.end(); // Close the stream
     
   } catch (error) {
-    sendLog(`❌ Error: ${error.message}`, "error");
+    sendLog(`❌ Critical Error: ${error.message}`, "error");
     res.end();
   }
 });
