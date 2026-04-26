@@ -27,7 +27,32 @@ async function main() {
   console.log("✅ Registry deployed to:", registryAddress);
 
   // ==========================================
-  // 3. DEPLOY AUTOYIELD VAULT (ERC-4626)
+  // 3. DEPLOY MOCK ERC-4626 VAULTS (For 0G Network Compatibility)
+  // ==========================================
+  console.log("\n🏦 Deploying Mock ERC-4626 Vaults on 0G Network...");
+  
+  const MockERC4626 = await hre.ethers.getContractFactory("MockERC4626");
+  
+  // Deploy Mock Aave Vault
+  const mockAave = await MockERC4626.deploy(usdcAddress, "Mock Aave USDC", "maUSDC");
+  await mockAave.waitForDeployment();
+  const mockAaveAddress = await mockAave.getAddress();
+  console.log("✅ Mock Aave Vault deployed to:", mockAaveAddress);
+  
+  // Deploy Mock Benqi Vault
+  const mockBenqi = await MockERC4626.deploy(usdcAddress, "Mock Benqi USDC", "mbUSDC");
+  await mockBenqi.waitForDeployment();
+  const mockBenqiAddress = await mockBenqi.getAddress();
+  console.log("✅ Mock Benqi Vault deployed to:", mockBenqiAddress);
+  
+  // Deploy Mock Compound Vault
+  const mockCompound = await MockERC4626.deploy(usdcAddress, "Mock Compound USDC", "mcUSDC");
+  await mockCompound.waitForDeployment();
+  const mockCompoundAddress = await mockCompound.getAddress();
+  console.log("✅ Mock Compound Vault deployed to:", mockCompoundAddress);
+
+  // ==========================================
+  // 4. DEPLOY AUTOYIELD VAULT (ERC-4626)
   // ==========================================
   console.log("\n🏦 Deploying AutoYield Vault...");
   const Vault = await hre.ethers.getContractFactory("AutoYieldVault");
@@ -37,12 +62,14 @@ async function main() {
   console.log("✅ Vault deployed to:", vaultAddress);
 
   // ==========================================
-  // 4. DEPLOY STRATEGY MANAGER (With Enclave Key)
+  // 5. DEPLOY STRATEGY MANAGER (With Enclave Key)
   // ==========================================
   console.log("\n🛡️ Deploying Strategy Manager (Hardware Enclave Verification)...");
-  // For the hackathon, we use the deployer's address as a mock "Enclave Public Key"
-  // In production, this is the actual public key of the 0G Compute SGX Enclave
-  const mockEnclaveKey = deployer.address; 
+  // Generate a dedicated mock enclave key for TEE simulation
+  // In production, this would be the actual public key of the 0G Compute SGX Enclave
+  const mockEnclaveWallet = hre.ethers.Wallet.createRandom();
+  const mockEnclaveKey = mockEnclaveWallet.address;
+  console.log("🔐 Generated Mock Enclave Key:", mockEnclaveKey); 
   
   const Manager = await hre.ethers.getContractFactory("StrategyManager");
   const manager = await Manager.deploy(vaultAddress, registryAddress, mockEnclaveKey);
@@ -51,7 +78,7 @@ async function main() {
   console.log("✅ Strategy Manager deployed to:", managerAddress);
 
   // ==========================================
-  // 5. SYSTEM CONFIGURATION
+  // 6. SYSTEM CONFIGURATION
   // ==========================================
   console.log("\n⚙️ Configuring System Permissions...");
   
@@ -72,6 +99,11 @@ async function main() {
   console.log(`VITE_MANAGER_ADDRESS="${managerAddress}"`);
   console.log(`VITE_REGISTRY_ADDRESS="${registryAddress}"`);
   console.log(`ZERO_G_ENCLAVE_KEY="${mockEnclaveKey}"`);
+  console.log("==========================================");
+  console.log("Mock ERC-4626 Protocol Addresses (for 0G Network):");
+  console.log(`MOCK_AAVE_ADDRESS="${mockAaveAddress}"`);
+  console.log(`MOCK_BENQI_ADDRESS="${mockBenqiAddress}"`);
+  console.log(`MOCK_COMPOUND_ADDRESS="${mockCompoundAddress}"`);
   console.log("==========================================");
 }
 

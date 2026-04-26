@@ -3,6 +3,7 @@ import { decideStrategy, testAgenticMath } from '../../agent/decisionEngine.js';
 import { executeStrategy, proposeStrategy } from './contractService.js';
 import { storeDecisionLog } from './ogStorageService.js';
 import { runComputeLogic } from './ogComputeService.js';
+import { generateTEEAttestation } from './teeService.js';
 
 export async function runAgent() {
   const apyData = await fetchAPYData();
@@ -68,35 +69,40 @@ export async function runAgentWithMathValidation() {
   console.log("🔬 Running AI Agent with mathematical validation...");
   
   try {
-    // Step 1: Fetch market data
+    console.log("🧠 Running AI with mathematical validation...");
+    
     const apyData = await fetchAPYData();
-    console.log(`📊 Retrieved data for ${apyData.length} protocols`);
-    
-    // Step 2: Run mathematical optimization
     const decision = decideStrategy(apyData);
-    console.log(`🧮 Mathematical optimization completed`);
-    console.log(`📈 Expected APY: ${decision.expectedAPY / 100}%`);
-    console.log(`⚠️ Portfolio Risk: ${decision.riskScore}/100`);
     
-    // Step 3: Validate mathematical constraints
-    const isValid = validateMathematicalConstraints(decision);
-    if (!isValid.valid) {
-      throw new Error(`Mathematical constraints violated: ${isValid.errors.join(', ')}`);
+    // Validate mathematical constraints
+    const validation = validateMathematicalConstraints(decision);
+    if (!validation.valid) {
+      throw new Error(`Mathematical validation failed: ${validation.errors.join(', ')}`);
     }
     
-    // Step 4: Execute based on risk level
-    const isMajorDecision = decision.riskScore > 50 || decision.expectedAPY > 1000; // 10% APY (1000 basis points)
+    console.log("✅ Mathematical validation passed");
     
-    let result;
-    if (isMajorDecision) {
-      console.log("⏰ High-risk decision detected: Using time-lock mechanism");
-      result = await proposeStrategy(decision);
-    } else {
-      console.log("⚡ Low-risk decision: Immediate execution");
-      result = await executeStrategy(decision);
-    }
+    // Generate TEE attestation signature
+    const teeAttestation = await generateTEEAttestation({
+      protocols: decision.protocols,
+      percentages: decision.percentages,
+      expectedAPY: decision.expectedAPY
+    });
     
-    // Step 5: Store mathematical proof
+    console.log("🔐 TEE attestation generated");
+    
+    // Determine execution type based on risk
+    const isMajorDecision = decision.riskScore > 50 || decision.expectedAPY > 10;
+    
+    // Execute strategy with TEE signature
+    const result = isMajorDecision ? 
+      await proposeStrategy({
+        ...decision,
+        executionProof: teeAttestation.signature
+      }) : 
+      await executeStrategy(decision);
+
+    // Store reasoning off-chain
     const mathematicalProof = {
       optimizationModel: "Risk-Adjusted Return Maximization",
       constraints: {
@@ -114,7 +120,8 @@ export async function runAgentWithMathValidation() {
     await storeDecisionLog({
       ...decision,
       mathematicalProof,
-      executionType: isMajorDecision ? 'time-lock' : 'immediate'
+      executionType: isMajorDecision ? 'time-lock' : 'immediate',
+      teeAttestation
     }, result.txHash);
     
     return {
@@ -124,7 +131,8 @@ export async function runAgentWithMathValidation() {
       riskLevel: decision.riskScore,
       expectedAPY: decision.expectedAPY / 100,
       protocols: decision.protocolNames || decision.protocols,
-      mathematicalProof
+      mathematicalProof,
+      teeAttestation
     };
     
   } catch (error) {

@@ -198,23 +198,23 @@ export async function getProtocolInfo(protocolAddress) {
 
 // Helper functions to convert between protocol names and addresses
 async function getProtocolAddresses(protocolNames) {
-  // In production, this would query a registry or use a mapping
-  // For demo, we'll use mock addresses
+  // Use deployed mock ERC-4626 vault addresses on 0G network
+  // These are the actual deployed contracts, not Ethereum mainnet addresses
   const mockAddresses = {
-    'Aave': '0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9',
-    'Benqi': '0x4F3A8B69D7246B6C5b2c5c5c5c5c5c5c5c5c5c5c',
-    'Compound': '0x5d3a536E4D6DbE6d4A8C0e7b4C8c8c8c8c8c8c8c8'
+    'Aave': process.env.MOCK_AAVE_ADDRESS || ethers.ZeroAddress,
+    'Benqi': process.env.MOCK_BENQI_ADDRESS || ethers.ZeroAddress,
+    'Compound': process.env.MOCK_COMPOUND_ADDRESS || ethers.ZeroAddress
   };
   
   return protocolNames.map(name => mockAddresses[name] || ethers.ZeroAddress);
 }
 
 async function getProtocolNames(protocolAddresses) {
-  // Reverse mapping from addresses to names
+  // Reverse mapping from addresses to names using environment variables
   const mockNames = {
-    '0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9': 'Aave',
-    '0x4F3A8B69D7246B6C5b2c5c5c5c5c5c5c5c5c5c5c': 'Benqi',
-    '0x5d3a536E4D6DbE6d4A8C0e7b4C8c8c8c8c8c8c8c8': 'Compound'
+    [process.env.MOCK_AAVE_ADDRESS?.toLowerCase()]: 'Aave',
+    [process.env.MOCK_BENQI_ADDRESS?.toLowerCase()]: 'Benqi',
+    [process.env.MOCK_COMPOUND_ADDRESS?.toLowerCase()]: 'Compound'
   };
   
   return protocolAddresses.map(addr => mockNames[addr.toLowerCase()] || addr.substring(0, 8) + '...');

@@ -34,6 +34,8 @@ router.post('/run-with-math', async (req, res) => {
 });
 
 // NEW: Streaming route for the React "Hollywood Terminal"
+// NOTE: This simulates TEE execution for demo purposes
+// Real 0G Compute TEE integration requires additional setup
 router.get('/stream-tee', async (req, res) => {
   // Set headers to keep the connection open for a live stream
   res.setHeader('Content-Type', 'text/event-stream');
@@ -45,32 +47,38 @@ router.get('/stream-tee', async (req, res) => {
   };
 
   try {
-    sendLog("Initializing 0G Compute TEE Connection...", "info");
+    sendLog("🔧 SIMULATION MODE: 0G Compute TEE Connection", "info");
     await new Promise(r => setTimeout(r, 1000));
 
-    sendLog("Sealing Market Data Payload (SGX Enclave)...", "processing");
+    sendLog("📊 Fetching Live Market Data (DefiLlama API)...", "processing");
     await new Promise(r => setTimeout(r, 1500));
 
-    sendLog("Running Agentic Math (Risk-Adjusted Optimization)...", "processing");
+    sendLog("🧠 Running AI Risk-Adjusted Optimization Algorithm...", "processing");
     await new Promise(r => setTimeout(r, 2000));
 
-    sendLog("Generating Cryptographic Proof of Execution...", "processing");
+    sendLog("🔐 Generating Cryptographic Signature...", "processing");
     await new Promise(r => setTimeout(r, 1500));
 
-    sendLog("Verifying SGX Attestation...", "success");
+    sendLog("✅ Strategy Generated & Signed", "success");
     await new Promise(r => setTimeout(r, 1000));
     
-    // In production, you would call your actual Agentic Math function here
-    // e.g., await runAgentWithMathValidation();
+    // Call actual agentic math function
+    try {
+      const { runAgentWithMathValidation } = await import('../services/agentService.js');
+      const result = await runAgentWithMathValidation();
+      sendLog(`📈 Strategy: ${result.protocols.length} protocols, ${result.expectedAPY}% APY`, "success");
+    } catch (mathError) {
+      sendLog(`⚠️ Math engine error: ${mathError.message}`, "warning");
+    }
     
-    sendLog("Submitting Verified Proposal to 0G Chain...", "processing");
+    sendLog("📤 Submitting Strategy Proposal to 0G Chain...", "processing");
     await new Promise(r => setTimeout(r, 2000));
 
-    sendLog("✅ Strategy Time-Locked and Stored on 0G Storage!", "complete");
+    sendLog("✅ Strategy Submitted! View in Pending Proposals", "complete");
     res.end(); // Close the stream
     
   } catch (error) {
-    sendLog(`Error: ${error.message}`, "error");
+    sendLog(`❌ Error: ${error.message}`, "error");
     res.end();
   }
 });

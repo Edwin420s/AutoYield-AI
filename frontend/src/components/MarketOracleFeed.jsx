@@ -5,26 +5,31 @@ export default function MarketOracleFeed() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [lastUpdate, setLastUpdate] = useState(new Date().toLocaleTimeString());
 
-  // Simulate fetching live data from your backend
+  // Fetch live data from backend oracle
   const fetchLiveOracleData = async () => {
     setIsUpdating(true);
 
     try {
-      // In production, this points to your Node.js backend: /api/oracle/live
-      // For UI demo, we will simulate the DefiLlama data structure
-      setTimeout(() => {
+      // Call the real backend oracle API
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/oracle/live`);
+      const result = await response.json();
+      
+      if (result.success) {
+        setMarketData(result.data);
+        setLastUpdate(new Date(result.timestamp).toLocaleTimeString());
+      } else {
+        // Fallback to demo data if backend fails
+        console.warn('Backend oracle failed, using fallback data');
         setMarketData([
-          { name: 'Aave V3', asset: 'USDC', tvl: 642000000, apy: 4.85, risk: 15 },
-          { name: 'Compound V3', asset: 'USDC', tvl: 315000000, apy: 5.12, risk: 22 },
-          { name: 'Curve Finance', asset: 'USDC', tvl: 89000000, apy: 8.45, risk: 45 },
-          { name: 'Spark', asset: 'DAI', tvl: 45000000, apy: 9.10, risk: 52 },
+          { name: 'Mock Aave', asset: 'USDC', tvl: 642000000, apy: 4.85, risk: 15 },
+          { name: 'Mock Benqi', asset: 'USDC', tvl: 315000000, apy: 5.12, risk: 22 },
+          { name: 'Mock Compound', asset: 'USDC', tvl: 89000000, apy: 8.45, risk: 45 },
+          { name: 'Mock Spark', asset: 'DAI', tvl: 45000000, apy: 9.10, risk: 52 },
         ]);
-
         setLastUpdate(new Date().toLocaleTimeString());
+      }
 
-        setIsUpdating(false);
-
-      }, 800);
+      setIsUpdating(false);
 
     } catch (error) {
 
