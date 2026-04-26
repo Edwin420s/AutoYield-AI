@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+
 interface IVault {
     function rebalance(address[] memory, uint256[] memory) external;
 }
@@ -10,6 +13,9 @@ interface IAgentRegistry {
 }
 
 contract StrategyManager {
+    using ECDSA for bytes32;
+    using MessageHashUtils for bytes32;
+
     address public vault;
     address public agentRegistry;
     address public owner;
@@ -18,6 +24,10 @@ contract StrategyManager {
     uint256 public cooldown = 1 minutes;
     uint256 public timeLockDuration = 24 hours;
     uint256 public maxPortfolioRisk = 75;
+    
+    // NEW: The exact public address of the 0G Compute Intel SGX Enclave
+    // Only strategies signed by this specific hardware key are accepted
+    address public trustedEnclaveKey;
     
     struct ProtocolInfo {
         bool isWhitelisted;
@@ -49,10 +59,19 @@ contract StrategyManager {
     event StrategyExecuted(address indexed agent, uint256 proposalId, uint256 totalApy, uint256 portfolioRisk);
     event ProposalCanceled(uint256 indexed proposalId, address indexed canceler);
     
-    constructor(address _vault, address _registry) {
+    constructor(address _vault, address _registry, address _enclaveKey) {
         vault = _vault;
         agentRegistry = _registry;
+        trustedEnclaveKey = _enclaveKey; // Set this during deployment
         owner = msg.sender;
+    }
+    
+    /**
+     * @dev Admin can update the enclave key if hardware is upgraded
+     */
+    function setTrustedEnclaveKey(address _newKey) external onlyOwner {
+        require(_newKey != address(0), "Invalid enclave key");
+        trustedEnclaveKey = _newKey;
     }
     
     modifier onlyOwner() {
@@ -111,11 +130,30 @@ contract StrategyManager {
     function proposeStrategy(
         address[] calldata _protocols,
         uint256[] calldata _percentages,
-        uint256 _reportedApy
+        uint256 _reportedApy,
+        bytes calldata _sgxSignature // NEW: Require hardware proof
     ) external {
         require(IAgentRegistry(agentRegistry).isAgent(msg.sender), "Not authorized agent");
         require(_protocols.length == _percentages.length, "Arrays length mismatch");
         require(_protocols.length > 0, "No protocols specified");
+
+        // ==========================================
+        // TEE HARDWARE ATTESTATION VERIFICATION
+        // ==========================================
+        
+        // 1. Recreate the exact hash of the data that enclave *should* have signed
+        bytes32 strategyHash = keccak256(abi.encodePacked(_protocols, _percentages, _reportedApy));
+        
+        // 2. Convert it to an Ethereum signed message hash standard
+        bytes32 ethSignedMessageHash = strategyHash.toEthSignedMessageHash();
+        
+        // 3. Recover the address that signed this payload
+        address recoveredSigner = ethSignedMessageHash.recover(_sgxSignature);
+        
+        // 4. THE ULTIMATE CHECK: Did our specific TEE enclave sign this exact data?
+        require(recoveredSigner == trustedEnclaveKey, "CRITICAL: TEE Attestation Failed! Payload altered or untrusted hardware.");
+        
+        // ==========================================
         
         uint256 totalPercentage = 0;
         uint256 portfolioRisk = 0;
