@@ -179,7 +179,10 @@ contract AutoYieldVault is ERC20, IERC4626 {
             currentAllocations.push(Allocation(_protocols[i], _percentages[i]));
         }
 
+        emit Rebalanced(_protocols, _percentages, availableAssets);
+    }
+
     function getTotalShares() external view returns (uint256) {
-        return totalShares;
+        return totalSupply();
     }
 }

@@ -1,98 +1,132 @@
-import { getWallet } from '../config/blockchain.js';
 import { ethers } from 'ethers';
+import dotenv from 'dotenv';
 
+dotenv.config();
+
+/**
+ * Contract Service - Handles all blockchain interactions
+ */
+
+// Get wallet and provider
+const provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
+const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+
+// Contract ABIs
 const managerAbi = [
-  "function executeStrategy(address[] protocols, uint256[] percentages, uint256 apy, uint256 risk) returns (bool)",
-  "function proposeStrategy(address[] protocols, uint256[] percentages, uint256 reportedApy)",
+  "function proposeStrategy(address[] protocols, uint256[] percentages, uint256 reportedApy, bytes _sgxSignature)",
   "function executeProposedStrategy(uint256 proposalId)",
   "function cancelProposal(uint256 proposalId)",
-  "function getProposal(uint256 proposalId) view returns (address[] protocols, uint256[] percentages, uint256 executionTime, bool executed, bool canceled, address proposedBy, uint256 totalApy, uint256 portfolioRisk)",
-  "function getProtocolInfo(address protocol) view returns (bool isWhitelisted, uint256 riskScore, string name, string zeroGStorageHash, uint256 lastUpdated)",
+  "function getProposal(uint256 proposalId) view returns (address[], uint256[], uint256, bool, bool, address, uint256, uint256)",
+  "function updateProtocol(address protocol, bool status, uint256 riskScore, string name, string zeroGHash)",
+  "function setTrustedEnclaveKey(address newKey)",
   "function proposalCount() view returns (uint256)"
 ];
 
-export async function executeStrategy(decision) {
-  const wallet = getWallet();
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  // Convert protocol names to addresses (in production, use a mapping)
-  const protocolAddresses = await getProtocolAddresses(decision.protocols);
-  
-  const tx = await contract.executeStrategy(
-    protocolAddresses,
-    decision.percentages,
-    decision.expectedAPY,
-    decision.riskScore
-  );
-  await tx.wait();
-  return { txHash: tx.hash };
-}
-
+/**
+ * Submit strategy proposal to blockchain
+ */
 export async function proposeStrategy(decision) {
-  const wallet = getWallet();
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  // Convert protocol names to addresses
-  const protocolAddresses = await getProtocolAddresses(decision.protocols);
-  
-  const tx = await contract.proposeStrategy(
-    protocolAddresses,
-    decision.percentages,
-    decision.expectedAPY
-  );
-  const receipt = await tx.wait();
-  
-  // Get proposal ID from events
-  const event = receipt.logs.find(log => {
-    try {
-      const parsed = contract.interface.parseLog(log);
-      return parsed.name === 'StrategyProposed';
-    } catch {
-      return false;
-    }
-  });
-  
-  let proposalId = null;
-  if (event) {
-    const parsed = contract.interface.parseLog(event);
-    proposalId = parsed.args.proposalId.toString();
+  try {
+    console.log("📝 Submitting strategy proposal to blockchain...");
+    
+    const contract = new ethers.Contract(
+      process.env.MANAGER_ADDRESS,
+      managerAbi,
+      wallet
+    );
+    
+    // decision.executionProof comes from TEE attestation
+    const tx = await contract.proposeStrategy(
+      decision.protocols,
+      decision.percentages,
+      decision.expectedAPY,
+      decision.executionProof || "0x" // Pass TEE signature
+    );
+    
+    console.log(`📤 Transaction submitted: ${tx.hash}`);
+    
+    const receipt = await tx.wait();
+    console.log(`✅ Transaction confirmed in block: ${receipt.blockNumber}`);
+    
+    return receipt;
+    
+  } catch (error) {
+    console.error("❌ Failed to propose strategy:", error);
+    throw error;
   }
-  
-  return { txHash: tx.hash, proposalId };
 }
 
 export async function executeProposal(proposalId) {
-  const wallet = getWallet();
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  const tx = await contract.executeProposedStrategy(proposalId);
-  await tx.wait();
-  return { txHash: tx.hash };
+  try {
+    console.log(`⚡ Executing proposal ${proposalId}...`);
+    
+    const contract = new ethers.Contract(
+      process.env.MANAGER_ADDRESS,
+      managerAbi,
+      wallet
+    );
+    
+    const tx = await contract.executeProposedStrategy(proposalId);
+    
+    const receipt = await tx.wait();
+    console.log(`✅ Proposal executed successfully`);
+    
+    return receipt;
+    
+  } catch (error) {
+    console.error("❌ Failed to execute proposal:", error);
+    throw error;
+  }
 }
 
 export async function cancelProposal(proposalId) {
-  const wallet = getWallet();
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
+  try {
+    console.log(`🛑 Canceling proposal ${proposalId}...`);
+    
+    const contract = new ethers.Contract(
+      process.env.MANAGER_ADDRESS,
+      managerAbi,
+      wallet
+    );
+    
+    const tx = await contract.cancelProposal(proposalId);
+    
+    const receipt = await tx.wait();
+    console.log(`✅ Proposal canceled successfully`);
+    
+    return receipt;
+    
+  } catch (error) {
+    console.error("❌ Failed to cancel proposal:", error);
+    throw error;
+  }
+}
 
-  const tx = await contract.cancelProposal(proposalId);
-  await tx.wait();
-  return { txHash: tx.hash };
+export async function getProposalDetails(proposalId) {
+  try {
+    const contract = new ethers.Contract(
+      process.env.MANAGER_ADDRESS,
+      managerAbi,
+      wallet
+    );
+
+    const proposal = await contract.getProposal(proposalId);
+    
+    return {
+      protocols: proposal[0],
+      percentages: proposal[1].map(p => Number(p)),
+      executionTime: Number(proposal[2]),
+      executed: proposal[3],
+      canceled: proposal[4],
+      proposedBy: proposal[5],
+      totalApy: Number(proposal[6]),
+      portfolioRisk: Number(proposal[7])
+    };
+    
+  } catch (error) {
+    console.error("❌ Failed to get proposal:", error);
+    throw error;
+  }
 }
 
 export async function getProposalDetails(proposalId) {

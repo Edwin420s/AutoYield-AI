@@ -1,10 +1,36 @@
 {
-  "name": "autoyield-contracts",
+  "name": "autoyield-ai-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for AutoYield AI - Autonomous DeFi Yield Optimizer on 0G",
+  "scripts": {
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js --network og",
+    "deploy:local": "hardhat run scripts/deploy.js --network localhost",
+    "test": "hardhat test"
+  },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "hardhat": "^2.22.2"
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "@nomicfoundation/hardhat-foundry": "^0.1.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.0",
+    "hardhat": "^2.19.0",
+    "hardhat-gas-reporter": "^1.0.8"
   },
   "dependencies": {
+    "@openzeppelin/contracts": "^5.0.0",
     "dotenv": "^16.4.5"
-  }
+  },
+  "keywords": [
+    "defi",
+    "yield",
+    "ai",
+    "0g",
+    "blockchain",
+    "autonomous",
+    "tee",
+    "smart-contracts",
+    "solidity"
+  ],
+  "author": "AutoYield AI Team",
+  "license": "MIT"
 }
