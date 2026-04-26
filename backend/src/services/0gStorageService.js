@@ -1,51 +1,159 @@
-import fs from 'fs';
-import path from 'path';
+import { IndexerClient, ZgFile, getFlowContract } from '@0glabs/0g-storage-client';
 import { ethers } from 'ethers';
+import fs from 'fs';
 import dotenv from 'dotenv';
-import { ZeroGStorageClient } from '@0glabs/0g-storage-sdk';
-import axios from 'axios';
-import FormData from 'form-data';
-import crypto from 'crypto';
 
 dotenv.config();
 
 /**
- * ACTUAL 0G Storage Service for Protocol Metadata
- * This service uses the real 0G Storage SDK to upload and retrieve
- * audit reports, security metadata, and AI decision logs.
+ * Uploads protocol security metadata to 0G Storage
+ * @param {string} filePath - Path to the local JSON or PDF file
  */
+export async function uploadProtocolAuditTo0G(filePath) {
+    console.log("Preparing to upload to 0G Storage...");
 
-class ZeroGStorageService {
-  constructor() {
-    this.provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
-    this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
-    
-    // Initialize 0G Storage Client
-    this.storageClient = new ZeroGStorageClient({
-      rpcUrl: process.env.ZERO_G_RPC_URL,
-      privateKey: process.env.PRIVATE_KEY,
-      indexerUrl: process.env.ZERO_G_INDEXER_URL || "https://indexer.0g.ai"
-    });
-    
-    // 0G Storage endpoints
-    this.storageUrl = process.env.ZERO_G_STORAGE_URL || "https://storage.0g.ai";
-    this.flowContractAddress = process.env.ZERO_G_FLOW_CONTRACT;
-  }
+    // 1. Initialize your wallet (You need 0G tokens to pay for storage)
+    const provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
-  /**
-   * Upload protocol metadata to 0G Storage using actual SDK
-   * @param {Object} protocolData - Protocol information
-   * @returns {Promise<string>} - 0G Storage root hash
-   */
-  async uploadProtocolMetadata(protocolData) {
+    // 2. Initialize 0G Storage Clients
+    // These endpoints will be provided in the 0G Hackathon documentation
+    const indexerClient = new IndexerClient("https://indexer.0g.ai"); // Example endpoint
+    const flowContract = getFlowContract("0x0G_FLOW_CONTRACT_ADDRESS", wallet);
+
     try {
-      console.log(`🚀 Uploading metadata for ${protocolData.name} to 0G Storage...`);
+        // 3. Read the file (e.g., Aave_Security_Audit.pdf or protocol_metadata.json)
+        const fileBuffer = fs.readFileSync(filePath);
+        
+        // Convert to 0G File format
+        const zgFile = await ZgFile.fromBuffer(fileBuffer);
+        const rootHash = zgFile.merkleTree.rootHash();
+        
+        console.log(`File processed. Root Hash: ${rootHash}`);
 
-      // 1. Prepare comprehensive metadata
-      const metadata = {
+        // 4. Pay for the storage on the 0G Chain (The "Flow" contract)
+        console.log("Submitting transaction to 0G Chain...");
+        const tx = await flowContract.append(zgFile);
+        await tx.wait();
+        
+        // 5. Upload the actual data to the 0G Storage Nodes
+        console.log("Uploading file chunks to 0G Storage Nodes...");
+        await indexerClient.upload(zgFile);
+
+        console.log("✅ Upload Complete!");
+        console.log(`🔗 0G Storage CID / Root Hash: ${rootHash}`);
+        
+        return rootHash;
+
+    } catch (error) {
+        console.error("0G Storage Upload Failed:", error);
+        throw error;
+    }
+}
+
+/**
+ * Retrieves protocol metadata from 0G Storage using the root hash
+ * @param {string} rootHash - The 0G Storage root hash
+ * @returns {Promise<Object>} - The retrieved metadata
+ */
+export async function retrieveProtocolMetadataFrom0G(rootHash) {
+    console.log(`Retrieving metadata from 0G Storage: ${rootHash}`);
+
+    try {
+        const indexerClient = new IndexerClient("https://indexer.0g.ai");
+        
+        // Download the file from 0G Storage
+        const zgFile = await indexerClient.download(rootHash);
+        const fileBuffer = await zgFile.toBuffer();
+        
+        // Parse the content (assuming JSON for metadata)
+        const metadata = JSON.parse(fileBuffer.toString());
+        
+        console.log("✅ Successfully retrieved metadata from 0G Storage");
+        return metadata;
+
+    } catch (error) {
+        console.error("Failed to retrieve from 0G Storage:", error);
+        throw error;
+    }
+}
+
+/**
+ * Batch upload multiple protocol files to 0G Storage
+ * @param {Array} filePaths - Array of file paths to upload
+ * @returns {Promise<Array>} - Array of upload results with root hashes
+ */
+export async function batchUploadTo0G(filePaths) {
+    console.log(`Starting batch upload of ${filePaths.length} files to 0G Storage...`);
+    
+    const results = [];
+    
+    for (const filePath of filePaths) {
+        try {
+            const rootHash = await uploadProtocolAuditTo0G(filePath);
+            results.push({
+                filePath,
+                rootHash,
+                success: true
+            });
+        } catch (error) {
+            console.error(`Failed to upload ${filePath}:`, error);
+            results.push({
+                filePath,
+                rootHash: null,
+                success: false,
+                error: error.message
+            });
+        }
+    }
+    
+    const successful = results.filter(r => r.success).length;
+    console.log(`✅ Batch upload complete: ${successful}/${filePaths.length} files uploaded successfully`);
+    
+    return results;
+}
+
+/**
+ * Verifies file integrity by comparing hashes
+ * @param {string} rootHash - Expected root hash
+ * @param {string} filePath - Local file path to verify
+ * @returns {Promise<boolean>} - True if integrity is verified
+ */
+export async function verifyFileIntegrity(rootHash, filePath) {
+    try {
+        console.log(`Verifying file integrity for ${filePath}...`);
+        
+        // Calculate local file hash
+        const fileBuffer = fs.readFileSync(filePath);
+        const zgFile = await ZgFile.fromBuffer(fileBuffer);
+        const localHash = zgFile.merkleTree.rootHash();
+        
+        // Compare with stored hash
+        const isValid = localHash === rootHash;
+        
+        console.log(`Integrity check: ${isValid ? '✅ PASSED' : '❌ FAILED'}`);
+        console.log(`Local hash: ${localHash}`);
+        console.log(`Stored hash: ${rootHash}`);
+        
+        return isValid;
+
+    } catch (error) {
+        console.error("File integrity verification failed:", error);
+        return false;
+    }
+}
+
+/**
+ * Creates protocol metadata JSON file for upload
+ * @param {Object} protocolData - Protocol information
+ * @param {string} outputPath - Path to save the JSON file
+ * @returns {Promise<string>} - Path to the created file
+ */
+export async function createProtocolMetadata(protocolData, outputPath) {
+    const metadata = {
         protocolName: protocolData.name,
         contractAddress: protocolData.address,
-        riskScore: protocolData.riskScore,
+        riskScore: protocolData.risk,
         description: protocolData.description,
         website: protocolData.website,
         auditDate: protocolData.auditDate,
@@ -54,314 +162,49 @@ class ZeroGStorageService {
         tvl: protocolData.tvl,
         volume24h: protocolData.volume24h,
         lastUpdated: new Date().toISOString(),
-        uploadedBy: this.wallet.address,
-        version: "1.0.0",
-        chainId: await this.provider.getNetwork().then(n => Number(n.chainId))
-      };
+        version: "1.0.0"
+    };
 
-      // 2. Create temporary metadata file
-      const metadataPath = path.join(process.cwd(), 'temp', `${protocolData.name.toLowerCase().replace(/\s+/g, '_')}_metadata.json`);
-      
-      // Ensure temp directory exists
-      const tempDir = path.dirname(metadataPath);
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-      
-      fs.writeFileSync(metadataPath, JSON.stringify(metadata, null, 2));
-
-      // 3. Upload to 0G Storage using actual SDK
-      const uploadResult = await this.storageClient.uploadFile({
-        filePath: metadataPath,
-        encryption: true, // Encrypt for privacy
-        replication: 3,   // Replicate across 3 nodes
-        compression: true // Compress to save space
-      });
-
-      // 4. If audit report exists, upload it too
-      let auditHash = null;
-      if (protocolData.auditReport && fs.existsSync(protocolData.auditReport)) {
-        const auditResult = await this.storageClient.uploadFile({
-          filePath: protocolData.auditReport,
-          encryption: true,
-          replication: 3,
-          tags: ['audit', protocolData.name, 'security']
-        });
-        auditHash = auditResult.rootHash;
-      }
-
-      // 5. Clean up temp files
-      fs.unlinkSync(metadataPath);
-
-      console.log(`✅ Successfully uploaded ${protocolData.name} to 0G Storage`);
-      console.log(`🔗 Metadata Hash: ${uploadResult.rootHash}`);
-      if (auditHash) {
-        console.log(`📋 Audit Report Hash: ${auditHash}`);
-      }
-
-      return {
-        metadataHash: uploadResult.rootHash,
-        auditHash: auditHash,
-        size: uploadResult.size,
-        txHash: uploadResult.transactionHash
-      };
-
-    } catch (error) {
-      console.error(`❌ Failed to upload ${protocolData.name} to 0G Storage:`, error);
-      throw new Error(`0G Storage upload failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Retrieve protocol metadata from 0G Storage
-   * @param {string} rootHash - 0G Storage root hash
-   * @returns {Promise<Object>} - Protocol metadata
-   */
-  async retrieveProtocolMetadata(rootHash) {
-    try {
-      console.log(`🔍 Retrieving metadata from 0G Storage: ${rootHash}`);
-
-      // Use actual 0G Storage SDK to retrieve file
-      const retrievedData = await this.storageClient.downloadFile(rootHash);
-      
-      // Parse and validate metadata
-      const metadata = JSON.parse(retrievedData.content);
-      
-      // Verify integrity
-      const calculatedHash = crypto.createHash('sha256').update(retrievedData.content).digest('hex');
-      if (calculatedHash !== retrievedData.hash) {
-        throw new Error('File integrity check failed - possible tampering');
-      }
-
-      console.log(`✅ Successfully retrieved and verified metadata for ${metadata.protocolName}`);
-      return metadata;
-
-    } catch (error) {
-      console.error(`❌ Failed to retrieve metadata from 0G Storage:`, error);
-      throw new Error(`0G Storage retrieval failed: ${error.message}`);
-    }
-  }
-
-  /**
-   * Store AI decision logs on 0G Storage for audit trail
-   * @param {Object} decisionData - AI decision details
-   * @returns {Promise<string>} - Storage hash
-   */
-  async storeDecisionLog(decisionData) {
-    try {
-      console.log(`� Storing AI decision log to 0G Storage...`);
-
-      const decisionLog = {
-        timestamp: new Date().toISOString(),
-        decisionId: crypto.randomUUID(),
-        agentAddress: this.wallet.address,
-        input: {
-          protocols: decisionData.protocols,
-          marketData: decisionData.marketData,
-          constraints: decisionData.constraints
-        },
-        output: {
-          selectedProtocols: decisionData.selectedProtocols,
-          allocations: decisionData.allocations,
-          expectedAPY: decisionData.expectedAPY,
-          portfolioRisk: decisionData.portfolioRisk,
-          strategy: decisionData.strategy,
-          confidence: decisionData.confidence
-        },
-        reasoning: decisionData.reasoning,
-        executionDetails: {
-          transactionHash: decisionData.txHash,
-          blockNumber: decisionData.blockNumber,
-          gasUsed: decisionData.gasUsed
-        },
-        verification: {
-          signature: await this.signDecision(decisionData),
-          checksum: this.calculateChecksum(decisionData)
-        }
-      };
-
-      // Store with high availability and encryption
-      const result = await this.storageClient.uploadFile({
-        content: JSON.stringify(decisionLog, null, 2),
-        encryption: true,
-        replication: 5, // Higher replication for audit logs
-        tags: ['ai-decision', 'audit-log', 'autoyield'],
-        retention: 'permanent' // Never delete audit logs
-      });
-
-      console.log(`✅ Decision log stored: ${result.rootHash}`);
-      return result.rootHash;
-
-    } catch (error) {
-      console.error(`❌ Failed to store decision log:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Verify AI decision integrity using stored logs
-   * @param {string} decisionHash - Storage hash of decision log
-   * @param {Object} currentDecision - Current decision to verify
-   * @returns {Promise<boolean>} - Verification result
-   */
-  async verifyDecisionIntegrity(decisionHash, currentDecision) {
-    try {
-      const storedLog = await this.retrieveProtocolMetadata(decisionHash);
-      
-      // Verify signature
-      const isValidSignature = await this.verifySignature(
-        storedLog.verification.signature,
-        storedLog.output,
-        storedLog.agentAddress
-      );
-
-      // Verify checksum
-      const calculatedChecksum = this.calculateChecksum(storedLog.output);
-      const isValidChecksum = calculatedChecksum === storedLog.verification.checksum;
-
-      // Compare with current decision
-      const decisionsMatch = JSON.stringify(storedLog.output) === JSON.stringify(currentDecision);
-
-      return isValidSignature && isValidChecksum && decisionsMatch;
-
-    } catch (error) {
-      console.error(`❌ Decision verification failed:`, error);
-      return false;
-    }
-  }
-
-  /**
-   * Batch upload multiple protocols with progress tracking
-   * @param {Array} protocols - Array of protocol data objects
-   * @returns {Promise<Array>} - Array of upload results
-   */
-  async batchUploadProtocols(protocols) {
-    console.log(`📦 Starting batch upload of ${protocols.length} protocols...`);
+    fs.writeFileSync(outputPath, JSON.stringify(metadata, null, 2));
+    console.log(`✅ Protocol metadata created: ${outputPath}`);
     
-    const results = [];
-    const startTime = Date.now();
-    
-    for (let i = 0; i < protocols.length; i++) {
-      const protocol = protocols[i];
-      console.log(`Progress: ${i + 1}/${protocols.length} - Uploading ${protocol.name}`);
-      
-      try {
-        const result = await this.uploadProtocolMetadata(protocol);
-        results.push({
-          name: protocol.name,
-          address: protocol.address,
-          success: true,
-          ...result
-        });
-      } catch (error) {
-        console.error(`Failed to upload ${protocol.name}:`, error);
-        results.push({
-          name: protocol.name,
-          address: protocol.address,
-          success: false,
-          error: error.message
-        });
-      }
-    }
-    
-    const duration = (Date.now() - startTime) / 1000;
-    const successful = results.filter(r => r.success).length;
-    
-    console.log(`✅ Batch upload complete: ${successful}/${protocols.length} protocols uploaded in ${duration}s`);
-    
-    return results;
-  }
-
-  /**
-   * Get comprehensive storage statistics from 0G network
-   * @returns {Promise<Object>} - Storage statistics
-   */
-  async getStorageStats() {
-    try {
-      console.log(`📊 Fetching 0G Storage statistics...`);
-      
-      // Query 0G Storage network for stats
-      const stats = await this.storageClient.getNetworkStats();
-      
-      return {
-        totalFilesStored: stats.totalFiles,
-        totalStorageUsed: `${(stats.totalSize / 1024 / 1024 / 1024).toFixed(2)} GB`,
-        averageFileSize: `${(stats.averageFileSize / 1024 / 1024).toFixed(2)} MB`,
-        uploadCount: stats.uploadCount,
-        activeNodes: stats.activeNodes,
-        replicationFactor: stats.replicationFactor,
-        networkUptime: `${(stats.uptime / 3600).toFixed(1)} hours`,
-        lastUpload: new Date(stats.lastUploadTimestamp).toISOString(),
-        encryptionEnabled: stats.encryptionEnabled,
-        compressionRatio: `${(stats.compressionRatio * 100).toFixed(1)}%`
-      };
-
-    } catch (error) {
-      console.error(`❌ Failed to fetch storage stats:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Sign decision data for integrity verification
-   * @param {Object} decisionData - Decision data to sign
-   * @returns {Promise<string>} - Signature
-   */
-  async signDecision(decisionData) {
-    const messageHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(decisionData)));
-    const signature = await this.wallet.signMessage(ethers.getBytes(messageHash));
-    return signature;
-  }
-
-  /**
-   * Verify signature of decision data
-   * @param {string} signature - Signature to verify
-   * @param {Object} data - Original data
-   * @param {string} signerAddress - Expected signer address
-   * @returns {Promise<boolean>} - Verification result
-   */
-  async verifySignature(signature, data, signerAddress) {
-    try {
-      const messageHash = ethers.keccak256(ethers.toUtf8Bytes(JSON.stringify(data)));
-      const recoveredAddress = ethers.verifyMessage(ethers.getBytes(messageHash), signature);
-      return recoveredAddress.toLowerCase() === signerAddress.toLowerCase();
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Calculate checksum for data integrity
-   * @param {Object} data - Data to checksum
-   * @returns {string} - Checksum hash
-   */
-  calculateChecksum(data) {
-    return crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
-  }
-
-  /**
-   * Monitor storage health and replication status
-   * @returns {Promise<Object>} - Health status
-   */
-  async monitorStorageHealth() {
-    try {
-      const health = await this.storageClient.getHealthStatus();
-      
-      return {
-        status: health.status === 'healthy' ? '✅ Healthy' : '⚠️ Issues Detected',
-        nodeCount: health.activeNodes,
-        replicationHealth: health.replicationStatus,
-        lastCheck: new Date().toISOString(),
-        alerts: health.alerts || []
-      };
-    } catch (error) {
-      return {
-        status: '❌ Error',
-        error: error.message,
-        lastCheck: new Date().toISOString()
-      };
-    }
-  }
+    return outputPath;
 }
 
-export default ZeroGStorageService;
+// Example usage function for testing
+export async function test0GStorageIntegration() {
+    try {
+        // Create test metadata
+        const testData = {
+            name: "Aave Protocol",
+            address: "0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9",
+            risk: 25,
+            description: "Decentralized lending and borrowing protocol",
+            website: "https://aave.com",
+            auditDate: "2024-01-15",
+            auditFirm: "Certik",
+            securityFeatures: ["Multi-sig", "Time locks", "Bug bounty"],
+            tvl: 5000000000,
+            volume24h: 100000000
+        };
+
+        // Create metadata file
+        const metadataPath = await createProtocolMetadata(testData, './temp/aave_metadata.json');
+        
+        // Upload to 0G Storage
+        const rootHash = await uploadProtocolAuditTo0G(metadataPath);
+        
+        // Retrieve and verify
+        const retrieved = await retrieveProtocolMetadataFrom0G(rootHash);
+        console.log("Retrieved metadata:", retrieved);
+        
+        // Clean up
+        fs.unlinkSync(metadataPath);
+        
+        return { rootHash, retrieved };
+
+    } catch (error) {
+        console.error("0G Storage integration test failed:", error);
+        throw error;
+    }
+}
