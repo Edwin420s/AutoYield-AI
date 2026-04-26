@@ -145,7 +145,9 @@ contract AutoYieldVault is ERC20, IERC4626 {
      * @dev The core engine. Called by StrategyManager after Time-Lock expires.
      * Liquidates old positions and physically routes assets to new optimal protocols.
      */
-    function rebalance(address[] memory _protocols, uint256[] memory _percentages) external onlyStrategyManager {
+    function rebalance(address[] memory _protocols, uint256[] memory _percentagesBps) external onlyStrategyManager {
+        require(_protocols.length == _percentagesBps.length, "Arrays length mismatch");
+        
         // Step 1: Withdraw EVERYTHING from current DeFi protocols back into idle cash
         for (uint i = 0; i < currentAllocations.length; i++) {
             address oldProtocol = currentAllocations[i].protocol;
@@ -163,9 +165,10 @@ contract AutoYieldVault is ERC20, IERC4626 {
 
         delete currentAllocations;
 
-        // Step 3: Physically route funds to new AI-selected protocols
+        // Step 3: Physically route funds to new AI-selected protocols using BPS
         for (uint i = 0; i < _protocols.length; i++) {
-            uint256 amountToDeploy = (availableAssets * _percentages[i]) / 100;
+            // Convert BPS to actual amount (10000 BPS = 100%)
+            uint256 amountToDeploy = (availableAssets * _percentagesBps[i]) / 10000;
 
             if (amountToDeploy > 0) {
                 // Give DeFi protocol permission to take our funds
@@ -175,11 +178,11 @@ contract AutoYieldVault is ERC20, IERC4626 {
                 IERC4626(_protocols[i]).deposit(amountToDeploy, address(this));
             }
 
-            // Save state
-            currentAllocations.push(Allocation(_protocols[i], _percentages[i]));
+            // Save state with BPS values
+            currentAllocations.push(Allocation(_protocols[i], _percentagesBps[i]));
         }
 
-        emit Rebalanced(_protocols, _percentages, availableAssets);
+        emit Rebalanced(_protocols, _percentagesBps, availableAssets);
     }
 
     function getTotalShares() external view returns (uint256) {

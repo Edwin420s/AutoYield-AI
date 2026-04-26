@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import MarketOracleFeed from './components/MarketOracleFeed.jsx';
 import PendingProposals from './components/PendingProposals.jsx';
+import AgentControlPanel from './components/AgentControlPanel.jsx';
 
 function App() {
   const [account, setAccount] = useState(null);
@@ -160,10 +161,13 @@ function App() {
           </div>
         )}
 
-        {/* Two Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Three Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Market Oracle Feed */}
           <MarketOracleFeed />
+          
+          {/* Hollywood TEE Terminal */}
+          <AgentControlPanel />
           
           {/* Pending Proposals */}
           <PendingProposals />

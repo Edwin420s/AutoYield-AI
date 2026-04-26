@@ -32,6 +32,7 @@ contract StrategyManager {
     struct ProtocolInfo {
         bool isWhitelisted;
         uint256 riskScore; // 0 (safest) to 100 (riskiest)
+        uint256 maxAllocationBps; // NEW: The absolute maximum allowed (e.g., 3500 for 35%)
         string name;
         string zeroGStorageHash; // CID for audit reports
         uint256 lastUpdated;
@@ -87,15 +88,18 @@ contract StrategyManager {
         address _protocol, 
         bool _status, 
         uint256 _riskScore, 
+        uint256 _maxAllocationBps,
         string calldata _name,
         string calldata _zeroGHash
     ) external onlyOwner {
         require(_protocol != address(0), "Invalid protocol address");
         require(_riskScore <= 100, "Invalid risk score");
+        require(_maxAllocationBps <= 10000, "Invalid max allocation BPS");
         
         protocolRegistry[_protocol] = ProtocolInfo({
             isWhitelisted: _status,
             riskScore: _riskScore,
+            maxAllocationBps: _maxAllocationBps,
             name: _name,
             zeroGStorageHash: _zeroGHash,
             lastUpdated: block.timestamp
@@ -129,12 +133,12 @@ contract StrategyManager {
      */
     function proposeStrategy(
         address[] calldata _protocols,
-        uint256[] calldata _percentages,
+        uint256[] calldata _percentagesBps, // Now using Basis Points (10000 = 100%)
         uint256 _reportedApy,
-        bytes calldata _sgxSignature // NEW: Require hardware proof
+        bytes calldata _sgxAttestationProof
     ) external {
         require(IAgentRegistry(agentRegistry).isAgent(msg.sender), "Not authorized agent");
-        require(_protocols.length == _percentages.length, "Arrays length mismatch");
+        require(_protocols.length == _percentagesBps.length, "Arrays length mismatch");
         require(_protocols.length > 0, "No protocols specified");
 
         // ==========================================
@@ -142,43 +146,47 @@ contract StrategyManager {
         // ==========================================
         
         // 1. Recreate the exact hash of the data that enclave *should* have signed
-        bytes32 strategyHash = keccak256(abi.encodePacked(_protocols, _percentages, _reportedApy));
+        bytes32 strategyHash = keccak256(abi.encodePacked(_protocols, _percentagesBps, _reportedApy));
         
         // 2. Convert it to an Ethereum signed message hash standard
         bytes32 ethSignedMessageHash = strategyHash.toEthSignedMessageHash();
         
         // 3. Recover the address that signed this payload
-        address recoveredSigner = ethSignedMessageHash.recover(_sgxSignature);
+        address recoveredSigner = ethSignedMessageHash.recover(_sgxAttestationProof);
         
         // 4. THE ULTIMATE CHECK: Did our specific TEE enclave sign this exact data?
         require(recoveredSigner == trustedEnclaveKey, "CRITICAL: TEE Attestation Failed! Payload altered or untrusted hardware.");
         
         // ==========================================
         
-        uint256 totalPercentage = 0;
+        uint256 totalBps = 0;
         uint256 portfolioRisk = 0;
         
         // Security checks for all protocols
         for(uint i = 0; i < _protocols.length; i++) {
-            require(_percentages[i] > 0, "Invalid percentage");
-            totalPercentage += _percentages[i];
+            require(_percentagesBps[i] > 0, "Invalid allocation");
+            totalBps += _percentagesBps[i];
             
             ProtocolInfo memory info = protocolRegistry[_protocols[i]];
             require(info.isWhitelisted, "Security Breach: Protocol not whitelisted");
             require(block.timestamp <= info.lastUpdated + 365 days, "Protocol info expired");
             
-            // Calculate weighted portfolio risk
-            portfolioRisk += (info.riskScore * _percentages[i]) / 100;
+            // 🚨 THE ENTERPRISE UPGRADE: Force the AI to obey the Trust Score Limit
+            require(_percentagesBps[i] <= info.maxAllocationBps, "CRITICAL: AI exceeded Trust Score allocation limit!");
+            
+            // Calculate weighted portfolio risk (adjusted for BPS)
+            portfolioRisk += (info.riskScore * _percentagesBps[i]) / 10000;
         }
         
-        require(totalPercentage == 100, "Total percentage must equal 100");
+        // Exact precision check
+        require(totalBps == 10000, "Total allocation must exactly equal 10000 BPS (100%)");
         require(portfolioRisk <= maxPortfolioRisk, "Risk Threshold Exceeded");
         
         uint256 executeAfter = block.timestamp + timeLockDuration;
         
         proposals[proposalCount] = Proposal({
             protocols: _protocols,
-            percentages: _percentages,
+            percentages: _percentagesBps, // Now storing highly precise BPS
             executionTime: executeAfter,
             executed: false,
             canceled: false,

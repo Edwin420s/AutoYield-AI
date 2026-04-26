@@ -31,52 +31,52 @@ export function decideStrategy(protocols) {
   const selected = scoredProtocols.slice(0, 2);
   const totalScore = selected.reduce((sum, p) => sum + p.score, 0);
 
-  // Step 4: Calculate proportional weights based on their scores
+  // Step 4: Calculate proportional weights using Basis Points (BPS) for precision
   let allocations = selected.map(p => {
-    // Calculate raw percentage
-    let rawPercent = (p.score / totalScore) * 100;
+    // Calculate raw BPS (10000 = 100%)
+    let rawBps = (p.score / totalScore) * 10000;
     return {
       name: p.name,
       address: p.address, // CRITICAL: Now using the on-chain address for the Whitelist!
       apy: p.apy,
       risk: p.risk,
-      // Round to nearest integer for solid blockchain execution
-      percentage: Math.round(rawPercent) 
+      // Round to nearest integer BPS for precise blockchain execution
+      percentageBps: Math.round(rawBps) 
     };
   });
 
-  // Ensure percentages equal exactly 100% due to rounding
-  let totalPercent = allocations.reduce((sum, a) => sum + a.percentage, 0);
-  if (totalPercent !== 100) {
-    const diff = 100 - totalPercent;
+  // Ensure BPS equals exactly 10000 (100%) due to rounding
+  let totalBps = allocations.reduce((sum, a) => sum + a.percentageBps, 0);
+  if (totalBps !== 10000) {
+    const diff = 10000 - totalBps;
     // Add/subtract the difference to the top protocol
-    allocations[0].percentage += diff; 
+    allocations[0].percentageBps += diff; 
   }
 
-  // Step 5: Verify against the strict portfolio risk constraint
-  const blendedRisk = allocations.reduce((sum, a) => sum + (a.risk * (a.percentage / 100)), 0);
-  const blendedApy = allocations.reduce((sum, a) => sum + (a.apy * (a.percentage / 100)), 0);
+  // Step 5: Verify against the strict portfolio risk constraint (using BPS)
+  const blendedRisk = allocations.reduce((sum, a) => sum + (a.risk * (a.percentageBps / 10000)), 0);
+  const blendedApy = allocations.reduce((sum, a) => sum + (a.apy * (a.percentageBps / 10000)), 0);
 
   if (blendedRisk > MAX_PORTFOLIO_RISK) {
     // If our best mathematical guess is still too risky, fallback to the single safest protocol
     console.warn(`Calculated risk (${blendedRisk.toFixed(2)}) exceeds max threshold. Engaging safety fallback.`);
     const safest = [...protocols].sort((a, b) => a.risk - b.risk)[0];
-    return generateOutput([safest], [100]);
+    return generateOutput([safest], [10000]); // 10000 BPS = 100%
   }
 
-  // Step 6: Format the output for the Smart Contract
-  return generateOutput(allocations, allocations.map(a => a.percentage));
+  // Step 6: Format the output for the Smart Contract (using BPS)
+  return generateOutput(allocations, allocations.map(a => a.percentageBps));
 }
 
-// Helper function to format data perfectly for the blockchain
-function generateOutput(protocolObjects, percentages) {
-    const blendedRisk = protocolObjects.reduce((sum, p, i) => sum + (p.risk * (percentages[i] / 100)), 0);
-    const blendedApy = protocolObjects.reduce((sum, p, i) => sum + (p.apy * (percentages[i] / 100)), 0);
+// Helper function to format data perfectly for the blockchain (using BPS)
+function generateOutput(protocolObjects, percentagesBps) {
+    const blendedRisk = protocolObjects.reduce((sum, p, i) => sum + (p.risk * (percentagesBps[i] / 10000)), 0);
+    const blendedApy = protocolObjects.reduce((sum, p, i) => sum + (p.apy * (percentagesBps[i] / 10000)), 0);
 
     return {
         protocols: protocolObjects.map(p => p.address), // Returning addresses, not names
         protocolNames: protocolObjects.map(p => p.name), // Keeping names for the UI/Storage logging
-        percentages: percentages,
+        percentages: percentagesBps, // Now using BPS values
         expectedAPY: Math.round(blendedApy * 100), // Multiply by 100 for integer math on chain (e.g. 5.25% -> 525)
         riskScore: Math.round(blendedRisk)
     };

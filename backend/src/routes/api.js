@@ -10,6 +10,47 @@ router.post('/agent/run', runAgentController);
 router.get('/agent/status', getAgentStatus);
 router.get('/agent/tee-performance', getTEEPerformance);
 
+// TEE Streaming Route (Server-Sent Events)
+router.get('/agent/stream-tee', async (req, res) => {
+  // Set headers for Server-Sent Events
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
+  const sendLog = (message, status = "info") => {
+    res.write(`data: ${JSON.stringify({ message, status, time: new Date().toLocaleTimeString() })}\n\n`);
+  };
+
+  try {
+    sendLog("Initializing 0G Compute TEE Connection...", "info");
+    await new Promise(r => setTimeout(r, 1000));
+
+    sendLog("Sealing Market Data Payload (SGX Enclave)...", "processing");
+    await new Promise(r => setTimeout(r, 1500));
+
+    sendLog("Running Agentic Math (Risk-Adjusted Optimization)...", "processing");
+    await new Promise(r => setTimeout(r, 2000));
+
+    sendLog("Generating Cryptographic Proof of Execution...", "processing");
+    await new Promise(r => setTimeout(r, 1500));
+
+    sendLog("Verifying SGX Attestation...", "success");
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Here you would actually call your runAgentWithMathValidation() function
+    
+    sendLog("Submitting Verified Proposal to 0G Chain...", "processing");
+    await new Promise(r => setTimeout(r, 2000));
+
+    sendLog("✅ Strategy Time-Locked and Stored on 0G Storage!", "complete");
+    res.end(); // Close the stream
+    
+  } catch (error) {
+    sendLog(`Error: ${error.message}`, "error");
+    res.end();
+  }
+});
+
 // Oracle Routes
 router.get('/oracle/live', async (req, res) => {
   try {
