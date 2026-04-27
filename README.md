@@ -48,6 +48,10 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 - **TEE Execution Flow**: Uses `@0glabs/0g-compute-sdk` architecture but falls back to local processing
 - **Hardware Attestation**: Simulated SGX reports for demo visualization
 
+### 🏗️ **Hackathon Architecture Note regarding TEE Verification**
+
+> Due to time constraints and testnet environment limitations, true Intel SGX DCAP on-chain attestation verification was not implemented in Solidity. Instead, the StrategyManager.sol implements a strict ECDSA cryptographic proxy. The smart contract mathematically verifies a signature generated exclusively by the designated Enclave Wallet, demonstrating the exact architectural flow of Verifiable Finance without requiring custom Intel Root-of-Trust pre-compiles.
+
 #### 🎯 **HACKATHON REALITY CHECK:**
 Setting up actual Intel SGX enclave development requires:
 - Specialized hardware (Intel SGX-enabled CPUs)

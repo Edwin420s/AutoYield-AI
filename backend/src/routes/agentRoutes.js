@@ -77,19 +77,22 @@ router.get('/stream-tee', async (req, res) => {
       // Submit strategy with TEE proof to blockchain
       sendLog("📤 Submitting TEE-Verified Strategy to 0G Chain...", "processing");
       
+      // 1. Import the smart contract service directly
       const { proposeStrategy } = await import('../services/contractService.js');
       
-      // Convert TEE decision to blockchain format
-      const decision = {
+      // 2. Format the TEE output so the blockchain understands it
+      // Ensure we are multiplying expectedAPY by 100 to match the integer math
+      const decisionPayload = {
         protocols: teeResult.decision.protocols,
         percentages: teeResult.decision.percentages,
-        expectedAPY: teeResult.decision.expectedAPY,
-        executionProof: teeResult.executionProof
+        expectedAPY: Math.round(teeResult.decision.expectedAPY * 100), 
+        executionProof: teeResult.executionProof // 🚨 THIS IS THE CRITICAL COMPONENT
       };
       
-      const txResult = await proposeStrategy(decision);
+      // 3. Submit the VERIFIED data to the blockchain
+      const receipt = await proposeStrategy(decisionPayload);
       
-      sendLog(`✅ Strategy Submitted! TX: ${txResult.hash?.substring(0, 10)}...`, "complete");
+      sendLog(`✅ Strategy Submitted! TX: ${receipt.hash?.substring(0, 10)}...`, "complete");
       sendLog("🎯 View in Pending Proposals for execution", "info");
       
     } catch (teeError) {
