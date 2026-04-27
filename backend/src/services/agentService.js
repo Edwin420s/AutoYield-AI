@@ -1,7 +1,7 @@
 import { fetchAPYData } from './apyService.js';
 import { decideStrategy, testAgenticMath } from '../../agent/decisionEngine.js';
 import { executeStrategy, proposeStrategy } from './contractService.js';
-import { createProtocolMetadata, uploadProtocolAuditTo0G } from './0gStorageService.js';
+import { createProtocolMetadata, uploadTo0GStorageWithPayment } from './0gStorageService.js';
 import { runComputeLogic } from './ogComputeService.js';
 import { generateTEEAttestation } from './teeService.js';
 import fs from 'fs';
@@ -228,8 +228,12 @@ async function storeDecisionOn0GStorage(decision, txHash, isMajorDecision) {
     // Write metadata to file
     fs.writeFileSync(filepath, JSON.stringify(decisionMetadata, null, 2));
     
-    // Upload to 0G Storage
-    const rootHash = await uploadProtocolAuditTo0G(filepath);
+    // Upload to 0G Storage with enhanced integration
+    const rootHash = await uploadTo0GStorageWithPayment(filepath, {
+      category: "ai_decision_proof",
+      executionType: isMajorDecision ? 'time-lock' : 'immediate',
+      transactionHash: txHash
+    });
     
     // Clean up temporary file
     fs.unlinkSync(filepath);

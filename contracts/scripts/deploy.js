@@ -77,10 +77,11 @@ async function main() {
   console.log("📝 NOTE: In production, this would be Intel SGX enclave public key");
   
   const Manager = await hre.ethers.getContractFactory("StrategyManager");
-  const manager = await Manager.deploy(vaultAddress, registryAddress, mockEnclaveKey);
+  const manager = await Manager.deploy(vaultAddress, registryAddress, mockEnclaveKey, 10); // 10 seconds for hackathon demo
   await manager.waitForDeployment();
   const managerAddress = await manager.getAddress();
   console.log("✅ Strategy Manager deployed to:", managerAddress);
+  console.log("🎬 HACKATHON MODE: Time-lock set to 10 seconds for demo");
 
   // ==========================================
   // 6. SYSTEM CONFIGURATION

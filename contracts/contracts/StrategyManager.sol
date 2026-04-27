@@ -24,7 +24,11 @@ contract StrategyManager {
     uint256 public maxPortfolioRisk = 75;
     
     // NEW: The exact public address of the 0G Compute Intel SGX Enclave
-    // Only strategies signed by this specific hardware key are accepted
+    // HACKATHON DEMO: Represents the Intel SGX public key. In production, this address 
+    // is hardcoded via DCAP attestation registry and cannot be a standard EOA.
+    // For hackathon purposes, we use a cryptographically secure random wallet to simulate
+    // the enclave's public key, demonstrating the exact verification pattern without
+    // requiring actual Intel SGX hardware infrastructure.
     address public trustedEnclaveKey;
     
     // SECURITY: Prevent replay attacks by tracking used signatures
@@ -61,10 +65,19 @@ contract StrategyManager {
     event StrategyExecuted(address indexed agent, uint256 proposalId, uint256 totalApy, uint256 portfolioRisk);
     event ProposalCanceled(uint256 indexed proposalId, address indexed canceler);
     
-    constructor(address _vault, address _registry, address _enclaveKey) {
+    constructor(address _vault, address _registry, address _enclaveKey, uint256 _hackathonTimeLockDuration) {
         vault = _vault;
         agentRegistry = _registry;
         trustedEnclaveKey = _enclaveKey; // Set this during deployment
+        
+        // HACKATHON MODE: Allow configurable time-lock for demo purposes
+        // If _hackathonTimeLockDuration > 0, use it (e.g., 10 seconds for demo)
+        // If _hackathonTimeLockDuration == 0, use default 24 hours for production
+        if (_hackathonTimeLockDuration > 0) {
+            timeLockDuration = _hackathonTimeLockDuration;
+        } else {
+            timeLockDuration = 24 hours;
+        }
         owner = msg.sender;
     }
     

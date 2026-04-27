@@ -52,6 +52,12 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 
 > Due to time constraints and testnet environment limitations, true Intel SGX DCAP on-chain attestation verification was not implemented in Solidity. Instead, the StrategyManager.sol implements a strict ECDSA cryptographic proxy. The smart contract mathematically verifies a signature generated exclusively by the designated Enclave Wallet, demonstrating the exact architectural flow of Verifiable Finance without requiring custom Intel Root-of-Trust pre-compiles.
 
+### ⚠️ **Oracle Data Security Consideration**
+
+> **Current Implementation:** Market data (APY rates, risk scores) is ingested via off-chain oracles (DefiLlama API) and fed to the TEE for decision-making. While the TEE provides cryptographic proof of execution integrity, the input data itself comes from centralized sources.
+> 
+> **Production Roadmap:** In V2, we will integrate on-chain zero-knowledge oracles or decentralized price feeds to ensure that both TEE inputs and outputs are mathematically verified, achieving complete end-to-end verifiability without trusted data sources.
+
 #### 🎯 **HACKATHON REALITY CHECK:**
 Setting up actual Intel SGX enclave development requires:
 - Specialized hardware (Intel SGX-enabled CPUs)
