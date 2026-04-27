@@ -8,6 +8,19 @@
  * - TEE attestation signature verification
  * - Enclave address management
  * 
+ * SECURITY WARNING: Oracle Vulnerability
+ * ========================================
+ * This V1 prototype has a critical oracle vulnerability:
+ * The TEE only secures the *calculation*, not the *data source*.
+ * Market data is fetched from external APIs (DefiLlama) and fed to the TEE.
+ * If the Node.js server is compromised, an attacker can rewrite API responses
+ * to manipulate the AI's decisions while generating valid TEE proofs.
+ * 
+ * Production V2 Solution:
+ * - SGX Enclave natively queries Decentralized On-Chain Oracles (Chainlink/Pyth)
+ * - Completely removes Node.js server from the chain of trust
+ * - Implements cryptographic data source verification
+ * 
  * @module services/teeService
  * @author AutoYield AI Team
  * @version 1.0.0

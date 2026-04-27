@@ -165,6 +165,9 @@ contract AutoYieldVault is ERC20 {
         uint256 currentTotalShares = totalSupply();
 
         if (currentTotalShares == 0 || currentTotalAssets == 0) {
+            // HACKATHON DEMO: Simplified share math. Production requires OpenZeppelin ERC4626 
+            // virtual decimals offset to prevent donation attacks. This implementation is vulnerable
+            // to first depositor inflation attacks and should be replaced with OpenZeppelin ERC4626
             shares = assets; // 1:1 ratio for very first depositor
         } else {
             shares = (assets * currentTotalShares) / currentTotalAssets;
@@ -307,16 +310,24 @@ contract AutoYieldVault is ERC20 {
      */
     function rebalance(address[] memory _protocols, uint256[] memory _percentagesBps) external onlyStrategyManager {
         require(_protocols.length == _percentagesBps.length, "Arrays length mismatch");
+        require(_protocols.length <= 10, "Gas Limit Protection: Max 10 protocols");
         
         // Step 1: Withdraw EVERYTHING from current DeFi protocols back into idle cash
+        // HACKATHON DEMO: Full liquidation sweep. Production V2 implements delta-rebalancing
+        // to handle illiquid protocol states and prevent vault lockups
         for (uint i = 0; i < currentAllocations.length; i++) {
             address oldProtocol = currentAllocations[i].protocol;
 
             uint256 sharesBalance = IERC20(oldProtocol).balanceOf(address(this));
 
             if (sharesBalance > 0) {
-                // Redeem external vault shares for underlying asset
-                IERC4626(oldProtocol).redeem(sharesBalance, address(this), address(this));
+                try IERC4626(oldProtocol).redeem(sharesBalance, address(this), address(this)) {
+                    // Withdrawal succeeded
+                } catch {
+                    // HACKATHON DEMO: Skip illiquid protocols to prevent vault bricking
+                    // Production V2 implements partial withdrawal and graceful failure handling
+                    continue;
+                }
             }
         }
 

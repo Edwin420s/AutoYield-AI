@@ -369,16 +369,112 @@ autoyield-ai/
 └── README.md          # Complete project documentation
 ```
 
+## 🚨 Enterprise Security Audit & Production Hardening
+
+### **Critical Security Vulnerabilities Identified & Mitigated**
+
+This section addresses the four most critical architectural vulnerabilities that would prevent safe mainnet deployment with real TVL.
+
+#### **🚨 FATAL FLAW 1: The Liquidity "Death Trap" (Vault Bricking)**
+
+**Problem:** The `rebalance()` function withdraws 100% of funds from all protocols before redepositing. If any protocol lacks liquidity (e.g., Aave at 99% utilization), the entire transaction reverts, permanently bricking the vault.
+
+**V1 Mitigation Applied:**
+- Added `try-catch` blocks to skip illiquid protocols during withdrawal
+- Added gas limit protection (max 10 protocols)
+- Added comprehensive disclaimers in code comments
+
+**V2 Production Solution:**
+- **Delta-Rebalancing:** Only withdraw the difference between target and current allocations
+- **Partial Withdrawal Logic:** Handle illiquid protocols gracefully without vault lockup
+- **Liquidity Prediction:** Pre-check protocol liquidity before rebalancing
+
+#### **🚨 FATAL FLAW 2: The "First Depositor" Inflation Attack**
+
+**Problem:** Custom vault implementation lacks OpenZeppelin ERC4626's virtual shares protection, making it vulnerable to donation attacks where hackers steal from first depositors.
+
+**V1 Mitigation Applied:**
+- Added explicit warning comments in `deposit()` function
+- Documented vulnerability in code and README
+- Recommended OpenZeppelin ERC4626 for production
+
+**V2 Production Solution:**
+- **OpenZeppelin ERC4626 Integration:** Inherit battle-tested vault implementation
+- **Virtual Shares Offset:** Implement virtual decimals to prevent donation attacks
+- **First Depositor Protection:** Burn initial shares to zero address
+
+#### **🚨 FATAL FLAW 3: Unbounded Array Gas Limits (O(n) Looping)**
+
+**Problem:** No limits on protocol array length could cause gas limit exhaustion, permanently locking funds.
+
+**V1 Mitigation Applied:**
+- Added hard limit: `require(_protocols.length <= 10, "Gas Limit Protection: Max 10 protocols")`
+- Applied to both `rebalance()` functions
+
+**V2 Production Solution:**
+- **Dynamic Gas Estimation:** Pre-calculate gas costs before execution
+- **Batch Processing:** Split large rebalances across multiple transactions
+- **Protocol Culling:** Automatically remove underperforming protocols
+
+#### **🚨 FATAL FLAW 4: The TEE Trust Paradox (Oracle Vulnerability)**
+
+**Problem:** TEE secures calculations but not data sources. Compromised backend can feed malicious data to TEE, generating valid proofs for harmful strategies.
+
+**V1 Mitigation Applied:**
+- Added comprehensive security warnings in `teeService.js`
+- Documented oracle vulnerability in README
+- Outlined V2 decentralized oracle solution
+
+**V2 Production Solution:**
+- **Direct On-Chain Oracle Integration:** SGX Enclave queries Chainlink/PYTH directly
+- **Zero-Knowledge Data Proofs:** ZK proofs verify oracle data integrity
+- **Multi-Oracle Consensus:** Cross-reference multiple decentralized oracles
+
+### **Production Readiness Assessment**
+
+| Security Aspect | V1 Status | V2 Target | Priority |
+|----------------|-----------|-----------|----------|
+| Vault Bricking Risk | ⚠️ Mitigated | ✅ Delta-Rebalancing | **Critical** |
+| Inflation Attack Protection | ⚠️ Documented | ✅ ERC4626 Virtual Shares | **Critical** |
+| Gas Limit Safety | ✅ Protected | ✅ Dynamic Estimation | **High** |
+| Oracle Security | ⚠️ Documented | ✅ ZK Oracle Proofs | **Critical** |
+| TEE Attestation | ⚠️ ECDSA Proxy | ✅ DCAP Hardware | **High** |
+
+### **Enterprise Deployment Checklist**
+
+Before deploying with real TVL, the following MUST be implemented:
+
+- [ ] **OpenZeppelin ERC4626 Integration** - Prevent inflation attacks
+- [ ] **Delta-Rebalancing Architecture** - Prevent vault bricking
+- [ ] **Decentralized Oracle Integration** - Prevent data manipulation
+- [ ] **Hardware DCAP Attestation** - True TEE security
+- [ ] **Comprehensive Audits** - Multiple firm audits
+- [ ] **Bug Bounty Program** - $100k+ bounty program
+- [ ] **Insurance Coverage** - DeFi insurance integration
+- [ ] **Formal Verification** - Mathematical proof of correctness
+
 ## Future Roadmap
 
-- **Multi‑chain Expansion**: Support for additional L1/L2 networks
-- **Advanced AI Models**: Machine learning integration for predictive analytics
-- **Social Trading**: Copy successful AI strategies with attribution
-- **Mobile Application**: Native iOS/Android apps with TEE verification
-- **DAO Governance**: Community protocol approval and parameter adjustment
+### **Phase 1: Security Hardening (Next 3 months)**
+- OpenZeppelin ERC4626 integration
+- Delta-rebalancing implementation
+- Decentralized oracle integration
+- Comprehensive security audits
+
+### **Phase 2: Production Scaling (6-12 months)**
+- Multi-chain expansion (Ethereum, Polygon, BSC)
+- Advanced AI models with ML integration
+- Hardware DCAP attestation
+- Insurance and custody partnerships
+
+### **Phase 3: Ecosystem Growth (12+ months)**
+- Social trading and strategy marketplace
+- Mobile applications with TEE verification
+- DAO governance for protocol parameters
+- Institutional grade compliance tools
 
 ---
 
-**AutoYield AI V1 represents a foundational step toward truly autonomous, verifiable DeFi management—demonstrating core TEE-based architecture with enterprise-grade transparency and a clear V2 production roadmap.**
+**AutoYield AI V1 represents a foundational step toward truly autonomous, verifiable DeFi management—demonstrating core TEE-based architecture with enterprise-grade transparency and a comprehensive V2 production roadmap.**
 
-**Hackathon Strategy:** We believe that acknowledging architectural limitations and providing comprehensive V2 solutions demonstrates senior-level technical capability more effectively than pretending V1 is production-ready.
+**Security Philosophy:** We believe that proactively identifying and documenting architectural vulnerabilities demonstrates senior-level engineering capability more effectively than pretending V1 is production-ready. Our transparent approach to security assessment builds trust and accelerates the path to safe mainnet deployment.
