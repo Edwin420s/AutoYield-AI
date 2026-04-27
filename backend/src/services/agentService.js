@@ -1,9 +1,11 @@
 import { fetchAPYData } from './apyService.js';
 import { decideStrategy, testAgenticMath } from '../../agent/decisionEngine.js';
 import { executeStrategy, proposeStrategy } from './contractService.js';
-import { storeDecisionLog } from './ogStorageService.js';
+import { createProtocolMetadata, uploadProtocolAuditTo0G } from './0gStorageService.js';
 import { runComputeLogic } from './ogComputeService.js';
 import { generateTEEAttestation } from './teeService.js';
+import fs from 'fs';
+import path from 'path';
 
 export async function runAgent() {
   const apyData = await fetchAPYData();
@@ -24,8 +26,8 @@ export async function runAgent() {
     result = await executeStrategy(decision);
   }
 
-  // Store full reasoning off-chain
-  await storeDecisionLog(decision, result.txHash);
+  // Store full reasoning off-chain on 0G Storage
+  await storeDecisionOn0GStorage(decision, result.txHash, isMajorDecision);
 
   return {
     txHash: result.txHash,
@@ -117,12 +119,13 @@ export async function runAgentWithMathValidation() {
       }
     };
     
-    await storeDecisionLog({
+    // Store reasoning and mathematical proof on 0G Storage
+    const storageHash = await storeDecisionOn0GStorage({
       ...decision,
       mathematicalProof,
       executionType: isMajorDecision ? 'time-lock' : 'immediate',
       teeAttestation
-    }, result.txHash);
+    }, result.txHash, isMajorDecision);
     
     return {
       ...result,
@@ -180,4 +183,63 @@ function calculateRiskAdjustedScores(protocols) {
       riskAdjustedScore: riskAdjustedScore
     };
   });
+}
+
+/**
+ * Store AI decision and mathematical proof on 0G Storage for permanent record
+ * @param {Object} decision - AI decision data
+ * @param {string} txHash - Transaction hash
+ * @param {boolean} isMajorDecision - Whether this was a major decision
+ * @returns {Promise<string>} - 0G Storage root hash
+ */
+async function storeDecisionOn0GStorage(decision, txHash, isMajorDecision) {
+  try {
+    console.log("📦 Storing AI decision on 0G Storage...");
+    
+    // Create comprehensive decision metadata
+    const decisionMetadata = {
+      decisionType: isMajorDecision ? 'time-lock' : 'immediate',
+      transactionHash: txHash,
+      timestamp: new Date().toISOString(),
+      protocols: decision.protocols,
+      protocolNames: decision.protocolNames || decision.protocols,
+      percentages: decision.percentages,
+      expectedAPY: decision.expectedAPY,
+      riskScore: decision.riskScore,
+      mathematicalProof: decision.mathematicalProof || null,
+      teeAttestation: decision.teeAttestation || null,
+      executionReasoning: {
+        riskAnalysis: `Portfolio risk ${decision.riskScore} <= MAX_PORTFOLIO_RISK (70)`,
+        optimizationModel: "Risk-Adjusted Return Maximization",
+        constraintSatisfaction: decision.riskScore <= 70
+      },
+      version: "1.0.0"
+    };
+    
+    // Create temporary file for metadata
+    const tempDir = './temp';
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    const filename = `decision_${Date.now()}.json`;
+    const filepath = path.join(tempDir, filename);
+    
+    // Write metadata to file
+    fs.writeFileSync(filepath, JSON.stringify(decisionMetadata, null, 2));
+    
+    // Upload to 0G Storage
+    const rootHash = await uploadProtocolAuditTo0G(filepath);
+    
+    // Clean up temporary file
+    fs.unlinkSync(filepath);
+    
+    console.log(`✅ Decision stored on 0G Storage with hash: ${rootHash}`);
+    return rootHash;
+    
+  } catch (error) {
+    console.error("❌ Failed to store decision on 0G Storage:", error);
+    // Don't throw error - storage failure shouldn't break the main flow
+    return null;
+  }
 }

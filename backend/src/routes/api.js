@@ -10,8 +10,12 @@ router.post('/agent/run', runAgentController);
 router.get('/agent/status', getAgentStatus);
 router.get('/agent/tee-performance', getTEEPerformance);
 
-// TEE Streaming Route (Server-Sent Events)
+// TEE Streaming Route (Server-Sent Events) - Real Implementation
 router.get('/agent/stream-tee', async (req, res) => {
+  // Import the real TEE service
+  const { ZeroGComputeService } = await import('../services/ogComputeService.js');
+  const { fetchAPYData } = await import('../services/apyService.js');
+  
   // Set headers for Server-Sent Events
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -22,31 +26,77 @@ router.get('/agent/stream-tee', async (req, res) => {
   };
 
   try {
-    sendLog("Initializing 0G Compute TEE Connection...", "info");
-    await new Promise(r => setTimeout(r, 1000));
-
-    sendLog("Sealing Market Data Payload (SGX Enclave)...", "processing");
-    await new Promise(r => setTimeout(r, 1500));
-
-    sendLog("Running Agentic Math (Risk-Adjusted Optimization)...", "processing");
-    await new Promise(r => setTimeout(r, 2000));
-
-    sendLog("Generating Cryptographic Proof of Execution...", "processing");
-    await new Promise(r => setTimeout(r, 1500));
-
-    sendLog("Verifying SGX Attestation...", "success");
-    await new Promise(r => setTimeout(r, 1000));
-
-    // Here you would actually call your runAgentWithMathValidation() function
+    sendLog("🔒 Initializing 0G Compute TEE Connection...", "info");
     
-    sendLog("Submitting Verified Proposal to 0G Chain...", "processing");
-    await new Promise(r => setTimeout(r, 2000));
+    // Initialize TEE service
+    const teeService = new ZeroGComputeService();
+    sendLog("✅ TEE Service Initialized", "success");
 
-    sendLog("✅ Strategy Time-Locked and Stored on 0G Storage!", "complete");
+    sendLog("📊 Fetching Live Market Data (DefiLlama API)...", "processing");
+    const marketData = await fetchAPYData();
+    sendLog(`📈 Retrieved ${marketData.length} protocols`, "success");
+
+    sendLog("🔒 Sealing Market Data for TEE Processing...", "processing");
+    
+    // Run actual TEE decision engine
+    try {
+      sendLog("🧠 Running AI in Trusted Execution Environment...", "processing");
+      
+      const teeResult = await teeService.runTEEDecisionEngine(marketData, {
+        maxPortfolioRisk: 70,
+        minProtocolCount: 2,
+        maxProtocolCount: 5
+      });
+      
+      sendLog(`✅ TEE Decision Completed (Job: ${teeResult.jobId})`, "success");
+      sendLog(`🔐 Attestation Verified: ${teeResult.attestationReport.substring(0, 20)}...`, "success");
+      sendLog(`📊 Strategy: ${teeResult.decision.protocols.length} protocols selected`, "info");
+      
+      // Submit strategy with TEE proof to blockchain
+      sendLog("📤 Submitting TEE-Verified Strategy to 0G Chain...", "processing");
+      
+      const { proposeStrategy } = await import('../services/contractService.js');
+      
+      // Convert TEE decision to blockchain format
+      const decision = {
+        protocols: teeResult.decision.protocols,
+        percentages: teeResult.decision.percentages,
+        expectedAPY: teeResult.decision.expectedAPY,
+        executionProof: teeResult.executionProof
+      };
+      
+      const txResult = await proposeStrategy(decision);
+      
+      sendLog(`✅ Strategy Submitted! TX: ${txResult.hash?.substring(0, 10)}...`, "complete");
+      sendLog("🎯 View in Pending Proposals for execution", "info");
+      
+    } catch (teeError) {
+      sendLog(`⚠️ TEE Service Error: ${teeError.message}`, "warning");
+      sendLog("🔄 Falling back to standard AI processing...", "info");
+      
+      // Fallback to standard processing with actual agent
+      const { runAgentWithMathValidation } = await import('../services/agentService.js');
+      const result = await runAgentWithMathValidation();
+      
+      // Submit fallback strategy
+      const { proposeStrategy } = await import('../services/contractService.js');
+      const decision = {
+        protocols: result.protocols,
+        percentages: result.percentages,
+        expectedAPY: result.expectedAPY,
+        executionProof: "0x" // No TEE proof in fallback mode
+      };
+      
+      await proposeStrategy(decision);
+      
+      sendLog(`📈 Strategy: ${result.protocols.length} protocols, ${result.expectedAPY}% APY`, "success");
+      sendLog("✅ Strategy Submitted (Fallback Mode)", "complete");
+    }
+    
     res.end(); // Close the stream
     
   } catch (error) {
-    sendLog(`Error: ${error.message}`, "error");
+    sendLog(`❌ Critical Error: ${error.message}`, "error");
     res.end();
   }
 });

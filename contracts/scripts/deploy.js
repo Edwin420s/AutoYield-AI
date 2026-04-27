@@ -64,14 +64,17 @@ async function main() {
   console.log("✅ Vault deployed to:", vaultAddress);
 
   // ==========================================
-  // 5. DEPLOY STRATEGY MANAGER (With Enclave Key)
+  // 5. DEPLOY STRATEGY MANAGER (With Proper Enclave Key)
   // ==========================================
   console.log("\n🛡️ Deploying Strategy Manager (Hardware Enclave Verification)...");
+  
   // Generate a dedicated mock enclave key for TEE simulation
-  // In production, this would be the actual public key of the 0G Compute SGX Enclave
+  // HACKATHON NOTE: In production, this would be the actual public key of the 0G Compute SGX Enclave
+  // For hackathon demo purposes, we generate a cryptographically secure random wallet to simulate the enclave
   const mockEnclaveWallet = hre.ethers.Wallet.createRandom();
   const mockEnclaveKey = mockEnclaveWallet.address;
-  console.log("🔐 Generated Mock Enclave Key:", mockEnclaveKey); 
+  console.log("🔐 Generated Mock Enclave Key (Simulates SGX Enclave):", mockEnclaveKey);
+  console.log("📝 NOTE: In production, this would be Intel SGX enclave public key");
   
   const Manager = await hre.ethers.getContractFactory("StrategyManager");
   const manager = await Manager.deploy(vaultAddress, registryAddress, mockEnclaveKey);

@@ -11,6 +11,11 @@ dotenv.config();
 const provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 
+// Helper function to get wallet instance
+function getWallet() {
+  return wallet;
+}
+
 // Contract ABIs
 const managerAbi = [
   "function proposeStrategy(address[] protocols, uint256[] percentages, uint256 reportedApy, bytes _sgxSignature)",
@@ -103,33 +108,25 @@ export async function cancelProposal(proposalId) {
 }
 
 
-export async function getProposalDetails(proposalId) {
-  const wallet = getWallet();
+export async function getProtocolInfo(protocolAddress) {
   const contract = new ethers.Contract(
     process.env.MANAGER_ADDRESS,
     managerAbi,
     wallet
   );
 
-  const proposal = await contract.getProposal(proposalId);
-  
-  // Convert addresses back to protocol names for frontend
-  const protocolNames = await getProtocolNames(proposal.protocols);
+  const info = await contract.getProtocolInfo(protocolAddress);
   
   return {
-    protocols: protocolNames,
-    percentages: proposal.percentages.map(p => Number(p)),
-    executionTime: Number(proposal.executionTime),
-    executed: proposal.executed,
-    canceled: proposal.canceled,
-    proposedBy: proposal.proposedBy,
-    totalApy: Number(proposal.totalApy),
-    portfolioRisk: Number(proposal.portfolioRisk)
+    isWhitelisted: info.isWhitelisted,
+    riskScore: Number(info.riskScore),
+    name: info.name,
+    zeroGStorageHash: info.zeroGStorageHash,
+    lastUpdated: Number(info.lastUpdated)
   };
 }
 
 export async function getAllProposals() {
-  const wallet = getWallet();
   const contract = new ethers.Contract(
     process.env.MANAGER_ADDRESS,
     managerAbi,
@@ -151,23 +148,8 @@ export async function getAllProposals() {
   return proposals;
 }
 
-export async function getProtocolInfo(protocolAddress) {
-  const wallet = getWallet();
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  const info = await contract.getProtocolInfo(protocolAddress);
-  
-  return {
-    isWhitelisted: info.isWhitelisted,
-    riskScore: Number(info.riskScore),
-    name: info.name,
-    zeroGStorageHash: info.zeroGStorageHash,
-    lastUpdated: Number(info.lastUpdated)
-  };
+export async function getProposal(proposalId) {
+  return await getProposalDetails(proposalId);
 }
 
 // Helper functions to convert between protocol names and addresses

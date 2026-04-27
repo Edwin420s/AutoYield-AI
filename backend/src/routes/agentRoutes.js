@@ -74,22 +74,43 @@ router.get('/stream-tee', async (req, res) => {
       sendLog(`🔐 Attestation Verified: ${teeResult.attestationReport.substring(0, 20)}...`, "success");
       sendLog(`📊 Strategy: ${teeResult.decision.protocols.length} protocols selected`, "info");
       
-      // Submit strategy with TEE proof
+      // Submit strategy with TEE proof to blockchain
       sendLog("📤 Submitting TEE-Verified Strategy to 0G Chain...", "processing");
       
-      const { runAgentWithMathValidation } = await import('../services/agentService.js');
-      const result = await runAgentWithMathValidation();
+      const { proposeStrategy } = await import('../services/contractService.js');
       
-      sendLog(`✅ Strategy Submitted! TX: ${result.txHash?.substring(0, 10)}...`, "complete");
+      // Convert TEE decision to blockchain format
+      const decision = {
+        protocols: teeResult.decision.protocols,
+        percentages: teeResult.decision.percentages,
+        expectedAPY: teeResult.decision.expectedAPY,
+        executionProof: teeResult.executionProof
+      };
+      
+      const txResult = await proposeStrategy(decision);
+      
+      sendLog(`✅ Strategy Submitted! TX: ${txResult.hash?.substring(0, 10)}...`, "complete");
       sendLog("🎯 View in Pending Proposals for execution", "info");
       
     } catch (teeError) {
       sendLog(`⚠️ TEE Service Error: ${teeError.message}`, "warning");
-      sendLog("� Falling back to standard AI processing...", "info");
+      sendLog("🔄 Falling back to standard AI processing...", "info");
       
-      // Fallback to standard processing
+      // Fallback to standard processing with actual agent
       const { runAgentWithMathValidation } = await import('../services/agentService.js');
       const result = await runAgentWithMathValidation();
+      
+      // Submit fallback strategy
+      const { proposeStrategy } = await import('../services/contractService.js');
+      const decision = {
+        protocols: result.protocols,
+        percentages: result.percentages,
+        expectedAPY: result.expectedAPY,
+        executionProof: "0x" // No TEE proof in fallback mode
+      };
+      
+      await proposeStrategy(decision);
+      
       sendLog(`📈 Strategy: ${result.protocols.length} protocols, ${result.expectedAPY}% APY`, "success");
       sendLog("✅ Strategy Submitted (Fallback Mode)", "complete");
     }
