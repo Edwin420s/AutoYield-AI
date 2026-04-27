@@ -59,11 +59,11 @@ router.get('/agent/stream-tee', async (req, res) => {
       const { proposeStrategy } = await import('../services/contractService.js');
       
       // 2. Format the TEE output so the blockchain understands it
-      // Ensure we are multiplying expectedAPY by 100 to match the integer math
+      // expectedAPY is already multiplied by 100 in decisionEngine.js
       const decisionPayload = {
         protocols: teeResult.decision.protocols,
         percentages: teeResult.decision.percentages,
-        expectedAPY: Math.round(teeResult.decision.expectedAPY * 100), 
+        expectedAPY: teeResult.decision.expectedAPY, 
         executionProof: teeResult.executionProof // 🚨 THIS IS THE CRITICAL COMPONENT
       };
       

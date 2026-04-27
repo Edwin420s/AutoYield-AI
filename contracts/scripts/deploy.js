@@ -97,6 +97,22 @@ async function main() {
   await registry.addAgent(deployer.address);
   console.log("✅ Backend Wallet authorized in Agent Registry.");
 
+  // ==========================================
+  // 7. PROTOCOL WHITELISTING (CRITICAL FOR DEMO)
+  // ==========================================
+  console.log("\n🛡️ Whitelisting Protocols in StrategyManager...");
+  
+  // Use the actual deployed mock protocol addresses
+  // updateProtocol(address, isWhitelisted, riskScore, maxAllocationBps, name, 0GStorageHash)
+  await manager.updateProtocol(mockAaveAddress, true, 15, 6000, "Mock Aave", "0xMockHashAave");
+  await manager.updateProtocol(mockBenqiAddress, true, 40, 4000, "Mock Benqi", "0xMockHashBenqi");
+  await manager.updateProtocol(mockCompoundAddress, true, 25, 5000, "Mock Compound", "0xMockHashCompound");
+  
+  console.log("✅ Protocols whitelisted successfully.");
+  console.log("📊 Mock Aave: 15% risk, 60% max allocation");
+  console.log("📊 Mock Benqi: 40% risk, 40% max allocation");
+  console.log("📊 Mock Compound: 25% risk, 50% max allocation");
+
   console.log("\n🎉 DEPLOYMENT COMPLETE! 🎉");
   console.log("==========================================");
   

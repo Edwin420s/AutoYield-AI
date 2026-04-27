@@ -124,12 +124,16 @@ contract AutoYieldVault is ERC20 {
         // Calculate the physical token value of the shares being burned
         assets = (shares * currentTotalAssets) / currentTotalShares;
 
+        // 🔒 CEI PATTERN: Burn shares FIRST (Checks-Effects-Interactions)
+        // This prevents reentrancy attacks by updating state before external calls
+        _burn(msg.sender, shares);
+
         // If the vault doesn't have enough idle cash, it pulls from the first protocol to pay the user
         if (underlyingAsset.balanceOf(address(this)) < assets) {
             _liquidateForWithdrawal(assets - underlyingAsset.balanceOf(address(this)));
         }
 
-        _burn(msg.sender, shares);
+        // Finally transfer the user's money
         underlyingAsset.safeTransfer(receiver, assets);
 
         emit Withdraw(msg.sender, receiver, msg.sender, assets, shares);
