@@ -274,11 +274,11 @@ contract StrategyManager {
         for(uint i = 0; i < protocols.length; i++) {
             ProtocolInfo memory info = protocolRegistry[protocols[i]];
             require(info.isWhitelisted, "Security Breach: Protocol not whitelisted");
-            portfolioRisk += (info.riskScore * percentages[i]) / 100;
+            portfolioRisk += (info.riskScore * percentages[i]) / 10000;
             totalPercentage += percentages[i];
         }
         
-        require(totalPercentage == 100, "Total percentage must equal 100");
+        require(totalPercentage == 10000, "Total percentage must equal 10000 BPS (100%)");
         require(apy >= 3 && portfolioRisk <= 80, "Strategy out of bounds");
         
         IVault(vault).rebalance(protocols, percentages);

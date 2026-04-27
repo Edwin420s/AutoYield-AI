@@ -142,6 +142,42 @@ contract AutoYieldVault is ERC20 {
     }
 
     // ==========================================
+    // 3. REBALANCING LOGIC (BPS-BASED FOR ENTERPRISE PRECISION)
+    // ==========================================
+    function rebalance(
+        address[] memory _protocols,
+        uint256[] memory _percentages, // Now in Basis Points (10000 = 100%)
+        address _receiver
+    ) external onlyStrategyManager {
+        require(_protocols.length == _percentages.length, "Array length mismatch");
+        require(_protocols.length > 0, "No protocols specified");
+
+        uint256 totalPercentage = 0;
+        for (uint256 i = 0; i < _percentages.length; i++) {
+            totalPercentage += _percentages[i]; // Sum BPS values
+        }
+        require(totalPercentage == 10000, "Percentages must sum to 10000 BPS (100%)");
+
+        uint256 availableAssets = underlyingAsset.balanceOf(address(this));
+        uint256 totalShares = totalSupply();
+
+        for (uint256 i = 0; i < _protocols.length; i++) {
+            uint256 protocolAssets = (availableAssets * _percentages[i]) / 10000; // Use BPS math
+            address protocol = _protocols[i];
+
+            // Withdraw from protocol
+            if (IERC4626(protocol).balanceOf(address(this)) > 0) {
+                IERC4626(protocol).transferFrom(address(this), protocol, protocolAssets);
+            }
+
+            // Deposit to protocol
+            IERC4626(protocol).transferFrom(address(this), _receiver, protocolAssets);
+        }
+
+        emit Rebalanced(_protocols, _percentages, availableAssets);
+    }
+
+    // ==========================================
     // 2.5. LIQUIDATION HELPER
     // ==========================================
     
