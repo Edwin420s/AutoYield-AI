@@ -4,6 +4,33 @@ import axios from 'axios';
  * Fetches LIVE yield data from DefiLlama's public API.
  * Filters for high-liquidity, stable pools to feed the TEE AI Engine.
  * 
+ * 
+ * ⚠️ CRITICAL SECURITY WARNING: ORACLE INGRESS VULNERABILITY
+ * ==========================================================
+ * This V1 prototype has a critical architectural vulnerability:
+ * The TEE secures the *calculation*, but NOT the *data source*.
+ * 
+ * THE PROBLEM:
+ * - This service fetches market data from centralized API (DefiLlama)
+ * - Data is fed to TEE for secure processing
+ * - If backend server is compromised, attacker can inject malicious data
+ * - TEE will process fake data and generate valid cryptographic proofs
+ * - Blockchain accepts valid proofs, potentially draining user funds
+ * 
+ * EXPLOIT SCENARIO:
+ * 1. Hacker compromises backend server
+ * 2. Modifies API response: { protocol: "HackerCoin", apy: 99999, risk: 0 }
+ * 3. TEE processes fake data securely (no fault in TEE)
+ * 4. Valid cryptographic proof generated
+ * 5. Blockchain accepts valid signature
+ * 6. Vault funds drained to malicious protocol
+ * 
+ * PRODUCTION V2 SOLUTION:
+ * - SGX Enclave queries Chainlink/PYTH oracles directly
+ * - Remove Node.js server from chain of trust
+ * - Implement ZK proofs for data integrity verification
+ * - Multi-oracle consensus for data validation
+ * 
  * @returns {Promise<Array>} Array of formatted protocol data with risk assessment
  * @throws {Error} When oracle fails or no safe pools are available
  */

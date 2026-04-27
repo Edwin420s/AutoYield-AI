@@ -5,30 +5,63 @@ import { ethers } from 'ethers';
 export default function PendingProposals({ strategyManagerContract, isOwner }) {
   const [proposals, setProposals] = useState([]);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
+  const [loading, setLoading] = useState(true);
 
-  // 1. Fetch Proposals from the Smart Contract
+  // 1. Fetch Proposals from Smart Contract with Backend API Fallback
+  // CRITICAL: Prevents ghost history on page refresh by using backend persistence
   useEffect(() => {
     const fetchProposals = async () => {
-      if (!strategyManagerContract) return;
+      setLoading(true);
+      
+      // Try backend API first for faster loading and history persistence
+      try {
+        const response = await fetch('/api/proposals/all');
+        if (response.ok) {
+          const backendProposals = await response.json();
+          setProposals(backendProposals);
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.log("Backend API unavailable, falling back to blockchain...");
+      }
+
+      // Fallback to direct blockchain queries
+      if (!strategyManagerContract) {
+        setLoading(false);
+        return;
+      }
+      
       try {
         const count = await strategyManagerContract.proposalCount();
         let fetchedProposals = [];
         
         // Loop backwards to show the newest proposals first
-        for (let i = count - 1n; i >= 0n; i--) {
-          const p = await strategyManagerContract.proposals(i);
-          fetchedProposals.push({
-            id: i,
-            protocols: p.protocols,
-            percentages: p.percentages.map(n => Number(n)), // Convert BigInt
-            executionTime: Number(p.executionTime),
-            executed: p.executed,
-            canceled: p.canceled
-          });
+        // CRITICAL: Limit iterations to prevent gas limit issues on large arrays
+        const maxProposals = Math.min(Number(count), 50); // Safety limit
+        for (let i = maxProposals - 1; i >= 0; i--) {
+          try {
+            const p = await strategyManagerContract.proposals(i);
+            fetchedProposals.push({
+              id: i,
+              protocols: p.protocols,
+              percentages: p.percentages.map(n => Number(n)), // Convert BigInt
+              executionTime: Number(p.executionTime),
+              executed: p.executed,
+              canceled: p.canceled
+            });
+          } catch (proposalError) {
+            console.error(`Failed to fetch proposal ${i}:`, proposalError);
+            // Continue with other proposals instead of failing completely
+          }
         }
         setProposals(fetchedProposals);
       } catch (error) {
-        console.error("Error fetching proposals:", error);
+        console.error("Error fetching proposals from blockchain:", error);
+        // Set empty state to prevent infinite loading
+        setProposals([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -113,61 +146,70 @@ export default function PendingProposals({ strategyManagerContract, isOwner }) {
       </h2>
       
       <div className="space-y-4">
-        {proposals.map((prop) => {
-          const timeLeft = prop.executionTime - currentTime;
-          const isReady = timeLeft <= 0;
-          
-          if (prop.executed || prop.canceled) return null; // Hide finished items
-
-          return (
-            <div key={prop.id.toString()} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-mono text-sm text-gray-400">Proposal #{prop.id.toString()}</span>
-                <span className={`px-3 py-1 rounded-full text-sm font-bold ${isReady ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                  {isReady ? 'Ready for Execution' : `Time Left: ${Math.floor(timeLeft / 3600)}h ${Math.floor((timeLeft % 3600) / 60)}m`}
-                </span>
-              </div>
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <p className="text-gray-400 mt-2">Loading proposal history...</p>
+          </div>
+        ) : (
+          <>
+            {proposals.map((prop) => {
+              const timeLeft = prop.executionTime - currentTime;
+              const isReady = timeLeft <= 0;
               
-              <div className="mb-4">
-                <p className="text-sm text-gray-400 mb-1">Proposed Allocation:</p>
-                {prop.protocols.map((addr, idx) => (
-                  <div key={addr} className="flex justify-between font-mono text-sm mb-1">
-                    <span className="flex items-center gap-2">
-                      <span className="text-blue-400">{getProtocolName(addr)}</span>
-                      <span className="text-gray-500 text-xs">({addr.substring(0, 8)}...{addr.substring(38)})</span>
-                    </span>
-                    <span className="text-green-400 font-bold">{prop.percentages[idx]}%</span>
-                  </div>
-                ))}
-              </div>
+              if (prop.executed || prop.canceled) return null; // Hide finished items
 
-              <div className="flex gap-3">
-                {/* Emergency Stop - Only visible to Owner/Admin */}
-                {isOwner && (
-                  <button 
-                    onClick={() => handleCancel(prop.id)}
-                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
-                  >
-                    Emergency Cancel
-                  </button>
-                )}
-                
-                {/* Execute - Only active if timer is zero */}
-                <button 
-                  onClick={() => handleExecute(prop.id)}
-                  disabled={!isReady}
-                  className={`flex-1 font-bold py-2 px-4 rounded transition-colors ${
-                    isReady ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Execute Strategy
-                </button>
-              </div>
-            </div>
-          );
-        })}
-        {proposals.filter(p => !p.executed && !p.canceled).length === 0 && (
-          <p className="text-center text-gray-500 py-8">No pending strategies in the queue.</p>
+              return (
+                <div key={prop.id.toString()} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-mono text-sm text-gray-400">Proposal #{prop.id.toString()}</span>
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${isReady ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                      {isReady ? 'Ready for Execution' : `Time Left: ${Math.floor(timeLeft / 3600)}h ${Math.floor((timeLeft % 3600) / 60)}m`}
+                    </span>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-400 mb-1">Proposed Allocation:</p>
+                    {prop.protocols.map((addr, idx) => (
+                      <div key={addr} className="flex justify-between font-mono text-sm mb-1">
+                        <span className="flex items-center gap-2">
+                          <span className="text-blue-400">{getProtocolName(addr)}</span>
+                          <span className="text-gray-500 text-xs">({addr.substring(0, 8)}...{addr.substring(38)})</span>
+                        </span>
+                        <span className="text-green-400 font-bold">{prop.percentages[idx]}%</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-3">
+                    {/* Emergency Stop - Only visible to Owner/Admin */}
+                    {isOwner && (
+                      <button 
+                        onClick={() => handleCancel(prop.id)}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                      >
+                        Emergency Cancel
+                      </button>
+                    )}
+                    
+                    {/* Execute - Only active if timer is zero */}
+                    <button 
+                      onClick={() => handleExecute(prop.id)}
+                      disabled={!isReady}
+                      className={`flex-1 font-bold py-2 px-4 rounded transition-colors ${
+                        isReady ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Execute Strategy
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+            {!loading && proposals.filter(p => !p.executed && !p.canceled).length === 0 && (
+              <p className="text-center text-gray-500 py-8">No pending strategies in the queue.</p>
+            )}
+          </>
         )}
       </div>
     </div>
