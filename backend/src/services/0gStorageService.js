@@ -1,7 +1,8 @@
-import { IndexerClient, ZgFile, getFlowContract } from '@0glabs/0g-storage-client';
 import { ethers } from 'ethers';
 import fs from 'fs';
+import path from 'path';
 import dotenv from 'dotenv';
+import { IndexerClient, ZgFile, getFlowContract } from '../mocks/0g-storage-sdk.js';
 
 dotenv.config();
 

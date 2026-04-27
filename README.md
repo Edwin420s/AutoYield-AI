@@ -29,7 +29,7 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 | Component | Usage in AutoYield AI | Implementation |
 |-----------|----------------------|-----------------|
 | **0G Chain** | Smart contracts (`AutoYieldVault`, `StrategyManager`, `AgentRegistry`) | All rebalance actions, agent permissions, and time‑lock proposals |
-| **0G Storage** | Audit reports, AI decision logs, protocol metadata | Real SDK integration with CID storage and retrieval |
+| **0G Storage** | Audit reports, AI decision logs, protocol metadata | ⚠️ **SIMULATED** - local mock SDK with mock CID generation |
 | **0G Compute** | TEE‑based AI execution with SGX attestation | ⚠️ **SIMULATED** for hackathon demo - see disclaimer below |
 
 ### ⚠️ **CRITICAL DISCLAIMER: TEE & Hardware Simulation**
@@ -37,7 +37,6 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 **JUDGES PLEASE READ:** This submission contains **both real implementations and necessary simulations** for hackathon feasibility.
 
 #### ✅ **FULLY REAL IMPLEMENTATIONS:**
-- **Real 0G Storage SDK Integration**: Uses actual `@0glabs/0g-storage-client` with real CID uploads
 - **Real 0G Chain Deployment**: All contracts deployed on 0G testnet with live transactions
 - **Real ERC-4626 Mock Vaults**: Deployed contracts that exist on 0G network (not Ethereum addresses)
 - **Real Mathematical Validation**: BPS-based calculations with trust score enforcement
@@ -45,8 +44,9 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 
 #### ⚠️ **NECESSARY SIMULATIONS:**
 - **Mock Enclave Key**: Generated with `ethers.Wallet.createRandom()` (not real Intel SGX hardware)
-- **TEE Execution Flow**: Uses `@0glabs/0g-compute-sdk` architecture but falls back to local processing
+- **TEE Execution Flow**: Uses local mock of `@0glabs/0g-compute-sdk` for hackathon demo
 - **Hardware Attestation**: Simulated SGX reports for demo visualization
+- **0G Storage Integration**: Uses local mock of `@0glabs/0g-storage-sdk` (mock CID generation)
 
 ### 🏗️ **Hackathon Architecture Note regarding TEE Verification**
 

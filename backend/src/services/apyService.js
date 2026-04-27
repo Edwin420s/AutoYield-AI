@@ -31,6 +31,7 @@ export async function fetchAPYData() {
     const formattedData = livePools.map(pool => {
       return {
         name: `${pool.project} (${pool.symbol})`,
+        asset: 'USDC', // Add asset field for frontend compatibility
         address: pool.pool, // The actual smart contract address of the pool
         apy: pool.apy,      // Live APY percentage
         tvl: pool.tvlUsd,
@@ -49,8 +50,8 @@ export async function fetchAPYData() {
 
     // Fallback data in case API goes down during live hackathon demo
     return [
-      { name: 'Aave V3 (USDC)', address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2', apy: 4.5, risk: 15 },
-      { name: 'Compound V3 (USDC)', address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', apy: 5.1, risk: 20 }
+      { name: 'Aave V3 (USDC)', asset: 'USDC', address: '0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2', apy: 4.5, risk: 15 },
+      { name: 'Compound V3 (USDC)', asset: 'USDC', address: '0xc3d688B66703497DAA19211EEdff47f25384cdc3', apy: 5.1, risk: 20 }
     ];
   }
 }

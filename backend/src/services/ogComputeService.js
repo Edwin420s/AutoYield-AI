@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import dotenv from 'dotenv';
-import { ZeroGComputeClient } from '@0glabs/0g-compute-sdk';
+import { ZeroGComputeClient } from '../mocks/0g-compute-sdk.js';
 import crypto from 'crypto';
 import { decideStrategy } from '../../agent/decisionEngine.js';
 

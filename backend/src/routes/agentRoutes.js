@@ -96,26 +96,12 @@ router.get('/stream-tee', async (req, res) => {
       sendLog("🎯 View in Pending Proposals for execution", "info");
       
     } catch (teeError) {
-      sendLog(`⚠️ TEE Service Error: ${teeError.message}`, "warning");
-      sendLog("🔄 Falling back to standard AI processing...", "info");
+      sendLog(`❌ TEE Service Error: ${teeError.message}`, "error");
+      sendLog("� TEE execution failed - cannot proceed without cryptographic proof", "error");
+      sendLog("🔧 Please check TEE service configuration and try again", "info");
       
-      // Fallback to standard processing with actual agent
-      const { runAgentWithMathValidation } = await import('../services/agentService.js');
-      const result = await runAgentWithMathValidation();
-      
-      // Submit fallback strategy
-      const { proposeStrategy } = await import('../services/contractService.js');
-      const decision = {
-        protocols: result.protocols,
-        percentages: result.percentages,
-        expectedAPY: result.expectedAPY,
-        executionProof: "0x" // No TEE proof in fallback mode
-      };
-      
-      await proposeStrategy(decision);
-      
-      sendLog(`📈 Strategy: ${result.protocols.length} protocols, ${result.expectedAPY}% APY`, "success");
-      sendLog("✅ Strategy Submitted (Fallback Mode)", "complete");
+      // No fallback - TEE proof is required for verifiable finance
+      res.end(); // Close the stream
     }
     
     res.end(); // Close the stream
