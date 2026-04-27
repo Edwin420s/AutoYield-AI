@@ -13,7 +13,7 @@ dotenv.config();
  * @param {Object} metadata - Additional metadata for the file
  */
 export async function uploadTo0GStorageWithPayment(filePath, metadata = {}) {
-    console.log("🚀 Starting enhanced 0G Storage upload with payment integration...");
+    console.log("Starting enhanced 0G Storage upload with payment integration...");
     
     try {
         // 1. Initialize wallet and provider
@@ -36,16 +36,16 @@ export async function uploadTo0GStorageWithPayment(filePath, metadata = {}) {
             ...metadata
         });
         
-        console.log("✅ Enhanced 0G Storage upload completed!");
-        console.log(`🔗 CID: ${result.cid}`);
-        console.log(`💰 Payment TX: ${result.paymentTx}`);
-        console.log(`📊 Chunks: ${result.chunks}`);
-        console.log(`✅ Verification: ${result.verification.valid}`);
+        console.log("Enhanced 0G Storage upload completed!");
+        console.log(`CID: ${result.cid}`);
+        console.log(`Payment TX: ${result.paymentTx}`);
+        console.log(`Chunks: ${result.chunks}`);
+        console.log(`Verification: ${result.verification.valid}`);
         
         return result;
         
     } catch (error) {
-        console.error("❌ Enhanced 0G Storage upload failed:", error);
+        console.error("Enhanced 0G Storage upload failed:", error);
         throw error;
     }
 }
@@ -85,8 +85,8 @@ export async function uploadProtocolAuditTo0G(filePath) {
         console.log("Uploading file chunks to 0G Storage Nodes...");
         await indexerClient.upload(zgFile);
 
-        console.log("✅ Upload Complete!");
-        console.log(`🔗 0G Storage CID / Root Hash: ${rootHash}`);
+        console.log("Upload Complete!");
+        console.log(`0G Storage CID / Root Hash: ${rootHash}`);
         
         return rootHash;
 
@@ -114,7 +114,7 @@ export async function retrieveProtocolMetadataFrom0G(rootHash) {
         // Parse the content (assuming JSON for metadata)
         const metadata = JSON.parse(fileBuffer.toString());
         
-        console.log("✅ Successfully retrieved metadata from 0G Storage");
+        console.log("Successfully retrieved metadata from 0G Storage");
         return metadata;
 
     } catch (error) {
@@ -153,7 +153,7 @@ export async function batchUploadTo0G(filePaths) {
     }
     
     const successful = results.filter(r => r.success).length;
-    console.log(`✅ Batch upload complete: ${successful}/${filePaths.length} files uploaded successfully`);
+    console.log(`Batch upload complete: ${successful}/${filePaths.length} files uploaded successfully`);
     
     return results;
 }
@@ -176,7 +176,7 @@ export async function verifyFileIntegrity(rootHash, filePath) {
         // Compare with stored hash
         const isValid = localHash === rootHash;
         
-        console.log(`Integrity check: ${isValid ? '✅ PASSED' : '❌ FAILED'}`);
+        console.log(`Integrity check: ${isValid ? 'PASSED' : 'FAILED'}`);
         console.log(`Local hash: ${localHash}`);
         console.log(`Stored hash: ${rootHash}`);
         
@@ -211,7 +211,7 @@ export async function createProtocolMetadata(protocolData, outputPath) {
     };
 
     fs.writeFileSync(outputPath, JSON.stringify(metadata, null, 2));
-    console.log(`✅ Protocol metadata created: ${outputPath}`);
+    console.log(`Protocol metadata created: ${outputPath}`);
     
     return outputPath;
 }

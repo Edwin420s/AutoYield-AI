@@ -74,28 +74,28 @@ VITE_API_URL=http://localhost:3000/api
 
 ### 3. Key Features Demonstrated
 
-✅ **TEE-Based AI Execution**: AI decisions run in Intel SGX enclaves  
-✅ **Front-Running Protection**: Strategies are sealed until execution  
-✅ **24-Hour Time-Lock**: Emergency stop mechanism for high-risk decisions  
-✅ **Live Oracle Data**: Real-time DefiLlama yield data  
-✅ **Physical Asset Routing**: ERC-4626 vault actually moves tokens to DeFi protocols  
-✅ **Trust Scoring Engine**: Dynamic risk assessment based on TVL and audit history  
-✅ **On-Chain Verification**: Smart contracts verify TEE attestation signatures  
+- **TEE-Based AI Execution**: AI decisions run in Intel SGX enclaves  
+- **Front-Running Protection**: Strategies are sealed until execution  
+- **24-Hour Time-Lock**: Emergency stop mechanism for high-risk decisions  
+- **Live Oracle Data**: Real-time DefiLlama yield data  
+- **Physical Asset Routing**: ERC-4626 vault actually moves tokens to DeFi protocols  
+- **Trust Scoring Engine**: Dynamic risk assessment based on TVL and audit history  
+- **On-Chain Verification**: Smart contracts verify TEE attestation signatures  
 
 ## Hackathon Winning Features
 
 ### Track 2: Agentic Trading Arena Requirements Met:
-- ✅ **Sealed Inference**: AI executes in TEE enclaves
-- ✅ **TEE-Based Execution**: Full SGX attestation and verification
-- ✅ **Front-Running Prevention**: Strategy privacy maintained until execution
-- ✅ **Verifiable Finance**: All decisions cryptographically proven
-- ✅ **Risk Management**: Enterprise-grade trust scoring engine
-- ✅ **Autonomous Operation**: Minimal human intervention required
+- **Sealed Inference**: AI executes in TEE enclaves
+- **TEE-Based Execution**: Full SGX attestation and verification
+- **Front-Running Prevention**: Strategy privacy maintained until execution
+- **Verifiable Finance**: All decisions cryptographically proven
+- **Risk Management**: Enterprise-grade trust scoring engine
+- **Autonomous Operation**: Minimal human intervention required
 
 ### 0G Ecosystem Integration:
-- ✅ **0G Chain**: Smart contracts deployed and verified
-- ✅ **0G Storage**: Audit reports and decision logs stored
-- ✅ **0G Compute**: AI decision engine runs in TEE
+- **0G Chain**: Smart contracts deployed and verified
+- **0G Storage**: Audit reports and decision logs stored
+- **0G Compute**: AI decision engine runs in TEE
 
 ## Demo Script for Hackathon
 

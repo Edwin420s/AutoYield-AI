@@ -42,7 +42,7 @@ class TrustScoringService {
    */
   async calculateTrustScore(protocolData) {
     try {
-      console.log(`🔍 Calculating trust score for ${protocolData.name}...`);
+      console.log(`Calculating trust score for ${protocolData.name}...`);
 
       // 1. Security Assessment (35%)
       const securityScore = await this.assessSecurity(protocolData);
@@ -90,11 +90,11 @@ class TrustScoringService {
         confidence: this.calculateConfidence(securityScore, financialScore, marketScore)
       };
 
-      console.log(`✅ Trust score calculated: ${trustReport.totalScore}/100 (${trustReport.grade})`);
+      console.log(`Trust score calculated: ${trustReport.totalScore}/100 (${trustReport.grade})`);
       return trustReport;
 
     } catch (error) {
-      console.error(`❌ Trust scoring failed for ${protocolData.name}:`, error);
+      console.error(`Trust scoring failed for ${protocolData.name}:`, error);
       throw new Error(`Trust scoring failed: ${error.message}`);
     }
   }
@@ -114,7 +114,7 @@ class TrustScoringService {
       score += auditScore * 0.4;
       factors.push(`Audit History: ${auditScore}/100`);
     } else {
-      factors.push('❌ No security audits found');
+      factors.push('No security audits found');
     }
 
     // Bug Bounty Program (25% of security score)
@@ -123,7 +123,7 @@ class TrustScoringService {
       score += bountyScore * 0.25;
       factors.push(`Bug Bounty: ${bountyScore}/100`);
     } else {
-      factors.push('❌ No bug bounty program');
+      factors.push('No bug bounty program');
     }
 
     // Security Track Record (25% of security score)
@@ -134,7 +134,7 @@ class TrustScoringService {
     } else {
       // No incidents is good, but we need some history
       score += 70 * 0.25; // Neutral score
-      factors.push('⚠️ Limited security history');
+      factors.push('Limited security history');
     }
 
     // Insurance Coverage (10% of security score)
@@ -143,7 +143,7 @@ class TrustScoringService {
       score += insuranceScore * 0.1;
       factors.push(`Insurance: ${insuranceScore}/100`);
     } else {
-      factors.push('❌ No insurance coverage');
+      factors.push('No insurance coverage');
     }
 
     return {
@@ -168,7 +168,7 @@ class TrustScoringService {
       score += tvlScore * 0.3;
       factors.push(`TVL Sustainability: ${tvlScore}/100`);
     } else {
-      factors.push('❌ Insufficient TVL data');
+      factors.push('Insufficient TVL data');
     }
 
     // Revenue Generation (25% of financial score)
@@ -177,7 +177,7 @@ class TrustScoringService {
       score += revenueScore * 0.25;
       factors.push(`Revenue: ${revenueScore}/100`);
     } else {
-      factors.push('❌ No revenue data');
+      factors.push('No revenue data');
     }
 
     // Treasury Health (20% of financial score)
@@ -186,7 +186,7 @@ class TrustScoringService {
       score += treasuryScore * 0.2;
       factors.push(`Treasury: ${treasuryScore}/100`);
     } else {
-      factors.push('❌ No treasury data');
+      factors.push('No treasury data');
     }
 
     // Token Economics (15% of financial score)
@@ -195,7 +195,7 @@ class TrustScoringService {
       score += tokenomicsScore * 0.15;
       factors.push(`Tokenomics: ${tokenomicsScore}/100`);
     } else {
-      factors.push('⚠️ Limited tokenomics data');
+      factors.push('Limited tokenomics data');
     }
 
     // Profitability (10% of financial score)
@@ -204,7 +204,7 @@ class TrustScoringService {
       score += profitScore * 0.1;
       factors.push(`Profitability: ${profitScore}/100`);
     } else {
-      factors.push('❌ No profitability data');
+      factors.push('No profitability data');
     }
 
     return {
@@ -229,7 +229,7 @@ class TrustScoringService {
       score += volumeScore * 0.3;
       factors.push(`Volume: ${volumeScore}/100`);
     } else {
-      factors.push('❌ No volume data');
+      factors.push('No volume data');
     }
 
     // User Base Growth (25% of market score)
@@ -238,7 +238,7 @@ class TrustScoringService {
       score += userScore * 0.25;
       factors.push(`User Growth: ${userScore}/100`);
     } else {
-      factors.push('❌ No user data');
+      factors.push('No user data');
     }
 
     // Market Share (20% of market score)
@@ -247,7 +247,7 @@ class TrustScoringService {
       score += shareScore * 0.2;
       factors.push(`Market Share: ${shareScore}/100`);
     } else {
-      factors.push('⚠️ Limited market share data');
+      factors.push('Limited market share data');
     }
 
     // Liquidity Depth (15% of market score)
@@ -256,7 +256,7 @@ class TrustScoringService {
       score += liquidityScore * 0.15;
       factors.push(`Liquidity: ${liquidityScore}/100`);
     } else {
-      factors.push('❌ No liquidity data');
+      factors.push('No liquidity data');
     }
 
     // Price Stability (10% of market score)
@@ -265,7 +265,7 @@ class TrustScoringService {
       score += stabilityScore * 0.1;
       factors.push(`Price Stability: ${stabilityScore}/100`);
     } else {
-      factors.push('❌ No price history');
+      factors.push('No price history');
     }
 
     return {
@@ -290,7 +290,7 @@ class TrustScoringService {
       score += daoScore * 0.3;
       factors.push(`DAO: ${daoScore}/100`);
     } else {
-      factors.push('❌ No DAO structure');
+      factors.push('No DAO structure');
     }
 
     // Team Transparency (25% of governance score)
@@ -299,7 +299,7 @@ class TrustScoringService {
       score += teamScore * 0.25;
       factors.push(`Team: ${teamScore}/100`);
     } else {
-      factors.push('❌ No team information');
+      factors.push('No team information');
     }
 
     // Community Engagement (20% of governance score)
@@ -308,7 +308,7 @@ class TrustScoringService {
       score += communityScore * 0.2;
       factors.push(`Community: ${communityScore}/100`);
     } else {
-      factors.push('❌ No community data');
+      factors.push('No community data');
     }
 
     // Voting Participation (15% of governance score)
@@ -317,7 +317,7 @@ class TrustScoringService {
       score += votingScore * 0.15;
       factors.push(`Voting: ${votingScore}/100`);
     } else {
-      factors.push('❌ No voting data');
+      factors.push('No voting data');
     }
 
     // Regulatory Compliance (10% of governance score)
@@ -326,7 +326,7 @@ class TrustScoringService {
       score += complianceScore * 0.1;
       factors.push(`Compliance: ${complianceScore}/100`);
     } else {
-      factors.push('⚠️ Limited compliance info');
+      factors.push('Limited compliance info');
     }
 
     return {
@@ -351,7 +351,7 @@ class TrustScoringService {
       score += codeScore * 0.3;
       factors.push(`Code Quality: ${codeScore}/100`);
     } else {
-      factors.push('❌ No code quality assessment');
+      factors.push('No code quality assessment');
     }
 
     // Documentation (25% of technical score)
@@ -360,7 +360,7 @@ class TrustScoringService {
       score += docsScore * 0.25;
       factors.push(`Documentation: ${docsScore}/100`);
     } else {
-      factors.push('❌ Poor documentation');
+      factors.push('Poor documentation');
     }
 
     // Innovation (20% of technical score)
@@ -369,7 +369,7 @@ class TrustScoringService {
       score += innovationScore * 0.2;
       factors.push(`Innovation: ${innovationScore}/100`);
     } else {
-      factors.push('⚠️ Limited innovation');
+      factors.push('Limited innovation');
     }
 
     // Integration Ecosystem (15% of technical score)
@@ -378,7 +378,7 @@ class TrustScoringService {
       score += integrationScore * 0.15;
       factors.push(`Integrations: ${integrationScore}/100`);
     } else {
-      factors.push('❌ Limited integrations');
+      factors.push('Limited integrations');
     }
 
     // Performance (10% of technical score)
@@ -387,7 +387,7 @@ class TrustScoringService {
       score += performanceScore * 0.1;
       factors.push(`Performance: ${performanceScore}/100`);
     } else {
-      factors.push('❌ No performance data');
+      factors.push('No performance data');
     }
 
     return {
@@ -443,11 +443,11 @@ class TrustScoringService {
   identifyRiskFactors(security, financial, market) {
     const risks = [];
 
-    if (security.score < 60) risks.push('🔒 Security concerns detected');
-    if (financial.score < 50) risks.push('💰 Financial health issues');
-    if (market.score < 40) risks.push('📉 Poor market performance');
-    if (security.score < 40) risks.push('🚨 High security risk');
-    if (financial.score < 30) risks.push('⚠️ Financial instability');
+    if (security.score < 60) risks.push('Security concerns detected');
+    if (financial.score < 50) risks.push('Financial health issues');
+    if (market.score < 40) risks.push('Poor market performance');
+    if (security.score < 40) risks.push('High security risk');
+    if (financial.score < 30) risks.push('Financial instability');
 
     return risks;
   }
@@ -462,21 +462,21 @@ class TrustScoringService {
     const recommendations = [];
 
     if (score >= 85) {
-      recommendations.push('✅ High confidence - suitable for large allocations');
-      recommendations.push('📈 Consider for core portfolio position');
+      recommendations.push('High confidence - suitable for large allocations');
+      recommendations.push('Consider for core portfolio position');
     } else if (score >= 70) {
-      recommendations.push('⚖️ Moderate confidence - diversify position');
-      recommendations.push('👀 Monitor closely for changes');
+      recommendations.push('Moderate confidence - diversify position');
+      recommendations.push('Monitor closely for changes');
     } else if (score >= 55) {
-      recommendations.push('⚠️ Low confidence - small allocation only');
-      recommendations.push('🔍 Increased monitoring required');
+      recommendations.push('Low confidence - small allocation only');
+      recommendations.push('Increased monitoring required');
     } else {
-      recommendations.push('❌ Very low confidence - avoid or minimal exposure');
-      recommendations.push('🚨 High risk - not recommended for most portfolios');
+      recommendations.push('Very low confidence - avoid or minimal exposure');
+      recommendations.push('High risk - not recommended for most portfolios');
     }
 
     if (allocation.maxAllocation <= 10) {
-      recommendations.push('📊 Limit to speculative portion of portfolio');
+      recommendations.push('Limit to speculative portion of portfolio');
     }
 
     return recommendations;
@@ -767,7 +767,7 @@ class TrustScoringService {
    * @returns {Promise<Array>} - Array of trust scores
    */
   async batchScoreProtocols(protocols) {
-    console.log(`📦 Starting batch trust scoring for ${protocols.length} protocols...`);
+    console.log(`Starting batch trust scoring for ${protocols.length} protocols...`);
     
     const results = [];
     const startTime = Date.now();
@@ -798,7 +798,7 @@ class TrustScoringService {
     const duration = (Date.now() - startTime) / 1000;
     const successful = results.filter(r => r.success).length;
     
-    console.log(`✅ Batch scoring complete: ${successful}/${protocols.length} protocols scored in ${duration}s`);
+    console.log(`Batch scoring complete: ${successful}/${protocols.length} protocols scored in ${duration}s`);
     
     return results;
   }

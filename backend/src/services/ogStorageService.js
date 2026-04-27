@@ -17,7 +17,7 @@ export async function storeDecisionLog(decision, txHash) {
     const jsonData = JSON.stringify(logData, null, 2);
     const uploadResult = await storage.upload(jsonData);
 
-    console.log(`✅ Successfully stored to 0G Storage:`, {
+    console.log(`Successfully stored to 0G Storage:`, {
       cid: uploadResult.cid,
       size: jsonData.length,
       txHash
@@ -29,7 +29,7 @@ export async function storeDecisionLog(decision, txHash) {
       size: jsonData.length
     };
   } catch (error) {
-    console.error('❌ 0G Storage upload failed:', error);
+    console.error('0G Storage upload failed:', error);
     // Fallback for demo purposes
     return {
       success: false,
@@ -51,14 +51,14 @@ export async function uploadProtocolAuditTo0G(protocolData) {
     const jsonData = JSON.stringify(auditData, null, 2);
     const uploadResult = await storage.upload(jsonData);
 
-    console.log(`✅ Protocol audit uploaded to 0G Storage:`, {
+    console.log(`Protocol audit uploaded to 0G Storage:`, {
       cid: uploadResult.cid,
       protocolsCount: protocolData.length
     });
 
     return uploadResult.cid;
   } catch (error) {
-    console.error('❌ Protocol audit upload failed:', error);
+    console.error('Protocol audit upload failed:', error);
     throw new Error(`Failed to upload audit to 0G Storage: ${error.message}`);
   }
 }

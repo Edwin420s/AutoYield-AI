@@ -109,7 +109,7 @@ export default function PendingProposals({ strategyManagerContract, isOwner }) {
   return (
     <div className="p-6 bg-gray-900 text-white rounded-xl shadow-lg border border-gray-800">
       <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
-        ⏳ Time-Lock Waiting Room
+        Time-Lock Waiting Room
       </h2>
       
       <div className="space-y-4">
@@ -148,7 +148,7 @@ export default function PendingProposals({ strategyManagerContract, isOwner }) {
                     onClick={() => handleCancel(prop.id)}
                     className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
                   >
-                    🛑 Emergency Cancel
+                    Emergency Cancel
                   </button>
                 )}
                 
@@ -160,7 +160,7 @@ export default function PendingProposals({ strategyManagerContract, isOwner }) {
                     isReady ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  ✅ Execute Strategy
+                  Execute Strategy
                 </button>
               </div>
             </div>

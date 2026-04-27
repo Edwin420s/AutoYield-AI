@@ -33,7 +33,7 @@ export default function AgentControlPanel() {
   return (
     <div className="p-6 bg-gray-900 text-white rounded-xl shadow-lg border border-gray-800">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">🤖 0G Compute TEE Console</h2>
+        <h2 className="text-2xl font-bold">0G Compute TEE Console</h2>
       </div>
 
       <button

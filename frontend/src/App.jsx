@@ -1,18 +1,40 @@
+/**
+ * AutoYield AI - Frontend Application
+ * React-based web interface for autonomous yield optimization
+ * 
+ * Features:
+ * - Wallet connection and management
+ * - Real-time market data display
+ * - AI strategy execution with TEE protection
+ * - Proposal tracking and management
+ * - Portfolio performance monitoring
+ * 
+ * @component App
+ * @returns {JSX.Element} Main application component
+ */
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import MarketOracleFeed from './components/MarketOracleFeed.jsx';
 import PendingProposals from './components/PendingProposals.jsx';
 import AgentControlPanel from './components/AgentControlPanel.jsx';
 
+/**
+ * Main application state and wallet management
+ * Handles user authentication, vault data fetching, and AI strategy execution
+ */
 function App() {
-  const [account, setAccount] = useState(null);
+  // State management
+  const [account, setAccount] = useState(null); // Connected wallet address
   const [vaultData, setVaultData] = useState({
-    totalAssets: 0,
-    userShares: 0,
-    apy: 0
+    totalAssets: 0,    // Total USDC assets in vault
+    userShares: 0,      // User's vault shares
+    apy: 0             // Current annual percentage yield
   });
 
-  // Connect wallet
+  /**
+   * Connect user wallet using MetaMask or compatible browser wallet
+   * Fetches vault data after successful connection
+   */
   const connectWallet = async () => {
     try {
       if (window.ethereum) {
@@ -31,7 +53,12 @@ function App() {
     }
   };
 
-  // Fetch vault data
+  /**
+   * Fetch user's vault data from backend API
+   * Retrieves total assets, shares, and current APY
+   * 
+   * @param {string} userAddress - Connected wallet address
+   */
   const fetchVaultData = async (userAddress) => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/vault/user/${userAddress}`);
@@ -44,7 +71,10 @@ function App() {
     }
   };
 
-  // Run AI Strategy
+  /**
+   * Execute AI strategy for yield optimization
+   * Submits strategy to blockchain with 24-hour time-lock
+   */
   const runAIStrategy = async () => {
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/agent/run`, {
@@ -67,7 +97,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
+      {/* Application Header */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
@@ -101,9 +131,9 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Application Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Dashboard */}
+        {/* User Portfolio Dashboard */}
         {account && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
@@ -161,20 +191,20 @@ function App() {
           </div>
         )}
 
-        {/* Three Column Layout */}
+        {/* Three-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Market Oracle Feed */}
+          {/* Market Oracle Feed - Live DeFi Yields */}
           <MarketOracleFeed />
           
-          {/* Hollywood TEE Terminal */}
+          {/* AI Agent Control Panel - TEE Terminal */}
           <AgentControlPanel />
           
-          {/* Pending Proposals */}
+          {/* Pending Proposals - Time-lock Management */}
           <PendingProposals />
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Application Footer */}
       <footer className="bg-gray-800 border-t border-gray-700 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-gray-400">

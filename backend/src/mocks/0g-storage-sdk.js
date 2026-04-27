@@ -44,12 +44,12 @@ export class IndexerClient {
   }
 
   async upload(zgFile) {
-    console.log("📦 0G Storage: Starting chunked upload to storage nodes...");
+    console.log("0G Storage: Starting chunked upload to storage nodes...");
     
     try {
       // Simulate chunk upload with progress tracking
       const uploadPromises = zgFile.chunks.map(async (chunk, index) => {
-        console.log(`📤 Uploading chunk ${index + 1}/${zgFile.chunks.length} (${chunk.length} bytes)`);
+        console.log(`Uploading chunk ${index + 1}/${zgFile.chunks.length} (${chunk.length} bytes)`);
         
         // Simulate network delay and upload
         await new Promise(resolve => setTimeout(resolve, 200 + Math.random() * 300));
@@ -72,9 +72,9 @@ export class IndexerClient {
       // Simulate metadata registration with 0G Storage indexer
       const metadataResponse = await this.registerFileMetadata(rootCid, zgFile);
       
-      console.log(`✅ 0G Storage: Upload completed! CID: ${rootCid}`);
-      console.log(`📊 Chunks uploaded: ${chunkResults.length}`);
-      console.log(`🔗 Metadata registered: ${metadataResponse.txHash}`);
+      console.log(`0G Storage: Upload completed! CID: ${rootCid}`);
+      console.log(`Chunks uploaded: ${chunkResults.length}`);
+      console.log(`Metadata registered: ${metadataResponse.txHash}`);
       
       return {
         cid: rootCid,
@@ -86,14 +86,14 @@ export class IndexerClient {
       };
       
     } catch (error) {
-      console.error("❌ 0G Storage upload failed:", error.message);
+      console.error("0G Storage upload failed:", error.message);
       throw new Error(`0G Storage upload failed: ${error.message}`);
     }
   }
 
   async registerFileMetadata(cid, zgFile) {
     // Simulate metadata registration transaction
-    console.log(`� Registering metadata for CID: ${cid}`);
+    console.log(`Registering metadata for CID: ${cid}`);
     
     await new Promise(resolve => setTimeout(resolve, 500));
     
@@ -107,7 +107,7 @@ export class IndexerClient {
   }
 
   async retrieve(cid) {
-    console.log(`📥 0G Storage: Retrieving file with CID: ${cid}`);
+    console.log(`0G Storage: Retrieving file with CID: ${cid}`);
     
     try {
       // Simulate file retrieval
@@ -129,13 +129,13 @@ export class IndexerClient {
         timestamp: new Date().toISOString()
       };
     } catch (error) {
-      console.error("❌ 0G Storage retrieval failed:", error.message);
+      console.error("0G Storage retrieval failed:", error.message);
       throw new Error(`0G Storage retrieval failed: ${error.message}`);
     }
   }
 
   async verifyIntegrity(cid) {
-    console.log(`🔍 0G Storage: Verifying integrity of CID: ${cid}`);
+    console.log(`0G Storage: Verifying integrity of CID: ${cid}`);
     
     await new Promise(resolve => setTimeout(resolve, 200));
     
@@ -149,12 +149,12 @@ export class IndexerClient {
 }
 
 export function getFlowContract(address, wallet) {
-  console.log(`🔗 0G Storage: Flow contract interaction at ${address}`);
+  console.log(`0G Storage: Flow contract interaction at ${address}`);
   
   return {
     address,
     append: async (zgFile) => {
-      console.log("� 0G Storage: Submitting storage payment transaction...");
+      console.log("0G Storage: Submitting storage payment transaction...");
       
       // Simulate payment transaction
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -194,7 +194,7 @@ export class StorageManager {
   }
 
   async uploadWithPayment(filePath, metadata = {}) {
-    console.log("🚀 0G Storage: Starting enhanced upload with payment...");
+    console.log("0G Storage: Starting enhanced upload with payment...");
     
     try {
       // 1. Read and prepare file
@@ -209,13 +209,13 @@ export class StorageManager {
 
       // 2. Get storage fee
       const feeInfo = await this.flowContract.getStorageFee(zgFile.size);
-      console.log(`💰 Storage fee: ${feeInfo.fee} ETH`);
+      console.log(`Storage fee: ${feeInfo.fee} ETH`);
 
       // 3. Submit payment transaction
       const paymentTx = await this.flowContract.append(zgFile);
       await paymentTx.wait();
       
-      console.log(`✅ Payment confirmed: ${paymentTx.hash}`);
+      console.log(`Payment confirmed: ${paymentTx.hash}`);
 
       // 4. Upload file chunks
       const uploadResult = await this.indexer.upload(zgFile);
@@ -231,7 +231,7 @@ export class StorageManager {
       };
       
     } catch (error) {
-      console.error("❌ Enhanced upload failed:", error.message);
+      console.error("Enhanced upload failed:", error.message);
       throw error;
     }
   }

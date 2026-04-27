@@ -7,11 +7,11 @@
 
 import { testAgenticMath } from './agent/decisionEngine.js';
 
-console.log('🧮 AutoYield AI - Agentic Math Test Suite');
+console.log('AutoYield AI - Agentic Math Test Suite');
 console.log('=====================================\n');
 
 // Test Scenario 1: High-Risk Scam Detection
-console.log('📊 Scenario 1: High-Risk Scam Detection');
+console.log('Scenario 1: High-Risk Scam Detection');
 console.log('----------------------------------------');
 const scamData = [
   { name: 'Aave', address: '0x1111111111111111111111111111111111111111', apy: 4.5, risk: 15 },
@@ -31,17 +31,17 @@ console.log(`  Allocations: ${scamResult.percentages.join('/')}`);
 console.log(`  Expected APY: ${scamResult.expectedAPY / 100}%`);
 console.log(`  Portfolio Risk: ${scamResult.riskScore}/100`);
 
-console.log('\n🔍 Risk-Adjusted Score Analysis:');
+console.log('\nRisk-Adjusted Score Analysis:');
 scamData.forEach(p => {
   const safetyFactor = (100 - p.risk) / 100;
   const riskAdjustedScore = p.apy * safetyFactor;
   console.log(`  ${p.name}: APY=${p.apy}%, Risk=${p.risk}, Safety=${safetyFactor.toFixed(2)}, Score=${riskAdjustedScore.toFixed(3)}`);
 });
 
-console.log('\n✅ SUCCESS: Scam avoided! DegenScam (150% APY) ignored due to high risk.\n');
+console.log('\nSUCCESS: Scam avoided! DegenScam (150% APY) ignored due to high risk.\n');
 
 // Test Scenario 2: Conservative Portfolio
-console.log('📊 Scenario 2: Conservative Portfolio');
+console.log('Scenario 2: Conservative Portfolio');
 console.log('------------------------------------');
 const conservativeData = [
   { name: 'Aave', address: '0x1111111111111111111111111111111111111111', apy: 4.5, risk: 15 },
@@ -61,10 +61,10 @@ console.log(`  Allocations: ${conservativeResult.percentages.join('/')}`);
 console.log(`  Expected APY: ${conservativeResult.expectedAPY / 100}%`);
 console.log(`  Portfolio Risk: ${conservativeResult.riskScore}/100`);
 
-console.log('\n✅ SUCCESS: Conservative portfolio optimized for safety.\n');
+console.log('\nSUCCESS: Conservative portfolio optimized for safety.\n');
 
 // Test Scenario 3: Balanced Risk/Reward
-console.log('📊 Scenario 3: Balanced Risk/Reward');
+console.log('Scenario 3: Balanced Risk/Reward');
 console.log('----------------------------------');
 const balancedData = [
   { name: 'Aave', address: '0x1111111111111111111111111111111111111111', apy: 4.5, risk: 15 },
@@ -84,10 +84,10 @@ console.log(`  Allocations: ${balancedResult.percentages.join('/')}`);
 console.log(`  Expected APY: ${balancedResult.expectedAPY / 100}%`);
 console.log(`  Portfolio Risk: ${balancedResult.riskScore}/100`);
 
-console.log('\n✅ SUCCESS: Balanced portfolio with optimal risk-adjusted returns.\n');
+console.log('\nSUCCESS: Balanced portfolio with optimal risk-adjusted returns.\n');
 
 // Test Scenario 4: Risk Constraint Violation
-console.log('📊 Scenario 4: Risk Constraint Violation');
+console.log('Scenario 4: Risk Constraint Violation');
 console.log('--------------------------------------');
 const riskyData = [
   { name: 'HighRisk1', address: '0x7777777777777777777777777777777777777777', apy: 25.0, risk: 85 },
@@ -107,20 +107,20 @@ console.log(`  Expected APY: ${riskyResult.expectedAPY / 100}%`);
 console.log(`  Portfolio Risk: ${riskyResult.riskScore}/100`);
 
 if (riskyResult.riskScore > 70) {
-  console.log('⚠️  WARNING: High portfolio risk detected!');
-  console.log('🛡️  SAFETY FALLBACK: Would select single safest protocol');
+  console.log('WARNING: High portfolio risk detected!');
+  console.log('SAFETY FALLBACK: Would select single safest protocol');
 } else {
-  console.log('✅ SUCCESS: Portfolio within acceptable risk limits.');
+  console.log('SUCCESS: Portfolio within acceptable risk limits.');
 }
 
 // Summary
-console.log('\n🎯 Agentic Math Test Summary');
+console.log('\nAgentic Math Test Summary');
 console.log('==========================');
-console.log('✅ Scam Prevention: High APY scams automatically rejected');
-console.log('✅ Risk Management: Portfolio risk constrained to ≤70');
-console.log('✅ Mathematical Optimization: Risk-adjusted returns maximized');
-console.log('✅ Safety Factors: Applied to prevent dangerous allocations');
-console.log('✅ Constraint Verification: All mathematical constraints enforced');
+console.log('Scam Prevention: High APY scams automatically rejected');
+console.log('Risk Management: Portfolio risk constrained to ≤70');
+console.log('Mathematical Optimization: Risk-adjusted returns maximized');
+console.log('Safety Factors: Applied to prevent dangerous allocations');
+console.log('Constraint Verification: All mathematical constraints enforced');
 
-console.log('\n🚀 The Agentic Math engine is ready for hackathon demonstration!');
-console.log('📈 It will automatically optimize yields while protecting user funds.');
+console.log('\nThe Agentic Math engine is ready for hackathon demonstration!');
+console.log('It will automatically optimize yields while protecting user funds.');

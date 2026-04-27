@@ -37,7 +37,7 @@ class ZeroGComputeService {
    */
   async runTEEDecisionEngine(marketData, constraints) {
     try {
-      console.log(`🔒 Running AI decision engine in TEE for privacy...`);
+      console.log(`Running AI decision engine in TEE for privacy...`);
 
       // 1. Prepare sealed input data
       const sealedInput = await this.prepareSealedInput(marketData, constraints);
@@ -59,7 +59,7 @@ class ZeroGComputeService {
         }
       });
 
-      console.log(`📤 Compute job submitted: ${computeJob.jobId}`);
+      console.log(`Compute job submitted: ${computeJob.jobId}`);
       
       // 3. Wait for TEE execution completion
       const result = await this.waitForTEEExecution(computeJob.jobId);
@@ -71,7 +71,7 @@ class ZeroGComputeService {
         throw new Error('TEE execution verification failed - possible tampering');
       }
 
-      console.log(`✅ TEE decision completed and verified`);
+      console.log(`TEE decision completed and verified`);
       
       return {
         decision: result.decision,
@@ -83,8 +83,8 @@ class ZeroGComputeService {
       };
 
     } catch (error) {
-      console.error(`❌ TEE execution failed:`, error);
-      throw new Error(`TEE compute failed: ${error.message}`);
+      console.error(`TEE execution failed:`, error);
+      throw new Error(`TEE execution failed: ${error.message}`);
     }
   }
 
@@ -192,7 +192,7 @@ module.exports = result;
    * @returns {Promise<Object>} - Execution result
    */
   async waitForTEEExecution(jobId) {
-    console.log(`⏳ Waiting for TEE execution: ${jobId}`);
+    console.log(`Waiting for TEE execution: ${jobId}`);
     
     let attempts = 0;
     const maxAttempts = 30; // 30 seconds max wait
@@ -202,7 +202,7 @@ module.exports = result;
         const status = await this.computeClient.getJobStatus(jobId);
         
         if (status.state === 'completed') {
-          console.log(`✅ TEE execution completed in ${status.executionTime}ms`);
+          console.log(`TEE execution completed in ${status.executionTime}ms`);
           
           // Retrieve and decrypt result
           const result = await this.computeClient.getJobResult(jobId);
@@ -215,7 +215,6 @@ module.exports = result;
             gasUsed: status.gasUsed
           };
         } else if (status.state === 'failed') {
-          throw new Error(`TEE execution failed: ${status.error}`);
         }
         
         // Wait and retry
@@ -239,7 +238,7 @@ module.exports = result;
    */
   async verifyTEEExecution(result) {
     try {
-      console.log(`🔍 Verifying TEE execution proof...`);
+      console.log(`Verifying TEE execution proof...`);
       
       // 1. Verify SGX attestation
       const isValidAttestation = await this.verifySGXAttestation(result.attestation);
@@ -252,14 +251,14 @@ module.exports = result;
       
       const allValid = isValidAttestation && isValidProof && outputIntegrity;
       
-      console.log(`📋 Attestation: ${isValidAttestation ? '✅' : '❌'}`);
-      console.log(`📋 Proof: ${isValidProof ? '✅' : '❌'}`);
-      console.log(`📋 Integrity: ${outputIntegrity ? '✅' : '❌'}`);
+      console.log(`Attestation: ${isValidAttestation ? 'VALID' : 'INVALID'}`);
+      console.log(`Proof: ${isValidProof ? 'VALID' : 'INVALID'}`);
+      console.log(`Integrity: ${outputIntegrity ? 'VALID' : 'INVALID'}`);
       
       return allValid;
       
     } catch (error) {
-      console.error(`❌ TEE verification failed: ${error.message}`);
+      console.error(`TEE verification failed: ${error.message}`);
       return false;
     }
   }
@@ -349,7 +348,7 @@ module.exports = result;
    */
   async getTEEStats() {
     try {
-      console.log(`📊 Fetching TEE compute statistics...`);
+      console.log(`Fetching TEE compute statistics...`);
       
       const stats = await this.computeClient.getTEEStats();
       
@@ -361,11 +360,11 @@ module.exports = result;
         frontRunningPrevented: stats.frontRunningPrevented,
         confidentialityLevel: 'TEE-SEALED',
         lastTEEJob: new Date(stats.lastJobTimestamp).toISOString(),
-        enclaveHealth: stats.enclaveHealth === 'healthy' ? '✅ Healthy' : '⚠️ Issues'
+        enclaveHealth: stats.enclaveHealth === 'healthy' ? 'Healthy' : 'Issues'
       };
 
     } catch (error) {
-      console.error(`❌ Failed to fetch TEE stats: ${error.message}`);
+      console.error(`Failed to fetch TEE stats: ${error.message}`);
       throw error;
     }
   }
@@ -379,7 +378,7 @@ module.exports = result;
       const health = await this.computeClient.getTEEHealth();
       
       return {
-        status: health.status === 'healthy' ? '✅ TEE Enclaves Healthy' : '⚠️ TEE Issues Detected',
+        status: health.status === 'healthy' ? 'TEE Enclaves Healthy' : 'TEE Issues Detected',
         enclaveCount: health.activeEnclaves,
         attestationService: health.attestationService,
         lastHealthCheck: new Date().toISOString(),
@@ -388,7 +387,7 @@ module.exports = result;
       };
     } catch (error) {
       return {
-        status: '❌ Error',
+        status: 'Error',
         error: error.message,
         lastCheck: new Date().toISOString()
       };
@@ -402,7 +401,7 @@ module.exports = result;
    */
   async compareTEEPerformance(marketData) {
     try {
-      console.log(`🏁 Comparing TEE vs non-TEE execution performance...`);
+      console.log(`Comparing TEE vs non-TEE execution performance...`);
       
       // Run TEE execution
       const teeStart = Date.now();
@@ -418,15 +417,15 @@ module.exports = result;
         teeExecution: {
           time: `${teeTime}ms`,
           confidentiality: 'TEE-SEALED',
-          frontRunningProtection: '✅ Enabled',
-          verification: '✅ Attested',
+          frontRunningProtection: 'Enabled',
+          verification: 'Attested',
           result: teeResult.decision
         },
         nonTEEExecution: {
           time: `${nonTeeTime}ms`,
-          confidentiality: '❌ Public',
-          frontRunningProtection: '❌ Disabled',
-          verification: '❌ None',
+          confidentiality: 'Public',
+          frontRunningProtection: 'Disabled',
+          verification: 'None',
           result: nonTEEResult
         },
         performanceImpact: `${((teeTime - nonTeeTime) / nonTeeTime * 100).toFixed(1)}%`,
@@ -434,7 +433,7 @@ module.exports = result;
       };
       
     } catch (error) {
-      console.error(`❌ Performance comparison failed: ${error.message}`);
+      console.error(`Performance comparison failed: ${error.message}`);
       throw error;
     }
   }
@@ -447,7 +446,7 @@ module.exports = result;
  */
 export async function executeVerifiableAI(marketData) {
   try {
-    console.log("🔒 Executing Verifiable AI with TEE protection...");
+    console.log("Executing Verifiable AI with TEE protection...");
     
     const teeService = new ZeroGComputeService();
     
@@ -465,7 +464,7 @@ export async function executeVerifiableAI(marketData) {
     };
     
   } catch (error) {
-    console.error("❌ Verifiable AI execution failed:", error);
+    console.error("Verifiable AI execution failed:", error);
     throw error;
   }
 }

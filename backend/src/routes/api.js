@@ -26,21 +26,21 @@ router.get('/agent/stream-tee', async (req, res) => {
   };
 
   try {
-    sendLog("🔒 Initializing 0G Compute TEE Connection...", "info");
+    sendLog("Initializing 0G Compute TEE Connection...", "info");
     
     // Initialize TEE service
     const teeService = new ZeroGComputeService();
-    sendLog("✅ TEE Service Initialized", "success");
+    sendLog("TEE Service Initialized", "success");
 
-    sendLog("📊 Fetching Live Market Data (DefiLlama API)...", "processing");
+    sendLog("Fetching Live Market Data (DefiLlama API)...", "processing");
     const marketData = await fetchAPYData();
-    sendLog(`📈 Retrieved ${marketData.length} protocols`, "success");
+    sendLog(`Retrieved ${marketData.length} protocols`, "success");
 
-    sendLog("🔒 Sealing Market Data for TEE Processing...", "processing");
+    sendLog("Sealing Market Data for TEE Processing...", "processing");
     
     // Run actual TEE decision engine
     try {
-      sendLog("🧠 Running AI in Trusted Execution Environment...", "processing");
+      sendLog("Running AI in Trusted Execution Environment...", "processing");
       
       const teeResult = await teeService.runTEEDecisionEngine(marketData, {
         maxPortfolioRisk: 70,
@@ -48,12 +48,12 @@ router.get('/agent/stream-tee', async (req, res) => {
         maxProtocolCount: 5
       });
       
-      sendLog(`✅ TEE Decision Completed (Job: ${teeResult.jobId})`, "success");
-      sendLog(`🔐 Attestation Verified: ${teeResult.attestationReport.substring(0, 20)}...`, "success");
-      sendLog(`📊 Strategy: ${teeResult.decision.protocols.length} protocols selected`, "info");
+      sendLog(`TEE Decision Completed (Job: ${teeResult.jobId})`, "success");
+      sendLog(`Attestation Verified: ${teeResult.attestationReport.substring(0, 20)}...`, "success");
+      sendLog(`Strategy: ${teeResult.decision.protocols.length} protocols selected`, "info");
       
       // Submit strategy with TEE proof to blockchain
-      sendLog("📤 Submitting TEE-Verified Strategy to 0G Chain...", "processing");
+      sendLog("Submitting TEE-Verified Strategy to 0G Chain...", "processing");
       
       // 1. Import the smart contract service directly
       const { proposeStrategy } = await import('../services/contractService.js');
@@ -64,19 +64,19 @@ router.get('/agent/stream-tee', async (req, res) => {
         protocols: teeResult.decision.protocols,
         percentages: teeResult.decision.percentages,
         expectedAPY: teeResult.decision.expectedAPY, 
-        executionProof: teeResult.executionProof // 🚨 THIS IS THE CRITICAL COMPONENT
+        executionProof: teeResult.executionProof // THIS IS THE CRITICAL COMPONENT
       };
       
       // 3. Submit the VERIFIED data to the blockchain
       const receipt = await proposeStrategy(decisionPayload);
       
-      sendLog(`✅ Strategy Submitted! TX: ${receipt.hash?.substring(0, 10)}...`, "complete");
-      sendLog("🎯 View in Pending Proposals for execution", "info");
+      sendLog(`Strategy Submitted! TX: ${receipt.hash?.substring(0, 10)}...`, "complete");
+      sendLog("View in Pending Proposals for execution", "info");
       
     } catch (teeError) {
-      sendLog(`❌ TEE Service Error: ${teeError.message}`, "error");
-      sendLog("� TEE execution failed - cannot proceed without cryptographic proof", "error");
-      sendLog("🔧 Please check TEE service configuration and try again", "info");
+      sendLog(`TEE Service Error: ${teeError.message}`, "error");
+      sendLog("TEE execution failed - cannot proceed without cryptographic proof", "error");
+      sendLog("Please check TEE service configuration and try again", "info");
       
       // No fallback - TEE proof is required for verifiable finance
       res.end(); // Close the stream
@@ -85,7 +85,7 @@ router.get('/agent/stream-tee', async (req, res) => {
     res.end(); // Close the stream
     
   } catch (error) {
-    sendLog(`❌ Critical Error: ${error.message}`, "error");
+    sendLog(`Critical Error: ${error.message}`, "error");
     res.end();
   }
 });

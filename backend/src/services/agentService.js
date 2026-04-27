@@ -48,7 +48,7 @@ export async function runAgent() {
 
 // Test function to demonstrate the Agentic Math model
 export async function testAgenticMathEngine() {
-  console.log("🧮 Testing Agentic Math Engine with rigorous optimization...");
+  console.log("Testing Agentic Math Engine with rigorous optimization...");
   
   try {
     const result = testAgenticMath();
@@ -68,10 +68,10 @@ export async function testAgenticMathEngine() {
 
 // Enhanced agent runner with mathematical validation
 export async function runAgentWithMathValidation() {
-  console.log("🔬 Running AI Agent with mathematical validation...");
+  console.log("Running AI Agent with mathematical validation...");
   
   try {
-    console.log("🧠 Running AI with mathematical validation...");
+    console.log("Running AI with mathematical validation...");
     
     const apyData = await fetchAPYData();
     const decision = decideStrategy(apyData);
@@ -82,7 +82,7 @@ export async function runAgentWithMathValidation() {
       throw new Error(`Mathematical validation failed: ${validation.errors.join(', ')}`);
     }
     
-    console.log("✅ Mathematical validation passed");
+    console.log("Mathematical validation passed");
     
     // Generate TEE attestation signature
     const teeAttestation = await generateTEEAttestation({
@@ -91,7 +91,7 @@ export async function runAgentWithMathValidation() {
       expectedAPY: decision.expectedAPY
     });
     
-    console.log("🔐 TEE attestation generated");
+    console.log("TEE attestation generated");
     
     // Determine execution type based on risk
     const isMajorDecision = decision.riskScore > 50 || decision.expectedAPY > 10;
@@ -139,7 +139,7 @@ export async function runAgentWithMathValidation() {
     };
     
   } catch (error) {
-    console.error("❌ Agent execution failed:", error);
+    console.error("Agent execution failed:", error);
     throw error;
   }
 }
@@ -194,7 +194,7 @@ function calculateRiskAdjustedScores(protocols) {
  */
 async function storeDecisionOn0GStorage(decision, txHash, isMajorDecision) {
   try {
-    console.log("📦 Storing AI decision on 0G Storage...");
+    console.log("Storing AI decision on 0G Storage...");
     
     // Create comprehensive decision metadata
     const decisionMetadata = {
@@ -238,11 +238,11 @@ async function storeDecisionOn0GStorage(decision, txHash, isMajorDecision) {
     // Clean up temporary file
     fs.unlinkSync(filepath);
     
-    console.log(`✅ Decision stored on 0G Storage with hash: ${rootHash}`);
+    console.log(`Decision stored on 0G Storage with hash: ${rootHash}`);
     return rootHash;
     
   } catch (error) {
-    console.error("❌ Failed to store decision on 0G Storage:", error);
+    console.error("Failed to store decision on 0G Storage:", error);
     // Don't throw error - storage failure shouldn't break the main flow
     return null;
   }

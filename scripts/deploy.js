@@ -3,15 +3,15 @@ const hre = require("hardhat");
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
 
-  console.log("🚀 Starting AutoYield AI Enterprise Deployment Sequence on 0G Network...");
-  console.log("👤 Deployer Address:", deployer.address);
-  console.log("💰 Account Balance:", (await hre.ethers.provider.getBalance(deployer.address)).toString());
+  console.log("Starting AutoYield AI Enterprise Deployment Sequence on 0G Network...");
+  console.log("Deployer Address:", deployer.address);
+  console.log("Account Balance:", (await hre.ethers.provider.getBalance(deployer.address)).toString());
 
   // ==========================================
   // 1. DEPLOY MOCK ASSET (For Hackathon Testing)
   // ==========================================
 
-  console.log("\n📦 Deploying Mock USDC (Underlying Asset)...");
+  console.log("\nDeploying Mock USDC (Underlying Asset)...");
 
   const MockUSDC = await hre.ethers.getContractFactory("MockUSDC");
 
@@ -21,13 +21,13 @@ async function main() {
 
   const usdcAddress = await usdc.getAddress();
 
-  console.log("✅ Mock USDC deployed to:", usdcAddress);
+  console.log("Mock USDC deployed to:", usdcAddress);
 
   // ==========================================
   // 2. DEPLOY AGENT REGISTRY
   // ==========================================
 
-  console.log("\n🤖 Deploying Agent Registry...");
+  console.log("\nDeploying Agent Registry...");
 
   const Registry = await hre.ethers.getContractFactory("AgentRegistry");
 
@@ -37,13 +37,13 @@ async function main() {
 
   const registryAddress = await registry.getAddress();
 
-  console.log("✅ Registry deployed to:", registryAddress);
+  console.log("Registry deployed to:", registryAddress);
 
   // ==========================================
   // 3. DEPLOY AUTOYIELD VAULT (ERC-4626)
   // ==========================================
 
-  console.log("\n🏦 Deploying AutoYield Vault (ERC-4626)...");
+  console.log("\nDeploying AutoYield Vault (ERC-4626)...");
 
   const Vault = await hre.ethers.getContractFactory("AutoYieldVault");
 
@@ -54,13 +54,13 @@ async function main() {
 
   const vaultAddress = await vault.getAddress();
 
-  console.log("✅ Vault deployed to:", vaultAddress);
+  console.log("Vault deployed to:", vaultAddress);
 
   // ==========================================
   // 4. DEPLOY STRATEGY MANAGER (With Enclave Key)
   // ==========================================
 
-  console.log("\n🛡️ Deploying Strategy Manager (Hardware Enclave Verification)...");
+  console.log("\nDeploying Strategy Manager (Hardware Enclave Verification)...");
 
   // For hackathon, we use the deployer's address as a mock "Enclave Public Key"
   // In production, this is the actual public key of the 0G Compute SGX Enclave
@@ -75,26 +75,26 @@ async function main() {
 
   const managerAddress = await manager.getAddress();
 
-  console.log("✅ Strategy Manager deployed to:", managerAddress);
+  console.log("Strategy Manager deployed to:", managerAddress);
 
   // ==========================================
   // 5. SYSTEM CONFIGURATION
   // ==========================================
 
-  console.log("\n⚙️ Configuring System Permissions...");
+  console.log("\nConfiguring System Permissions...");
 
   // Grant the Strategy Manager permission to physically move vault funds
   await vault.setStrategyManager(managerAddress);
 
-  console.log("✅ StrategyManager linked to Vault.");
+  console.log("StrategyManager linked to Vault.");
 
   // Register the backend Node.js wallet as an authorized AI Agent Caller
   // (Assuming your backend uses the same private key for testing)
   await registry.addAgent(deployer.address);
 
-  console.log("✅ Backend Wallet authorized in Agent Registry.");
+  console.log("Backend Wallet authorized in Agent Registry.");
 
-  console.log("\n🎉 DEPLOYMENT COMPLETE! 🎉");
+  console.log("\nDEPLOYMENT COMPLETE!");
 
   console.log("==========================================");
 
@@ -112,19 +112,19 @@ async function main() {
 
   console.log("==========================================");
 
-  console.log("\n🏆 ENTERPRISE-GRADE DEPLOYMENT COMPLETE! 🏆");
+  console.log("\nENTERPRISE-GRADE DEPLOYMENT COMPLETE!");
 
-  console.log("🔗 Features Implemented:");
-  console.log("  ✅ ERC-4626 Token Routing (Physical Asset Movement)");
-  console.log("  ✅ On-Chain TEE Attestation Verification (Hardware Security)");
-  console.log("  ✅ ERC-4337 Agent Wallet (Account Abstraction)");
-  console.log("  ✅ Live Oracle Data Ingestion (DefiLlama API)");
-  console.log("  ✅ Live Market Oracle Feed UI (Real-Time Transparency)");
-  console.log("  ✅ Enterprise Deployment Sequence (Production-Ready)");
+  console.log("Features Implemented:");
+  console.log("  ERC-4626 Token Routing (Physical Asset Movement)");
+  console.log("  On-Chain TEE Attestation Verification (Hardware Security)");
+  console.log("  ERC-4337 Agent Wallet (Account Abstraction)");
+  console.log("  Live Oracle Data Ingestion (DefiLlama API)");
+  console.log("  Live Market Oracle Feed UI (Real-Time Transparency)");
+  console.log("  Enterprise Deployment Sequence (Production-Ready)");
 
-  console.log("\n🎯 AutoYield AI is now an Enterprise-Grade DeFi Hedge Fund! 🎯");
+  console.log("\nAutoYield AI is now an Enterprise-Grade DeFi Hedge Fund!");
 
-  console.log("\n📝 Next Steps for Hackathon:");
+  console.log("\nNext Steps for Hackathon:");
   console.log("1. Compile contracts: npx hardhat compile");
   console.log("2. Deploy to 0G testnet: npx hardhat run scripts/deploy.js --network ogTestnet");
   console.log("3. Update .env files with new addresses");
@@ -134,10 +134,10 @@ async function main() {
   console.log("   - Physical token routing into DeFi protocols");
   console.log("   - 24-hour time-lock emergency stop");
 
-  console.log("\n🚀 Ready to dominate Track 2: Agentic Trading Arena! 🚀");
+  console.log("\nReady to dominate Track 2: Agentic Trading Arena!");
 }
 
 main().catch((error) => {
-  console.error("❌ Deployment failed:", error);
+  console.error("Deployment failed:", error);
   process.exitCode = 1;
 });
