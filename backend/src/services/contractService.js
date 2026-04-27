@@ -126,6 +126,30 @@ export async function getProtocolInfo(protocolAddress) {
   };
 }
 
+export async function getProposalDetails(proposalId) {
+  const contract = new ethers.Contract(
+    process.env.MANAGER_ADDRESS,
+    managerAbi,
+    wallet
+  );
+
+  const proposal = await contract.getProposal(proposalId);
+  
+  // Convert addresses back to protocol names for frontend
+  const protocolNames = await getProtocolNames(proposal.protocols);
+  
+  return {
+    protocols: protocolNames,
+    percentages: proposal.percentages.map(p => Number(p)),
+    executionTime: Number(proposal.executionTime),
+    executed: proposal.executed,
+    canceled: proposal.canceled,
+    proposedBy: proposal.proposedBy,
+    totalApy: Number(proposal.totalApy),
+    portfolioRisk: Number(proposal.portfolioRisk)
+  };
+}
+
 export async function getAllProposals() {
   const contract = new ethers.Contract(
     process.env.MANAGER_ADDRESS,

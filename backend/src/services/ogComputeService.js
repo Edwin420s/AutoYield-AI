@@ -440,4 +440,34 @@ module.exports = result;
   }
 }
 
+/**
+ * Execute verifiable AI decision (standalone function for controller)
+ * @param {Object} marketData - Market data
+ * @returns {Promise<Object>} - Decision and proof
+ */
+export async function executeVerifiableAI(marketData) {
+  try {
+    console.log("🔒 Executing Verifiable AI with TEE protection...");
+    
+    const teeService = new ZeroGComputeService();
+    
+    const result = await teeService.runTEEDecisionEngine(marketData, {
+      maxPortfolioRisk: 70,
+      minProtocolCount: 2,
+      maxProtocolCount: 5
+    });
+    
+    return {
+      decision: result.decision,
+      proof: result.executionProof,
+      attestation: result.attestationReport,
+      jobId: result.jobId
+    };
+    
+  } catch (error) {
+    console.error("❌ Verifiable AI execution failed:", error);
+    throw error;
+  }
+}
+
 export default ZeroGComputeService;
