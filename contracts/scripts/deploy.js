@@ -113,6 +113,27 @@ async function main() {
   console.log("📊 Mock Benqi: 40% risk, 40% max allocation");
   console.log("📊 Mock Compound: 25% risk, 50% max allocation");
 
+  // ==========================================
+  // FINAL STEP: SEED THE VAULT FOR THE DEMO
+  // ==========================================
+  console.log("\n🏦 Seeding Vault with Initial Capital...");
+  
+  // 1. Define seed amount (e.g., 50,000 Mock USDC)
+  // Note: We use 18 decimals assuming standard ERC20 default in your MockERC20
+  const seedAmount = hre.ethers.parseUnits("50000", 18); 
+  
+  // 2. Approve Vault to take deployer's money
+  console.log("   Approving Vault...");
+  const approveTx = await usdc.approve(vaultAddress, seedAmount);
+  await approveTx.wait();
+
+  // 3. Deposit money into Vault
+  console.log("   Depositing physical tokens into Vault...");
+  const depositTx = await vault.deposit(seedAmount, deployer.address);
+  await depositTx.wait();
+  
+  console.log(`✅ Vault successfully seeded! Total TVL: $50,000`);
+
   console.log("\n🎉 DEPLOYMENT COMPLETE! 🎉");
   console.log("==========================================");
   
