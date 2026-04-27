@@ -72,6 +72,32 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 
 **Technical Judge Assessment:** We are not attempting to deceive judges. This is explicitly a V1 architectural prototype demonstrating the TEE integration pattern using available tools within hackathon constraints.
 
+### 🔒 **Enterprise Security Note: EIP-712 Implementation**
+
+> **Production Security Enhancement:** For hackathon velocity, ECDSA verification uses `abi.encodePacked`. In production, the TEE signature payload will implement strict **EIP-712 Domain Separators** (including `block.chainid` and `address(this)`) to mathematically prevent cross-chain replay attacks.
+
+**Current V1 Implementation:**
+```solidity
+bytes32 strategyHash = keccak256(abi.encodePacked(_protocols, _percentagesBps, _reportedApy));
+```
+
+**V2 Production Implementation:**
+```solidity
+bytes32 strategyHash = keccak256(
+    abi.encode(
+        keccak256("StrategyExecution(uint256,address[],uint256[],uint256,uint256)"),
+        block.chainid,
+        address(this),
+        block.timestamp,
+        _protocols,
+        _percentagesBps, 
+        _reportedApy
+    )
+);
+```
+
+This ensures mathematical isolation of signature domains across different blockchain networks, preventing replay attacks where a malicious actor could reuse a valid signature on a different chain.
+
 ### ⚠️ **Oracle Data Security Consideration**
 
 > **Current Implementation:** Market data (APY rates, risk scores) is ingested via off-chain oracles (DefiLlama API) and fed to the TEE for decision-making. While the TEE provides cryptographic proof of execution integrity, the input data itself comes from centralized sources.
