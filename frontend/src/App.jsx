@@ -133,7 +133,7 @@ function App() {
         {account && (
           <div className="bg-gray-800 p-6 rounded-xl border border-gray-700 mb-8">
             <h2 className="text-xl font-bold mb-4 flex items-center">
-              🤖 AI Control Panel
+              AI Control Panel
             </h2>
             <div className="flex items-center justify-between">
               <div>
@@ -155,7 +155,7 @@ function App() {
                 onClick={runAIStrategy}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-lg font-medium"
               >
-                🚀 Run AI Strategy
+                Run AI Strategy
               </button>
             </div>
           </div>

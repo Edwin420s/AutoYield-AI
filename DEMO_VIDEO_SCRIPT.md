@@ -1,8 +1,8 @@
 # AutoYield AI - 3-Minute Demo Video Script
 
-## 🎬 Demo Video Structure (180 seconds total)
+## Demo Video Structure (180 seconds total)
 
-### 📋 Scene Breakdown
+### Scene Breakdown
 
 #### **Scene 1: Introduction (0:00 - 0:20)**
 - **Visual:** AutoYield AI logo animation with 0G branding
@@ -13,7 +13,7 @@
 #### **Scene 2: The Solution (0:20 - 0:45)**
 - **Visual:** System architecture diagram animation
 - **Voiceover:** "We've built the first autonomous yield optimizer that runs AI decisions inside Trusted Execution Environments, preventing front-running while providing complete transparency."
-- **Screen Text:** "🔒 TEE-Based Execution • 📊 Enterprise Trust Scoring • ⏱️ Time-Lock Protection"
+- **Screen Text:** "TEE-Based Execution • Enterprise Trust Scoring • Time-Lock Protection"
 - **Visual:** Animated flow showing user → TEE → blockchain with verification
 
 #### **Scene 3: Trust Scoring Engine (0:45 - 1:15)**
@@ -26,17 +26,17 @@
 #### **Scene 4: TEE Execution Demo (1:15 - 1:45)**
 - **Visual:** Terminal showing TEE execution
 - **Voiceover:** "Watch as our AI makes a decision inside a secure enclave. The strategy is completely hidden from front-running bots until execution."
-- **Screen Text:** "🔒 Sealed Inference • ✅ SGX Attestation • 🛡️ Front-Running Prevention"
+- **Screen Text:** "Sealed Inference • SGX Attestation • Front-Running Prevention"
 - **Demo:** 
-  - Terminal: `🔒 Running AI decision engine in TEE for privacy...`
-  - Terminal: `📤 Compute job submitted: job_12345`
-  - Terminal: `✅ TEE execution completed and verified`
-  - Terminal: `📋 Attestation: ✅ • 📋 Proof: ✅ • 📋 Integrity: ✅`
+  - Terminal: `Running AI decision engine in TEE for privacy...`
+  - Terminal: `Compute job submitted: job_12345`
+  - Terminal: `TEE execution completed and verified`
+  - Terminal: `Attestation: OK • Proof: OK • Integrity: OK`
 
 #### **Scene 5: Time-Lock Protection (1:45 - 2:15)**
 - **Visual:** Time-lock dashboard with countdown
 - **Voiceover:** "For high-risk decisions, our 24-hour time-lock mechanism provides an emergency stop, preventing catastrophic AI errors."
-- **Screen Text:** "⏱️ 24-Hour Time-Lock • 🛑 Emergency Stop • 👥 User Control"
+- **Screen Text:** "24-Hour Time-Lock • Emergency Stop • User Control"
 - **Demo:** Show proposal with 14h 23m countdown and emergency cancel button
 
 #### **Scene 6: 0G Integration Proof (2:15 - 2:40)**
@@ -45,16 +45,16 @@
 - **Screen Text:** "0G Chain • 0G Storage • 0G Compute • Complete Integration"
 - **Demo:** 
   - Browser: 0G Explorer showing transaction with TEE proof
-  - Terminal: `✅ Decision log stored: QmX...abc`
+  - Terminal: `Decision log stored: QmX...abc`
   - Browser: 0G Storage showing decision metadata
 
 #### **Scene 7: Results & Call to Action (2:40 - 3:00)**
 - **Visual:** Portfolio performance chart
 - **Voiceover:** "The result? Higher yields with complete security and transparency. AutoYield AI represents the future of autonomous DeFi management."
-- **Screen Text:** "🚀 Higher Yields • 🔒 Maximum Security • 🌊 Complete Transparency"
+- **Screen Text:** "Higher Yields • Maximum Security • Complete Transparency"
 - **Final Screen:** GitHub repo URL, #0GHackathon #BuildOn0G @0G_labs @HackQuest_
 
-## 🎥 Production Notes
+## Production Notes
 
 ### **Required Screenshots/Recordings:**
 
@@ -95,15 +95,15 @@
 
 1. **0G Storage SDK Usage**
    - Show terminal: `npm install @0glabs/0g-storage-sdk`
-   - Demonstrate actual upload: `🚀 Uploading metadata to 0G Storage...`
+   - Demonstrate actual upload: `Uploading metadata to 0G Storage...`
 
 2. **0G Compute TEE Integration**
-   - Show SGX attestation: `✅ SGX Attestation verified`
-   - Display sealed inference: `🔒 Running AI in TEE for privacy`
+   - Show SGX attestation: `SGX Attestation verified`
+   - Display sealed inference: `Running AI in TEE for privacy`
 
 3. **0G Chain Smart Contracts**
-   - Show contract deployment: `✅ StrategyManager deployed`
-   - Display transaction: `📋 StrategyExecuted event emitted`
+   - Show contract deployment: `StrategyManager deployed`
+   - Display transaction: `StrategyExecuted event emitted`
 
 ### **Demo Script - Technical Details**
 
@@ -112,23 +112,21 @@
 npm install @0glabs/0g-compute-sdk
 
 # Terminal output to show:
-🔒 Running AI decision engine in TEE for privacy...
-📤 Compute job submitted: job_67890
-⏳ Waiting for TEE execution: job_67890
-✅ TEE execution completed in 1847ms
-🔍 Verifying TEE execution proof...
-📋 Attestation: ✅ • 📋 Proof: ✅ • 📋 Integrity: ✅
-✅ TEE decision completed and verified
+Running AI decision engine in TEE for privacy...
+Compute job submitted: job_67890
+Waiting for TEE execution: job_67890
+TEE execution completed in 1847ms
+Verifying TEE execution proof...
 
 # Scene 6: 0G Storage Commands
 npm install @0glabs/0g-storage-sdk
 
 # Terminal output to show:
-🚀 Uploading metadata for Aave to 0G Storage...
-✅ Successfully uploaded Aave to 0G Storage
-🔗 Metadata Hash: QmXyZ123abc789def
-📋 Audit Report Hash: QmAbC456def789ghi
-✅ Decision log stored: QmDef789ghi012jkl
+Uploading metadata for Aave to 0G Storage...
+Successfully uploaded Aave to 0G Storage
+Metadata Hash: QmXyZ123abc789def
+Audit Report Hash: QmAbC456def789ghi
+Decision log stored: QmDef789ghi012jkl
 
 # Scene 6: 0G Explorer URLs
 https://explorer.0g.ai/tx/0x123...abc

@@ -1,6 +1,6 @@
 # AutoYield AI - System Architecture Diagram
 
-## 🏗️ Complete System Architecture
+## Complete System Architecture
 
 ```mermaid
 graph TB
@@ -104,7 +104,7 @@ graph TB
     PM -.->|Risk Data| SM
 ```
 
-## 🔗 Component Interactions Flow
+## Component Interactions Flow
 
 ### 1. User Interaction Flow
 ```mermaid
@@ -185,7 +185,7 @@ sequenceDiagram
     SM->>API: Protocol updated
 ```
 
-## 🛡️ Security Architecture
+## Security Architecture
 
 ### Multi-Layer Security Model
 ```mermaid
@@ -226,7 +226,7 @@ graph TB
     ENC2 --> LOGS
 ```
 
-## 📊 Data Flow Architecture
+## Data Flow Architecture
 
 ### Real-Time Data Pipeline
 ```mermaid
@@ -273,7 +273,7 @@ flowchart LR
     R --> B
 ```
 
-## 🔧 Technical Specifications
+## Technical Specifications
 
 ### Smart Contract Architecture
 ```mermaid
@@ -348,7 +348,7 @@ classDiagram
     TrustScoringService --> ZeroGStorageService
 ```
 
-## 🚀 Deployment Architecture
+## Deployment Architecture
 
 ### Production Environment
 ```mermaid
@@ -416,7 +416,7 @@ graph TB
     API --> TC
 ```
 
-## 📈 Performance Metrics
+## Performance Metrics
 
 ### System Performance Targets
 | Component | Target | Current | Status |
@@ -436,7 +436,7 @@ graph TB
 | Front-running Prevention | 100% | 100% | ✅ |
 | Risk Score Accuracy | >95% | 97% | ✅ |
 
-## 🔍 Integration Points
+## Integration Points
 
 ### 0G Storage Integration
 - **Protocol Metadata**: Audit reports, security assessments
@@ -456,7 +456,7 @@ graph TB
 - **Access Control**: Role-based permissions and agent registry
 - **State Management**: Portfolio and allocation tracking
 
-## 🎯 Key Architecture Benefits
+## Key Architecture Benefits
 
 ### 1. **Security-First Design**
 - Multi-layer security with TEE protection

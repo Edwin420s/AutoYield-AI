@@ -1,6 +1,6 @@
 # AutoYield AI - Quick Start Guide
 
-## 🚀 Complete Setup Instructions
+## Complete Setup Instructions
 
 ### 1. Smart Contracts (Backend Foundation)
 ```bash
@@ -33,7 +33,7 @@ npm run dev
 
 Frontend will run on: `http://localhost:5173`
 
-## 🔧 Environment Configuration
+## Environment Configuration
 
 ### Backend .env Required Variables:
 ```
@@ -55,7 +55,7 @@ VITE_REGISTRY_ADDRESS=0x...  # From deployment
 VITE_API_URL=http://localhost:3000/api
 ```
 
-## 🧪 Testing the System
+## Testing the System
 
 ### 1. Deploy Everything
 1. Deploy smart contracts to 0G testnet
@@ -82,7 +82,7 @@ VITE_API_URL=http://localhost:3000/api
 ✅ **Trust Scoring Engine**: Dynamic risk assessment based on TVL and audit history  
 ✅ **On-Chain Verification**: Smart contracts verify TEE attestation signatures  
 
-## 🏆 Hackathon Winning Features
+## Hackathon Winning Features
 
 ### Track 2: Agentic Trading Arena Requirements Met:
 - ✅ **Sealed Inference**: AI executes in TEE enclaves
@@ -97,7 +97,7 @@ VITE_API_URL=http://localhost:3000/api
 - ✅ **0G Storage**: Audit reports and decision logs stored
 - ✅ **0G Compute**: AI decision engine runs in TEE
 
-## 📊 Demo Script for Hackathon
+## Demo Script for Hackathon
 
 Follow the demo script in `DEMO_VIDEO_SCRIPT.md` for your 3-minute video presentation:
 
@@ -107,7 +107,7 @@ Follow the demo script in `DEMO_VIDEO_SCRIPT.md` for your 3-minute video present
 4. **Time-Lock Demo** (30s) - Show 24-hour waiting period and emergency stop
 5. **Verification** (15s) - Show blockchain explorer and 0G storage proof
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues:
 1. **"Contract not deployed"**: Check PRIVATE_KEY and RPC_URL in contracts/.env
@@ -127,7 +127,7 @@ curl http://localhost:3000/health
 cd frontend && npm run build
 ```
 
-## 📱 Production Deployment
+## Production Deployment
 
 For production deployment:
 1. Deploy contracts to 0G mainnet
@@ -136,4 +136,4 @@ For production deployment:
 4. Update all .env files with mainnet addresses
 5. Verify contracts on 0G Explorer
 
-**Ready to win the 0G APAC Hackathon! 🚀**
+Ready to win the 0G APAC Hackathon!

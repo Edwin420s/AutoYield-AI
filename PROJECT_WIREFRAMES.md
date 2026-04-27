@@ -1,9 +1,9 @@
 # AutoYield AI - Project Wireframes & Architecture
 
-## 🎯 Project Overview
+## Project Overview
 **AutoYield AI** is an autonomous yield optimization platform that combines AI decision-making with blockchain security to maximize DeFi returns while minimizing risk.
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -24,12 +24,12 @@
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 📱 Frontend Wireframes
+## Frontend Wireframes
 
 ### 1. Dashboard (Main View)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ AutoYield AI                                    🔔 📊 ⚙️ 👤 │
+│  AutoYield AI                                    Notification Bell Chart Settings User
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  Portfolio Overview                                             │
@@ -40,12 +40,12 @@
 │                                                                 │
 │  Quick Actions                                                  │
 │  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐    │
-│  │ 💰 Deposit      │ │ 🤖 Run AI       │ │ 📋 View History │    │
+│  Deposit      Run AI       View History
 │  └─────────────────┘ └─────────────────┘ └─────────────────┘    │
 │                                                                 │
 │  Current Allocations                                            │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │ 📊 Allocation Chart (Pie/Bar)                              ││
+│  Allocation Chart (Pie/Bar)
 │  │ • Aave: 60% ($7,470)                                       ││
 │  │ • Benqi: 30% ($3,735)                                      ││
 │  │ • Compound: 10% ($1,245)                                    ││
@@ -56,32 +56,32 @@
 ### 2. Time-Lock Waiting Room
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ ⏳ Time-Lock Waiting Room                              [Refresh] │
+  Time-Lock Waiting Room                              [Refresh]
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  Pending Proposals: 2                                           │
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │ Proposal #15                                [⏰ 14h 23m left]││
+│  Proposal #15                                [14h 23m left]
 │  │ Proposed by: 0x7d27...8dE2                                   ││
 │  │ Expected APY: 12.3% | Risk: 68/100                           ││
 │  │                                                               ││
-│  │ 📋 Allocation:                                                ││
+│  Allocation:
 │  │ • Aave: 50% (Risk: 25)                                       ││
 │  │ • Benqi: 30% (Risk: 40)                                      ││
-│  │ • NewProtocol: 20% (Risk: 75) ⚠️                            ││
+│  NewProtocol: 20% (Risk: 75) Warning
 │  │                                                               ││
-│  │ [🛑 Emergency Cancel] [⏳ Time-Lock Active]                   ││
+│  [Emergency Cancel] [Time-Lock Active]
 │  └─────────────────────────────────────────────────────────────┘│
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │ Proposal #14                                    [✅ Ready Now]││
+│  Proposal #14                                    [Ready Now]
 │  │ Proposed by: 0x7d27...8dE2                                   ││
 │  │ Expected APY: 9.1% | Risk: 42/100                            ││
 │  │                                                               ││
 │  │ 📋 Allocation: Aave 70%, Compound 30%                        ││
 │  │                                                               ││
-│  │ [🛑 Emergency Cancel] [✅ Execute Strategy]                   ││
+│  [Emergency Cancel] [Execute Strategy]
 │  └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -89,25 +89,25 @@
 ### 3. Protocol Registry (Admin View)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ 🔐 Protocol Registry                                    [+ Add] │
+│ Protocol Registry                                    [+ Add] │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  Search: [Aave...]                                                    │
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │ 🏦 Aave Protocol                               ⭐ Whitelisted││
+│  │  Aave Protocol                               Whitelisted││
 │  │ Address: 0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9         ││
 │  │ Risk Score: 25/100 | Last Updated: 2024-01-15               ││
-│  │ 📋 Audit: Certik Report (🔗 0G Storage: QmX...abc)          ││
-│  │ [📝 Edit] [❌ Remove] [📋 View Audit]                        ││
+│  │  Audit: Certik Report (0G Storage: QmX...abc)          ││
+│  │ [Edit] [Remove] [View Audit]                        ││
 │  └─────────────────────────────────────────────────────────────┘│
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │ 🏦 Benqi Protocol                              ⭐ Whitelisted││
-│  │ Address: 0x4F3A8B69D7246B6C5b2c5c5c5c5c5c5c5c5c5c5c         ││
+│  │  Benqi Protocol                              Whitelisted││
+│  │ Address: 0x4F3A8B69D7246B6C5b2c5c5c5c5c5c5c5c5c5c         ││
 │  │ Risk Score: 40/100 | Last Updated: 2024-01-10               ││
-│  │ 📋 Audit: OpenZeppelin Report (🔗 0G Storage: QmY...def)     ││
-│  │ [📝 Edit] [❌ Remove] [📋 View Audit]                        ││
+│  │  Audit: OpenZeppelin Report (0G Storage: QmY...def)     ││
+│  │ [Edit] [Remove] [View Audit]                        ││
 │  └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -115,41 +115,42 @@
 ### 4. AI Decision Explanation
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ 🤖 AI Decision Analysis                                          │
+│ AI Decision Analysis                                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  📊 Strategy: Conservative Diversification                      │
-│  🎯 Confidence: 85%                                             │
-│  ⏰ Generated: 2 minutes ago                                    │
+│  Strategy: Conservative Diversification                      │
+│  Confidence: 85%                                             │
+│  Generated: 2 minutes ago                                    │
 │                                                                 │
-│  💡 Reasoning:                                                  │
+│  Reasoning:                                                  │
 │  "Market shows elevated risk levels (avg: 62/100).             │
 │   Implementing conservative diversification across              │
 │   top 3 protocols to minimize exposure while                   │
 │   maintaining competitive returns."                            │
 │                                                                 │
-│  📈 Expected Performance:                                        │
+│  Expected Performance:                                        │
 │  • Expected APY: 8.7%                                           │
 │  • Risk-Adjusted APY: 6.2%                                      │
 │  • Portfolio Risk: 45/100                                       │
 │                                                                 │
-│  🔍 Protocol Analysis:                                          │
+│  Protocol Analysis:                                          │
 │  ┌─────────────────────────────────────────────────────────────┐│
-│  │ 🏦 Aave: Selected for stability (Risk: 25, APY: 5.0%)     ││
-│  │    ✅ Low risk, proven track record                          ││
+│  │  Aave: Selected for stability (Risk: 25, APY: 5.0%)     ││
+│  │     Low risk, proven track record                          ││
 │  │                                                               ││
-│  │ 🏦 Benqi: Selected for higher returns (Risk: 40, APY: 8.1%)  ││
-│  │    ⚠️ Moderate risk, good diversification                    ││
+│  │  Benqi: Selected for higher returns (Risk: 40, APY: 8.1%)  ││
+│  │    Moderate risk, good diversification                    ││
 │  │                                                               ││
-│  │ 🏦 Compound: Small allocation (Risk: 15, APY: 4.2%)         ││
-│  │    ✅ Very low risk, portfolio stabilizer                    ││
+│  │  Compound: Small allocation (Risk: 15, APY: 4.2%)         ││
+│  │    Very low risk, portfolio stabilizer                    ││
+│  │     Very low risk, portfolio stabilizer                    ││
 │  └─────────────────────────────────────────────────────────────┘│
 │                                                                 │
-│  [📊 View Detailed Charts] [⚙️ Adjust Parameters]               │
+│  [View Detailed Charts] [Adjust Parameters]               │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 🔧 Backend Architecture
+## Backend Architecture
 
 ### API Endpoints Structure
 ```
@@ -189,7 +190,7 @@ Services/
 └── riskAssessmentService.js # Advanced risk calculations
 ```
 
-## ⛓️ Smart Contract Architecture
+## Smart Contract Architecture
 
 ### Contract Interaction Flow
 ```
@@ -224,7 +225,7 @@ StrategyManager.sol
     └── transferOwnership()        # Ownership transfer
 ```
 
-## 🎨 UI/UX Design System
+## UI/UX Design System
 
 ### Color Palette
 ```css
@@ -273,7 +274,7 @@ Components/
     └── NotificationSystem.jsx
 ```
 
-## 🚀 Deployment Architecture
+## Deployment Architecture
 
 ### Development Environment
 ```
@@ -292,7 +293,7 @@ Storage: 0G Storage Network
 DNS: Cloudflare
 ```
 
-## 📊 Data Flow Diagram
+## Data Flow Diagram
 
 ```
 User Action → Frontend → Backend API → Smart Contract → Blockchain
@@ -304,9 +305,9 @@ User Action → Frontend → Backend API → Smart Contract → Blockchain
    Refresh     JSON Data   Audit Log    Frontend    Verification
 ```
 
-## 🎯 Key Features Summary
+## Key Features Summary
 
-### ✅ Implemented Features
+### Implemented Features
 1. **On-Chain Whitelist & Risk Registry** - Protocol validation system
 2. **24-Hour Time-Lock** - Emergency stop mechanism for high-risk decisions
 3. **Enhanced AI Engine** - Risk-adjusted portfolio optimization
@@ -315,14 +316,14 @@ User Action → Frontend → Backend API → Smart Contract → Blockchain
 6. **Protocol Registry UI** - Admin interface for protocol management
 7. **Decision Explanation** - Transparent AI reasoning display
 
-### 🔄 Future Enhancements
+### Future Enhancements
 1. **Multi-chain Support** - Expand beyond 0G Chain
 2. **Advanced AI Models** - Machine learning integration
 3. **Social Trading** - Copy successful strategies
 4. **Mobile App** - iOS/Android native applications
 5. **DAO Governance** - Community protocol approval system
 
-## 🏆 Hackathon Competitive Advantages
+## Hackathon Competitive Advantages
 
 1. **Security-First Design** - Time-lock prevents flash crashes
 2. **Verifiable AI** - All decisions stored on 0G Storage

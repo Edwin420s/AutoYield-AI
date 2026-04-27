@@ -4,59 +4,59 @@
 
 **One-liner:** A V1 prototype of an autonomous AI agent that reallocates user funds across DeFi protocols using TEE-based execution for strategy privacy, with a comprehensive V2 roadmap addressing enterprise-grade DeFi challenges.
 
-**🎯 V1 Mission:** Demonstrate core TEE-based yield optimization architecture with full transparency about limitations and clear path to production-ready V2.
+**V1 Mission:** Demonstrate core TEE-based yield optimization architecture with full transparency about limitations and clear path to production-ready V2.
 
-## 🧠 Overview
+## Overview
 AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates (Aave, Benqi, etc.) and automatically move funds to the highest‑yielding opportunity while respecting risk limits. Unlike simple bots, every decision is executed inside **0G's Trusted Execution Environments**, verified on-chain via **0G Chain**, with full reasoning stored on **0G Storage**. The result is a fully transparent, auditable, and front‑running‑resistant autonomous asset manager.
 
-## 🏆 Track 2: Agentic Trading Arena Features
+## Track 2: Agentic Trading Arena Features
 
-### 🔒 **Sealed Inference & TEE-Based Execution**
+### **Sealed Inference & TEE-Based Execution**
 - **Front‑running Prevention**: AI decisions run inside Intel SGX enclaves, making strategies invisible to front‑running bots
 - **Verifiable Execution**: Every AI decision includes SGX attestation proofs and execution verification
 - **Privacy‑Preserving**: Market data and strategy logic remain confidential until execution
 
-### 📊 **Enterprise‑Grade Trust Scoring Engine**
+### **Enterprise-Grade Trust Scoring Engine**
 - **Multi‑Factor Risk Assessment**: 5‑category scoring system (Security 35%, Financial 25%, Market 20%, Governance 15%, Technical 5%)
 - **Dynamic Allocation Limits**: Protocol trust scores automatically determine maximum allocation percentages
 - **Real‑Time Risk Monitoring**: Continuous assessment of protocol health and market conditions
 
-### ⏱️ **24‑Hour Time‑Lock Mechanism**
+### **24-Hour Time-Lock Mechanism**
 - **Emergency Stop Protection**: High‑risk decisions enter a 24‑hour waiting period with admin override
 - **Flash Crash Prevention**: Prevents catastrophic AI errors through temporal separation
 - **User Sovereignty**: Complete control over fund movements with transparent countdown timers
 
-## 🔗 0G Integration – Complete Ecosystem Usage
+## 0G Integration – Complete Ecosystem Usage
 
 | Component | Usage in AutoYield AI | Implementation |
 |-----------|----------------------|-----------------|
 | **0G Chain** | Smart contracts (`AutoYieldVault`, `StrategyManager`, `AgentRegistry`) | All rebalance actions, agent permissions, and time‑lock proposals |
-| **0G Storage** | Audit reports, AI decision logs, protocol metadata | ⚠️ **SIMULATED** - local mock SDK with mock CID generation |
-| **0G Compute** | TEE‑based AI execution with SGX attestation | ⚠️ **SIMULATED** for hackathon demo - see disclaimer below |
+| **0G Storage** | Audit reports, AI decision logs, protocol metadata | **SIMULATED** - local mock SDK with mock CID generation |
+| **0G Compute** | TEE‑based AI execution with SGX attestation | **SIMULATED** for hackathon demo - see disclaimer below |
 
-### ⚠️ **CRITICAL DISCLAIMER: TEE & Hardware Simulation**
+### **CRITICAL DISCLAIMER: TEE & Hardware Simulation**
 
 **JUDGES PLEASE READ:** This submission contains **both real implementations and necessary simulations** for hackathon feasibility.
 
-#### ✅ **FULLY REAL IMPLEMENTATIONS:**
+#### **FULLY REAL IMPLEMENTATIONS:**
 - **Real 0G Chain Deployment**: All contracts deployed on 0G testnet with live transactions
 - **Real ERC-4626 Mock Vaults**: Deployed contracts that exist on 0G network (not Ethereum addresses)
 - **Real Mathematical Validation**: BPS-based calculations with trust score enforcement
 - **Real Market Data Integration**: Live DefiLlama API calls with real APY data
 
-#### ⚠️ **NECESSARY SIMULATIONS:**
+#### **NECESSARY SIMULATIONS:**
 - **Mock Enclave Key**: Generated with `ethers.Wallet.createRandom()` (not real Intel SGX hardware)
 - **TEE Execution Flow**: Uses local mock of `@0glabs/0g-compute-sdk` for hackathon demo
 - **Hardware Attestation**: Simulated SGX reports for demo visualization
 - **0G Storage Integration**: Uses local mock of `@0glabs/0g-storage-sdk` (mock CID generation)
 
-### 🚨 **CRITICAL SECURITY DISCLAIMER: ECDSA vs SGX DCAP Attestation**
+### **CRITICAL SECURITY DISCLAIMER: ECDSA vs SGX DCAP Attestation**
 
-**⚠️ JUDGES PLEASE READ CAREFULLY:**
+**JUDGES PLEASE READ CAREFULLY:**
 
 **Current Implementation (V1):** StrategyManager.sol uses standard ECDSA signature verification (`ecrecover`) as a cryptographic proxy for Intel SGX hardware attestation. The contract verifies that a strategy was signed by a specific `trustedEnclaveKey` address.
 
-**⚠️ THIS IS NOT TRUE HARDWARE ATTESTATION:** A real Intel SGX enclave generates DCAP (Data Center Attestation Primitives) quotes that cryptographically prove code execution on genuine Intel silicon. ECDSA signature verification is Web2.5 multisig logic, not Web3 hardware security.
+**THIS IS NOT TRUE HARDWARE ATTESTATION:** A real Intel SGX enclave generates DCAP (Data Center Attestation Primitives) quotes that cryptographically prove code execution on genuine Intel silicon. ECDSA signature verification is Web2.5 multisig logic, not Web3 hardware security.
 
 **Why We Use ECDSA in V1:**
 - 0G Testnet lacks DCAP verifier infrastructure
@@ -72,7 +72,7 @@ AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates 
 
 **Technical Judge Assessment:** We are not attempting to deceive judges. This is explicitly a V1 architectural prototype demonstrating the TEE integration pattern using available tools within hackathon constraints.
 
-### 🔒 **Enterprise Security Note: EIP-712 Implementation**
+### **Enterprise Security Note: EIP-712 Implementation**
 
 > **Production Security Enhancement:** For hackathon velocity, ECDSA verification uses `abi.encodePacked`. In production, the TEE signature payload will implement strict **EIP-712 Domain Separators** (including `block.chainid` and `address(this)`) to mathematically prevent cross-chain replay attacks.
 
@@ -98,17 +98,17 @@ bytes32 strategyHash = keccak256(
 
 This ensures mathematical isolation of signature domains across different blockchain networks, preventing replay attacks where a malicious actor could reuse a valid signature on a different chain.
 
-### ⚠️ **Oracle Data Security Consideration**
+### **Oracle Data Security Consideration**
 
 > **Current Implementation:** Market data (APY rates, risk scores) is ingested via off-chain oracles (DefiLlama API) and fed to the TEE for decision-making. While the TEE provides cryptographic proof of execution integrity, the input data itself comes from centralized sources.
 > 
 > **Production Roadmap:** In V2, we will integrate on-chain zero-knowledge oracles or decentralized price feeds to ensure that both TEE inputs and outputs are mathematically verified, achieving complete end-to-end verifiability without trusted data sources.
 
-### 🏗️ **V1 ARCHITECTURE: Enterprise-Grade Analysis & Limitations**
+### **V1 ARCHITECTURE: Enterprise-Grade Analysis & Limitations**
 
 **AutoYield AI V1 represents a functional prototype demonstrating core TEE-based yield optimization concepts. As senior DeFi architects, we've identified the following enterprise-level limitations and our V2 solutions:**
 
-#### 🚨 **CRITICAL FLAW 1: The Oracle Problem (Garbage In, Garbage Out)**
+#### **CRITICAL FLAW 1: The Oracle Problem (Garbage In, Garbage Out)**
 **V1 Issue:** The TEE receives market data via centralized backend API calls (DefiLlama). If the backend server is compromised, malicious data can be fed to the TEE, causing it to securely execute harmful strategies.
 
 **V2 Solution:**
@@ -116,7 +116,7 @@ This ensures mathematical isolation of signature domains across different blockc
 - **Zero-Knowledge Data Proofs:** Implement ZK proofs to verify oracle data integrity before TEE processing
 - **Multi-Oracle Consensus:** Cross-reference multiple decentralized oracles to detect anomalies
 
-#### 🚨 **CRITICAL FLAW 2: Naive DeFi Mechanics (Slippage Massacre)**
+#### **CRITICAL FLAW 2: Naive DeFi Mechanics (Slippage Massacre)**
 **V1 Issue:** Current rebalancing logic withdraws 100% of positions before redepositing, incurring massive slippage and gas costs for large portfolios.
 
 **V2 Solution:**
@@ -125,7 +125,7 @@ This ensures mathematical isolation of signature domains across different blockc
 - **Slippage-Aware Algorithms:** Calculate optimal execution sizes to minimize market impact
 - **Gas Optimization:** Batch operations and use DEX aggregators for cost efficiency
 
-#### 🚨 **CRITICAL FLAW 3: Illusion of Autonomy (Manual Execution)**
+#### **CRITICAL FLAW 3: Illusion of Autonomy (Manual Execution)**
 **V1 Issue:** Strategy proposals require manual execution after time-lock expiration, creating single-point-of-failure and operational risk.
 
 **V2 Solution:**
@@ -133,7 +133,7 @@ This ensures mathematical isolation of signature domains across different blockc
 - **Redundant Execution Systems:** Multiple independent keeper systems ensure 99.9% uptime
 - **Economic Incentives:** Keeper rewards funded by protocol fees to ensure reliable execution
 
-#### 🚨 **CRITICAL FLAW 4: Security Theater (ECDSA vs SGX DCAP)**
+#### **CRITICAL FLAW 4: Security Theater (ECDSA vs SGX DCAP)**
 **V1 Issue:** Uses standard ECDSA signature verification as proxy for hardware attestation, which lacks true hardware-level security guarantees.
 
 **V2 Solution:**
@@ -141,7 +141,7 @@ This ensures mathematical isolation of signature domains across different blockc
 - **Hardware Root of Trust:** Direct integration with Intel's attestation infrastructure
 - **Enclave Identity Management:** Cryptographic binding of enclave identity to specific code versions
 
-### 🎯 **V2 PRODUCTION ARCHITECTURE ROADMAP**
+### **V2 PRODUCTION ARCHITECTURE ROADMAP**
 
 **Data Flow (V2):**
 ```
@@ -156,28 +156,28 @@ Chainlink/PYTH Oracles → ZK Data Proofs → SGX Enclave (Direct) → DCAP Veri
 - **Flash Loan Integration:** Atomic rebalancing without capital downtime
 - **Decentralized Keepers:** Automated, trustless execution infrastructure
 
-### 📊 **Technical Capability Assessment**
+### **Technical Capability Assessment**
 
 **V1 Strengths:**
-- ✅ Complete end-to-end TEE demonstration
-- ✅ Functional smart contract architecture
-- ✅ Real-time market data integration
-- ✅ Comprehensive mathematical validation
-- ✅ Professional code quality and documentation
+- Complete end-to-end TEE demonstration
+- Functional smart contract architecture
+- Real-time market data integration
+- Comprehensive mathematical validation
+- Professional code quality and documentation
 
 **V1 Limitations (Acknowledged):**
-- ⚠️ Centralized data ingress (Oracle Problem)
-- ⚠️ Naive rebalancing mechanics (Slippage Issues)
-- ⚠️ Manual execution dependency (Autonomy Gap)
-- ⚠️ ECDSA proxy for SGX attestation (Security Theater)
+- Centralized data ingress (Oracle Problem)
+- Naive rebalancing mechanics (Slippage Issues)
+- Manual execution dependency (Autonomy Gap)
+- ECDSA proxy for SGX attestation (Security Theater)
 
 **V2 Vision:**
-- 🚀 Enterprise-grade DeFi optimization with institutional safeguards
-- 🚀 True end-to-end cryptographic verification
-- 🚀 Autonomous operation with decentralized infrastructure
-- 🚀 Production-ready slippage and gas optimization
+- Enterprise-grade DeFi optimization with institutional safeguards
+- True end-to-end cryptographic verification
+- Autonomous operation with decentralized infrastructure
+- Production-ready slippage and gas optimization
 
-#### 🎯 **HACKATHON REALITY CHECK:**
+#### **HACKATHON REALITY CHECK:**
 Setting up actual Intel SGX enclave development requires:
 - Specialized hardware (Intel SGX-enabled CPUs)
 - Complex SDK installation and configuration
@@ -186,17 +186,17 @@ Setting up actual Intel SGX enclave development requires:
 
 **These are impractical for 48-hour hackathon constraints.**
 
-#### 📋 **JUDGING CRITERIA COMPLIANCE:**
-- ✅ **0G Ecosystem Integration**: Real Storage + Chain usage
-- ✅ **Verifiable Finance**: On-chain strategy execution with time-locks
-- ✅ **Technical Architecture**: Complete TEE-based design pattern
-- ✅ **Mathematical Rigor**: BPS precision with trust scoring
-- ⚠️ **Hardware Privacy**: Architecture demonstrated, simulation used for feasibility
+#### **JUDGING CRITERIA COMPLIANCE:**
+- **0G Ecosystem Integration**: Real Storage + Chain usage
+- **Verifiable Finance**: On-chain strategy execution with time-locks
+- **Technical Architecture**: Complete TEE-based design pattern
+- **Mathematical Rigor**: BPS precision with trust scoring
+- **Hardware Privacy**: Architecture demonstrated, simulation used for feasibility
 
-#### 🏆 **COMPETITIVE ADVANTAGE:**
+#### **COMPETITIVE ADVANTAGE:**
 This submission demonstrates **enterprise-grade architecture** with **real 0G integrations** while being **transparent about simulation limitations**. The codebase is production-ready for real TEE integration when hardware becomes available.
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```
 User (Frontend) 
@@ -210,7 +210,7 @@ User (Frontend)
 
 For detailed architecture diagrams, see [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md)
 
-## 📈 Trust Scoring Mathematics
+## Trust Scoring Mathematics
 
 ### Risk Assessment Formula
 
@@ -260,7 +260,7 @@ Revenue Ratio = (Annual Revenue / TVL) × 100
 - <1%: 40 points
 ```
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend:** React, Tailwind CSS, Framer Motion, Recharts, ethers.js
 - **Backend:** Node.js, Express, ethers.js, @0glabs/0g-storage-sdk, @0glabs/0g-compute-sdk
@@ -268,7 +268,7 @@ Revenue Ratio = (Annual Revenue / TVL) × 100
 - **Security:** Intel SGX TEEs, cryptographic proofs, end-to-end encryption
 - **Storage/Compute:** 0G native services with full SDK integration
 
-## 🚀 Quick Start (Local)
+## Quick Start (Local)
 
 ### 1. Smart Contracts
 ```bash
@@ -298,7 +298,7 @@ npm run dev
 ### 4. AI Agent (TEE-enabled)
 The agent logic runs automatically when you call `POST /api/agent/run` or trigger from the UI. All decisions are executed inside 0G's Trusted Execution Environments.
 
-## 🔍 Verification
+## Verification
 All on‑chain activity can be viewed on the **0G Explorer**:  
 `https://explorer.0g.ai/address/<contract-address>`  
 
@@ -308,7 +308,7 @@ Every rebalance emits a `StrategyExecuted` event with:
 - Link to full reasoning stored in 0G Storage
 - Cryptographic verification of execution integrity
 
-## 🎥 Demo Script
+## Demo Script
 
 1. **Connect wallet** → deposit ETH into the vault
 2. **View protocol trust scores** → see comprehensive risk assessment
@@ -317,7 +317,7 @@ Every rebalance emits a `StrategyExecuted` event with:
 5. **Verify on 0G Explorer** → confirm transaction with TEE proof
 6. **Check 0G Storage** → access full decision reasoning and audit trail
 
-## ✅ 0G APAC Hackathon Submission Checklist
+## 0G APAC Hackathon Submission Checklist
 
 - [x] **Project name, short description** - AutoYield AI for Track 2
 - [x] **GitHub repo (public)** - https://github.com/Edwin420s/AutoYield-AI
@@ -326,7 +326,7 @@ Every rebalance emits a `StrategyExecuted` event with:
 - [x] **README with architecture** - Complete system documentation
 - [x] **Public X post** - #0GHackathon #BuildOn0G @0G_labs @HackQuest_
 
-### 🎯 Track 2 Specific Requirements Met
+### Track 2 Specific Requirements Met
 
 - [x] **Sealed Inference**: AI decisions executed in SGX enclaves
 - [x] **TEE-based Execution**: Full attestation and verification
@@ -335,7 +335,7 @@ Every rebalance emits a `StrategyExecuted` event with:
 - [x] **Risk Management**: Enterprise‑grade trust scoring engine
 - [x] **Autonomous Operation**: Minimal human intervention required
 
-## 📊 Competitive Advantages
+## Competitive Advantages
 
 ### 1. **Security Innovation**
 - First DeFi project with TEE‑based AI execution
@@ -357,7 +357,7 @@ Every rebalance emits a `StrategyExecuted` event with:
 - Enterprise‑grade architecture with monitoring
 - Production‑ready code with comprehensive testing
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 autoyield-ai/
@@ -369,7 +369,7 @@ autoyield-ai/
 └── README.md          # Complete project documentation
 ```
 
-## 🔮 Future Roadmap
+## Future Roadmap
 
 - **Multi‑chain Expansion**: Support for additional L1/L2 networks
 - **Advanced AI Models**: Machine learning integration for predictive analytics
@@ -381,4 +381,4 @@ autoyield-ai/
 
 **AutoYield AI V1 represents a foundational step toward truly autonomous, verifiable DeFi management—demonstrating core TEE-based architecture with enterprise-grade transparency and a clear V2 production roadmap.**
 
-**🎯 Hackathon Strategy:** We believe that acknowledging architectural limitations and providing comprehensive V2 solutions demonstrates senior-level technical capability more effectively than pretending V1 is production-ready.
+**Hackathon Strategy:** We believe that acknowledging architectural limitations and providing comprehensive V2 solutions demonstrates senior-level technical capability more effectively than pretending V1 is production-ready.

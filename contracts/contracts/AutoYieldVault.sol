@@ -124,7 +124,7 @@ contract AutoYieldVault is ERC20 {
         // Calculate the physical token value of the shares being burned
         assets = (shares * currentTotalAssets) / currentTotalShares;
 
-        // 🔒 CEI PATTERN: Burn shares FIRST (Checks-Effects-Interactions)
+        // CEI PATTERN: Burn shares FIRST (Checks-Effects-Interactions)
         // This prevents reentrancy attacks by updating state before external calls
         _burn(msg.sender, shares);
 

@@ -194,7 +194,7 @@ contract StrategyManager {
             require(info.isWhitelisted, "Security Breach: Protocol not whitelisted");
             require(block.timestamp <= info.lastUpdated + 365 days, "Protocol info expired");
             
-            // 🚨 THE ENTERPRISE UPGRADE: Force the AI to obey the Trust Score Limit
+            // THE ENTERPRISE UPGRADE: Force AI to obey Trust Score Limit
             require(_percentagesBps[i] <= info.maxAllocationBps, "CRITICAL: AI exceeded Trust Score allocation limit!");
             
             // Calculate weighted portfolio risk (adjusted for BPS)
