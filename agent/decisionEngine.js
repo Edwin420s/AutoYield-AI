@@ -45,13 +45,26 @@ export function decideStrategy(protocols) {
     };
   });
 
-  // Ensure BPS equals exactly 10000 (100%) due to rounding
-  let totalBps = allocations.reduce((sum, a) => sum + a.percentageBps, 0);
-  if (totalBps !== 10000) {
-    const diff = 10000 - totalBps;
-    // Add/subtract the difference to the top protocol
-    allocations[0].percentageBps += diff; 
-  }
+  // 🚨 THE FIX: Remainder Sweep to guarantee exact 10000 BPS total
+  let currentTotalBps = 0;
+  const finalAllocations = allocations.map((allocation, index) => {
+    let bps = allocation.percentageBps;
+    
+    // Force the very last protocol to absorb the rounding error 
+    // so the total always perfectly equals exactly 10,000 BPS
+    if (index === allocations.length - 1) {
+      bps = 10000 - currentTotalBps;
+    }
+    
+    currentTotalBps += bps;
+    return {
+      ...allocation,
+      percentageBps: bps
+    };
+  });
+  
+  // Replace allocations with the corrected version
+  allocations = finalAllocations;
 
   // Step 5: Verify against the strict portfolio risk constraint (using BPS)
   const blendedRisk = allocations.reduce((sum, a) => sum + (a.risk * (a.percentageBps / 10000)), 0);

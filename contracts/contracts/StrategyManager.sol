@@ -281,9 +281,12 @@ contract StrategyManager {
         require(totalPercentage == 10000, "Total percentage must equal 10000 BPS (100%)");
         require(apy >= 3 && portfolioRisk <= 80, "Strategy out of bounds");
         
-        IVault(vault).rebalance(protocols, percentages);
+        // 1. Update the state FIRST (The Effect)
         lastRebalance = block.timestamp;
         emit StrategyExecuted(msg.sender, 0, apy, portfolioRisk);
+        
+        // 2. Call the external contract SECOND (The Interaction)
+        IVault(vault).rebalance(protocols, percentages);
     }
     
     /**
