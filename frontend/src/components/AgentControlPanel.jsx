@@ -9,7 +9,8 @@ export default function AgentControlPanel() {
     setLogs([]); // Clear old logs
     
     // Connect to the Server-Sent Events endpoint
-    const eventSource = new EventSource(`${import.meta.env.VITE_API_URL}/agent/stream-tee`);
+    // Add fallback to prevent demo failures if VITE_API_URL is not set
+    const eventSource = new EventSource(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/agent/stream-tee`);
     
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);

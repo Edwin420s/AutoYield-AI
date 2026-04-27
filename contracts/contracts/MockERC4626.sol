@@ -48,6 +48,11 @@ contract MockERC4626 is ERC20 {
     function maxWithdraw(address owner) external view returns (uint256) {
         return balanceOf(owner);
     }
+
+    // NEW: Allow judges/users to mint test tokens to try your app!
+    function faucet() external {
+        _mint(msg.sender, 1000 * 10**decimals()); // Gives them 1,000 USDC
+    }
     
     function maxRedeem(address owner) external view returns (uint256) {
         return balanceOf(owner);
