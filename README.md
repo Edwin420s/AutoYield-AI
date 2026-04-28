@@ -6,6 +6,28 @@
 
 **V1 Mission:** Demonstrate core TEE-based yield optimization architecture with full transparency about limitations and clear path to production-ready V2.
 
+## 🛡️ Keeper Architecture – Non-Custodial Web3 Design
+
+**Critical Architecture Shift:** AutoYield AI implements a **Keeper-as-a-Service** architecture that transforms the centralized custody vulnerability into a Web3 UX feature.
+
+### **Self-Custodial Foundation**
+- **User Wallet Sovereignty:** All users deposit funds via their own MetaMask/self-custodial Web3 wallets
+- **Direct Blockchain Interaction:** Frontend reads TVL, APY, and shares directly from smart contracts using `ethers.js`
+- **No Backend State:** Vault calculations are performed on-chain, not in Node.js backend variables
+- **User Transaction Signing:** Every critical action requires user's explicit wallet signature
+
+### **Agent-as-a-Service Keeper Model**
+- **Autonomous Execution:** The AI Agent acts as a decentralized Keeper with its own authorized gas wallet
+- **Gas-Free UX:** Users experience yield generation entirely hands-off without gas transaction signing for each execution
+- **TEE-Verified Decisions:** All Keeper actions are verified by 0G TEE attestation before execution
+- **Emergency Override:** Users maintain full control with manual override capabilities
+
+### **Web3 Verifiability Stack**
+- **On-Chain State:** All vault TVL, user shares, and APY stored in smart contracts
+- **Transaction Verification:** Frontend verifies `receipt.status === 1` before showing success
+- **Explorer Integration:** Every action references 0G Testnet Explorer for public verification
+- **Event-Driven Updates:** Real-time UI updates via blockchain event listeners
+
 ## Overview
 AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates (Aave, Benqi, etc.) and automatically move funds to the highest‑yielding opportunity while respecting risk limits. Unlike simple bots, every decision is executed inside **0G's Trusted Execution Environments**, verified on-chain via **0G Chain**, with full reasoning stored on **0G Storage**. The result is a fully transparent, auditable, and front‑running‑resistant autonomous asset manager.
 
@@ -199,16 +221,21 @@ This submission demonstrates **enterprise-grade architecture** with **real 0G in
 ## System Architecture
 
 ```
-User (Frontend) 
-   → Backend (Agent Trigger) 
+User (Self-Custodial Wallet) 
+   → Direct Contract Calls (ethers.js) 
       → TEE Decision Engine (0G Compute) 
-         → StrategyManager (Time‑Lock on 0G Chain) 
-            → Vault Rebalance (0G Chain) 
-               → Event emitted (0G Chain)
-               → Decision Log stored (0G Storage)
+         → Keeper Agent (Authorized on 0G Chain) 
+            → StrategyManager (Time‑Lock on 0G Chain) 
+               → Vault Rebalance (0G Chain) 
+                  → Event emitted (0G Chain)
+                  → Decision Log stored (0G Storage)
 ```
 
-For detailed architecture diagrams, see [SYSTEM_ARCHITECTURE.md](./SYSTEM_ARCHITECTURE.md)
+### **Critical Web3 Design Principles**
+1. **Blockchain as Database:** All financial state stored in smart contracts, not backend
+2. **User Self-Custody:** Funds never leave user's wallet control without explicit approval
+3. **Keeper Autonomy:** AI agent operates as independent keeper with gas wallet for execution
+4. **Verifiable Execution:** Every action cryptographically proven and publicly auditable
 
 ## Trust Scoring Mathematics
 

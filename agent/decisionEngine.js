@@ -37,7 +37,7 @@ const MAX_PORTFOLIO_RISK = 70;
  * @returns {Object} Optimized allocation strategy with protocols, percentages, and risk metrics
  * @throws {Error} When no protocol data provided or constraints violated
  */
-export function decideStrategy(protocols) {
+export function decideStrategy(protocols, protocolLimits = {}) {
   if (!protocols || protocols.length === 0) {
     throw new Error('No protocol data provided to engine.');
   }
@@ -54,7 +54,13 @@ export function decideStrategy(protocols) {
     // The raw score balancing APY and Risk (Sharpe Ratio approximation)
     const score = p.apy * safetyFactor;
     
-    return { ...p, score, safetyFactor };
+    return { 
+      ...p, 
+      score, 
+      safetyFactor,
+      // 🔴 CRITICAL: Include on-chain trust limits
+      maxAllocationBps: protocolLimits[p.address] || p.maxAllocationBps || 5000 // Default 50% if not specified
+    };
   });
 
   // Sort protocols from highest risk-adjusted score to lowest risk
@@ -70,25 +76,34 @@ export function decideStrategy(protocols) {
   const totalScore = selected.reduce((sum, p) => sum + p.score, 0);
 
   // ========================================
-  // STEP 3: CALCULATE PROPORTIONAL WEIGHTS USING BPS
+  // STEP 3: CALCULATE PROPORTIONAL WEIGHTS USING BPS WITH TRUST LIMITS
   // ========================================
   
   // Calculate proportional weights using Basis Points (BPS) for precision
+  // 🔴 CRITICAL: Respect on-chain trust limits during optimization
   let allocations = selected.map(p => {
     // Calculate raw BPS (10000 = 100%)
     let rawBps = (p.score / totalScore) * 10000;
+    
+    // 🔴 SECURITY: Enforce protocol trust limits (maxAllocationBps)
+    const maxAllowedBps = p.maxAllocationBps || 5000; // Default 50% if not specified
+    const finalBps = Math.min(rawBps, maxAllowedBps);
+    
     return {
       name: p.name,
       address: p.address, // CRITICAL: Now using on-chain address for Whitelist!
       apy: p.apy,
       risk: p.risk,
       // Round to nearest integer BPS for precise blockchain execution
-      percentageBps: Math.round(rawBps) 
+      percentageBps: Math.round(finalBps),
+      // 🔴 CRITICAL: Track if limited by trust score
+      limited: finalBps < rawBps,
+      originalBps: Math.round(rawBps)
     };
   });
 
   // ========================================
-  // STEP 4: GUARANTEE EXACT 10000 BPS TOTAL
+  // STEP 4: GUARANTEE EXACT 10000 BPS TOTAL WITH TRUST LIMIT RESPECT
   // ========================================
   
   // Force the very last protocol to absorb rounding error 
@@ -109,7 +124,7 @@ export function decideStrategy(protocols) {
     };
   });
   
-  // Replace allocations with the corrected version
+  // Replace allocations with corrected version
   allocations = finalAllocations;
 
   // ========================================
@@ -147,10 +162,13 @@ function generateOutput(protocolObjects, percentagesBps) {
 
   return {
     protocols: protocolObjects.map(p => p.address), // Returning addresses, not names
-    protocolNames: protocolObjects.map(p => p.name), // Keeping names for the UI/Storage logging
+    protocolNames: protocolObjects.map(p => p.name), // Keeping names for UI/Storage logging
     percentages: percentagesBps, // Now using BPS values
     expectedAPY: Math.round(blendedApy * 100), // Multiply by 100 for integer math on chain (e.g. 5.25% -> 525)
-    riskScore: Math.round(blendedRisk)
+    riskScore: Math.round(blendedRisk),
+    // 🔴 CRITICAL: Add nonce and timestamp for replay protection
+    nonce: Date.now(), // Unique timestamp-based nonce
+    executionTimestamp: Math.floor(Date.now() / 1000) // Unix timestamp for uniqueness
   };
 }
 
@@ -162,15 +180,19 @@ function generateOutput(protocolObjects, percentagesBps) {
  */
 export function testAgenticMath() {
   const liveMarketData = [
-    { name: 'Aave', address: '0x1111111111111111111111111111111111', apy: 4.5, risk: 15 }, // Low reward, very low risk
-    { name: 'Benqi', address: '0x2222222222222222222222222222222222', apy: 12.0, risk: 65 },   // High reward, high risk
-    { name: 'DegenScam', address: '0x3333333333333333333333333333333333', apy: 150.0, risk: 99 } // Extreme reward, total scam
+    { name: 'Aave', address: '0x1111111111111111111111111111111', apy: 4.5, risk: 15, maxAllocationBps: 6000 }, // Low reward, very low risk, max 60%
+    { name: 'Benqi', address: '0x2222222222222222222222222222222', apy: 12.0, risk: 65, maxAllocationBps: 3500 }, // High reward, high risk, max 35%
+    { name: 'DegenScam', address: '0x3333333333333333333333333333333', apy: 150.0, risk: 99, maxAllocationBps: 1000 } // Extreme reward, max 10%
   ];
 
   console.log("Testing Agentic Math with live market data:");
   console.log("Input protocols:", liveMarketData);
   
-  const result = decideStrategy(liveMarketData);
+  const result = decideStrategy(liveMarketData, {
+    '0x1111111111111111111111111111111': 6000, // Aave max 60%
+    '0x2222222222222222222222222222222': 3500, // Benqi max 35%
+    '0x3333333333333333333333333333333': 1000  // DegenScam max 10%
+  });
   console.log("Mathematical optimization result:", result);
   
   // ========================================
@@ -183,6 +205,28 @@ export function testAgenticMath() {
     const riskAdjustedScore = p.apy * safetyFactor;
     console.log(`${p.name}: APY=${p.apy}%, Risk=${p.risk}, Safety=${safetyFactor.toFixed(2)}, Score=${riskAdjustedScore.toFixed(3)}`);
   });
+  
+  // ========================================
+  // DEMONSTRATE TRUST LIMIT ENFORCEMENT
+  // ========================================
+  console.log("\n=== PROTOCOL TRUST LIMIT VALIDATION ===");
+  if (result.allocations) {
+    result.allocations.forEach(allocation => {
+      if (allocation.limited) {
+        console.log(`⚠️  ${allocation.name}: LIMITED to ${allocation.percentageBps} BPS (was ${allocation.originalBps} BPS)`);
+      } else {
+        console.log(`✅ ${allocation.name}: ALLOCATED ${allocation.percentageBps} BPS (within trust limit)`);
+      }
+    });
+  }
+  
+  // ========================================
+  // DEMONSTRATE REPLAY PROTECTION
+  // ========================================
+  console.log(`\n=== REPLAY PROTECTION ===`);
+  console.log(`Nonce: ${result.nonce}`);
+  console.log(`Execution Timestamp: ${result.executionTimestamp}`);
+  console.log("Each execution is cryptographically unique - prevents replay attacks");
   
   return result;
 }

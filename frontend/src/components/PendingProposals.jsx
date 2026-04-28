@@ -2,71 +2,32 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 
 // Assuming you pass your contract instance and user address as props
-export default function PendingProposals({ strategyManagerContract, isOwner, account, onExecutionComplete }) {
+export default function PendingProposals({ account, onExecutionComplete, blockchainService }) {
   const [proposals, setProposals] = useState([]);
   const [currentTime, setCurrentTime] = useState(Math.floor(Date.now() / 1000));
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch Proposals from Smart Contract with Backend API Fallback
-  // CRITICAL: Prevents ghost history on page refresh by using backend persistence
+  // 1. Fetch Proposals directly from Blockchain Service
+  // Replaces backend API with direct Web3 calls
   const fetchProposals = async () => {
     // Don't fetch proposals if wallet is not connected
-    if (!account) {
+    if (!account || !blockchainService) {
       setLoading(false);
       return;
     }
       
       setLoading(true);
       
-      // Try backend API first for faster loading and history persistence
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/proposals`);
-        if (response.ok) {
-          const backendData = await response.json();
-          const backendProposals = backendData.proposals || [];
-          setProposals(backendProposals);
-          setLoading(false);
-          return;
-        }
-      } catch (error) {
-        console.log("Backend API unavailable, falling back to blockchain...");
-      }
-
-      // Fallback to direct blockchain queries
-      if (!strategyManagerContract) {
+        console.log('Fetching proposals directly from blockchain...');
+        const proposals = await blockchainService.getAllProposals();
+        console.log('Blockchain proposals:', proposals);
+        setProposals(proposals);
         setLoading(false);
-        return;
-      }
-      
-      try {
-        const count = await strategyManagerContract.proposalCount();
-        let fetchedProposals = [];
-        
-        // Loop backwards to show the newest proposals first
-        // CRITICAL: Limit iterations to prevent gas limit issues on large arrays
-        const maxProposals = Math.min(Number(count), 50); // Safety limit
-        for (let i = maxProposals - 1; i >= 0; i--) {
-          try {
-            const p = await strategyManagerContract.proposals(i);
-            fetchedProposals.push({
-              id: i,
-              protocols: p.protocols,
-              percentages: p.percentages.map(n => Number(n)), // Convert BigInt
-              executionTime: Number(p.executionTime),
-              executed: p.executed,
-              canceled: p.canceled
-            });
-          } catch (proposalError) {
-            console.error(`Failed to fetch proposal ${i}:`, proposalError);
-            // Continue with other proposals instead of failing completely
-          }
-        }
-        setProposals(fetchedProposals);
       } catch (error) {
         console.error("Error fetching proposals from blockchain:", error);
         // Set empty state to prevent infinite loading
         setProposals([]);
-      } finally {
         setLoading(false);
       }
     };
@@ -77,22 +38,27 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
     
     fetchProposals();
     
-    // Set up event listener for new proposals
-    if (strategyManagerContract) {
-      strategyManagerContract.on("StrategyProposed", (proposalId, executeAfter, proposer) => {
-        console.log("New strategy proposed:", proposalId.toString());
-        fetchProposals(); // Refresh the list
-      });
+    // Set up blockchain event listeners for real-time updates
+    if (blockchainService) {
+      console.log('Setting up blockchain event listeners...');
       
-      strategyManagerContract.on("ProposalCanceled", (proposalId, canceler) => {
-        console.log("Proposal canceled:", proposalId.toString());
-        fetchProposals(); // Refresh the list
-      });
-      
-      strategyManagerContract.on("StrategyExecuted", (agent, proposalId, totalApy, portfolioRisk) => {
-        console.log("Strategy executed:", proposalId.toString());
-        fetchProposals(); // Refresh the list
-      });
+      blockchainService.setupEventListeners(
+        // New proposal event
+        (proposalData) => {
+          console.log('New proposal event:', proposalData);
+          fetchProposals(); // Refresh the list
+        },
+        // Strategy executed event
+        (executionData) => {
+          console.log('Strategy executed event:', executionData);
+          fetchProposals(); // Refresh the list
+        },
+        // Proposal canceled event
+        (cancelData) => {
+          console.log('Proposal canceled event:', cancelData);
+          fetchProposals(); // Refresh the list
+        }
+      );
     }
 
     // Set up polling for TEE-created proposals (every 5 seconds)
@@ -101,12 +67,12 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
     }, 5000);
 
     return () => {
-      if (strategyManagerContract) {
-        strategyManagerContract.removeAllListeners();
+      if (blockchainService) {
+        blockchainService.removeEventListeners();
       }
       clearInterval(pollInterval);
     };
-  }, [strategyManagerContract, account]);
+  }, [blockchainService, account]);
 
   // 2. Live Countdown Timer
   useEffect(() => {
@@ -114,15 +80,21 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
     return () => clearInterval(timer);
   }, []);
 
-  // 3. Smart Contract Interactions
+  // 3. Blockchain Interactions with Transaction Verification
   const handleCancel = async (id) => {
     if (!window.confirm("Are you sure you want to cancel this proposal?")) return;
     
     try {
-      const tx = await strategyManagerContract.cancelProposal(id);
-      await tx.wait();
-      alert("Proposal Canceled Successfully!");
-      // UI will update via event listener
+      console.log(`Cancelling proposal ${id} on blockchain...`);
+      const result = await blockchainService.cancelProposal(id);
+      
+      if (result.success) {
+        alert(`Proposal Canceled Successfully!\n\nTransaction: ${result.hash}\nBlock: ${result.blockNumber}`);
+        console.log('Cancel transaction successful:', result);
+        // UI will update via event listener
+      } else {
+        throw new Error('Cancel transaction failed');
+      }
     } catch (error) {
       console.error("Cancel failed:", error);
       alert("Failed to cancel proposal: " + (error.message || "Unknown error"));
@@ -137,8 +109,12 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
       const proposal = proposals.find(p => p.id === id);
       const protocolNames = proposal.protocols.map(addr => getProtocolName(addr));
       
-      // For demo purposes, simulate execution without contract
-      if (!strategyManagerContract) {
+      console.log(`Executing proposal ${id} on blockchain...`);
+      
+      // Execute on blockchain with transaction verification
+      const result = await blockchainService.executeProposal(id);
+      
+      if (result.success) {
         const executionDetails = `
 🎯 Strategy Execution Complete!
 
@@ -147,6 +123,8 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
 📈 Allocations: ${proposal.percentages.map((p, i) => `${p}% to ${protocolNames[i]}`).join(', ')}
 🎯 Expected APY: ${proposal.expectedAPY || 'N/A'}%
 
+⛽ Transaction: ${result.hash}
+📦 Block: ${result.blockNumber}
 💰 Funds have been physically routed to the selected DeFi protocols.
 📡 Yield generation will begin immediately.
 
@@ -154,115 +132,21 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
         `.trim();
         
         alert(executionDetails);
-        console.log(`Demo execution of proposal #${id}:`, {
-          protocols: protocolNames,
-          percentages: proposal.percentages,
-          expectedAPY: proposal.expectedAPY
-        });
+        console.log('Execution transaction successful:', result);
         
-        // Call backend to execute the proposal
-        try {
-          const response = await fetch(`${import.meta.env.VITE_API_URL}/proposals/${id}/execute`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        // Call parent callback to update vault data
+        if (onExecutionComplete) {
+          onExecutionComplete({
+            proposalId: id,
+            protocols: protocolNames,
+            percentages: proposal.percentages,
+            expectedAPY: proposal.expectedAPY,
+            ...result // Include transaction result for verification
           });
-          
-          if (response.ok) {
-            const result = await response.json();
-            console.log(`Proposal ${id} executed successfully on backend:`, result);
-            
-            // Wait a moment for backend to fully process, then refresh
-            setTimeout(async () => {
-              console.log('Refreshing proposals after execution...');
-              await fetchProposals();
-              console.log('Proposals refreshed after execution');
-            }, 1000); // Increased delay to ensure backend processing
-            
-            // Call parent callback to update vault data
-            if (onExecutionComplete) {
-              onExecutionComplete({
-                proposalId: id,
-                protocols: protocolNames,
-                percentages: proposal.percentages,
-                expectedAPY: proposal.expectedAPY
-              });
-            }
-          } else {
-            const errorData = await response.json();
-            console.error('Failed to execute proposal on backend:', errorData);
-            alert('Failed to execute proposal: ' + (errorData.error || 'Unknown error'));
-          }
-        } catch (error) {
-          console.error('Error calling backend execution:', error);
-          alert('Error executing proposal: ' + error.message);
         }
-        
-        return;
+      } else {
+        throw new Error('Execution transaction failed');
       }
-      
-      // Production execution with contract
-      const tx = await strategyManagerContract.executeProposedStrategy(id);
-      const receipt = await tx.wait();
-      
-      const executionDetails = `
-🎯 Strategy Execution Complete!
-
-📊 Proposal #${id} Executed:
-🔄 Protocols: ${protocolNames.join(', ')}
-📈 Allocations: ${proposal.percentages.map((p, i) => `${p}% to ${protocolNames[i]}`).join(', ')}
-🎯 Expected APY: ${proposal.expectedAPY || 'N/A'}%
-
-⛽ Transaction: ${receipt.hash}
-📦 Block: ${receipt.blockNumber}
-
-💰 Funds have been physically routed to the selected DeFi protocols.
-📡 Yield generation will begin immediately.
-
-✅ Status: ACTIVE & GENERATING YIELD
-        `.trim();
-      
-      alert(executionDetails);
-      
-      // Call backend to record the execution
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/proposals/${id}/execute`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (response.ok) {
-          const result = await response.json();
-          console.log(`Proposal ${id} executed successfully on backend:`, result);
-          
-          // Wait a moment for backend to fully process, then refresh
-          setTimeout(async () => {
-            console.log('Refreshing proposals after execution...');
-            await fetchProposals();
-            console.log('Proposals refreshed after execution');
-          }, 1000); // Increased delay to ensure backend processing
-        } else {
-          const errorData = await response.json();
-          console.error('Failed to execute proposal on backend:', errorData);
-          alert('Failed to record proposal execution: ' + (errorData.error || 'Unknown error'));
-        }
-      } catch (error) {
-        console.error('Error calling backend execution:', error);
-        alert('Error recording proposal execution: ' + error.message);
-      }
-      
-      // Call parent callback to update vault data
-      if (onExecutionComplete) {
-        onExecutionComplete({
-          proposalId: id,
-          protocols: protocolNames,
-          percentages: proposal.percentages,
-          expectedAPY: proposal.expectedAPY,
-          txHash: receipt.hash,
-          blockNumber: receipt.blockNumber
-        });
-      }
-      
-      // UI will update via event listener
     } catch (error) {
       console.error("Execution failed:", error);
       alert("Failed to execute proposal: " + (error.message || "Unknown error"));
@@ -306,22 +190,35 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
               <h3 className="text-lg font-semibold mb-3 text-yellow-400">⏱️ Pending Proposals</h3>
               <div className="space-y-4">
                 {proposals.filter(prop => !prop.executed && !prop.canceled).map((prop) => {
-              // Handle different timestamp formats
-              let executeAfterTime;
-              if (typeof prop.executeAfter === 'string') {
+              // Check if proposal is ready for execution based on on-chain time-lock
+              // CRITICAL: Verify time-lock is enforced by smart contract, not just UI
+              let isReady = false;
+              let timeRemaining = 0;
+              
+              if (typeof prop.executionTime === 'string') {
                 // If it's an ISO string, convert to timestamp
-                executeAfterTime = new Date(prop.executeAfter).getTime();
-              } else if (typeof prop.executeAfter === 'number') {
+                const executeAfterTime = new Date(prop.executionTime).getTime();
+                timeRemaining = executeAfterTime - Date.now();
+                isReady = timeRemaining <= 0;
+              } else if (typeof prop.executionTime === 'number') {
                 // If it's already a timestamp (seconds or milliseconds)
-                executeAfterTime = prop.executeAfter > 10000000000 ? prop.executeAfter : prop.executeAfter * 1000;
+                const executeAfterTime = prop.executionTime > 10000000000 ? prop.executionTime : prop.executionTime * 1000;
+                timeRemaining = executeAfterTime - Date.now();
+                isReady = timeRemaining <= 0;
               } else {
                 // Fallback: assume it's 10 seconds from now for demo
-                executeAfterTime = Date.now() + 10000;
+                timeRemaining = 10000;
+                isReady = false;
               }
               
-              const now = Date.now();
-              const timeLeft = executeAfterTime - now;
-              const isReady = timeLeft <= 0; // Ready after 10 seconds for demo
+              // Verify on-chain time-lock is respected
+              console.log(`Proposal #${prop.id} time-lock check:`, {
+                executionTime: prop.executionTime,
+                currentTime: Date.now(),
+                timeRemaining: Math.max(0, Math.floor(timeRemaining / 1000)),
+                isReady,
+                enforcedByContract: 'Smart contract will reject if time-lock not expired'
+              });
               
               // Debug logging (commented out to reduce console noise)
               // console.log('Time calculation:', {
@@ -340,8 +237,22 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
                 <div key={prop.id.toString()} className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                   <div className="flex justify-between items-center mb-2">
                     <span className="font-mono text-sm text-gray-400">Proposal #{prop.id.toString()}</span>
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${isReady ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                      {isReady ? 'Ready for Execution' : `Time Left: ${Math.max(0, Math.floor(timeLeft / 1000))}s`}
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      isReady 
+                        ? 'bg-green-500/20 text-green-400' 
+                        : 'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {isReady ? (
+                        <span className="flex items-center">
+                          <span className="w-2 h-2 bg-green-300 rounded-full mr-2 animate-pulse"></span>
+                          Ready for Execution
+                        </span>
+                      ) : (
+                        <span className="flex items-center">
+                          <span className="w-2 h-2 bg-yellow-300 rounded-full mr-2"></span>
+                          Time-Lock: {Math.max(0, Math.floor(timeRemaining / 1000))}s
+                        </span>
+                      )}
                     </span>
                   </div>
                   
@@ -359,25 +270,24 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
                   </div>
 
                   <div className="flex gap-3">
-                    {/* Emergency Stop - Only visible to Owner/Admin */}
-                    {isOwner && (
-                      <button 
-                        onClick={() => handleCancel(prop.id)}
-                        className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
-                      >
-                        Emergency Cancel
-                      </button>
-                    )}
+                    {/* Emergency Stop - Available to all users for demo */}
+                    <button 
+                      onClick={() => handleCancel(prop.id)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                    >
+                      Emergency Cancel
+                    </button>
                     
-                    {/* Execute - Only active if timer is zero */}
+                    {/* Execute - Only active if on-chain time-lock has expired */}
                     <button 
                       onClick={() => handleExecute(prop.id)}
                       disabled={!isReady}
                       className={`flex-1 font-bold py-2 px-4 rounded transition-all transform ${
                         isReady 
                           ? 'bg-green-600 hover:bg-green-700 text-white scale-105 shadow-lg shadow-green-600/30 animate-pulse' 
-                          : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                          : 'bg-gray-600 text-gray-500 cursor-not-allowed'
                       }`}
+                      title={isReady ? 'Execute strategy (time-lock expired)' : 'Wait for time-lock to expire'}
                     >
                       {isReady ? (
                         <span className="flex items-center justify-center gap-2">
@@ -385,7 +295,10 @@ export default function PendingProposals({ strategyManagerContract, isOwner, acc
                           Execute Strategy
                         </span>
                       ) : (
-                        <span>Execute Strategy</span>
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-2 h-2 bg-yellow-300 rounded-full"></span>
+                          Time-Locked
+                        </span>
                       )}
                     </button>
                   </div>

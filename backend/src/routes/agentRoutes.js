@@ -80,7 +80,7 @@ router.get('/stream-tee', async (req, res) => {
       // 1. Import the smart contract service directly
       const { proposeStrategy } = await import('../services/contractService.js');
       
-      // 2. Format the TEE output so the blockchain understands it
+      // 2. Format TEE output so the blockchain understands it
       // expectedAPY is already multiplied by 100 in decisionEngine.js
       const decisionPayload = {
         protocols: teeResult.decision.protocols,
@@ -88,6 +88,11 @@ router.get('/stream-tee', async (req, res) => {
         expectedAPY: teeResult.decision.expectedAPY, 
         executionProof: teeResult.executionProof // THIS IS THE CRITICAL COMPONENT
       };
+      
+      // 🔴 CRITICAL SECURITY BOUNDARY: The agent's output MUST be passed directly to blockchain
+      // NEVER multiply, modify, or alter the agent's cryptographic output
+      // The routing layer is a secure pipe, not a data transformation layer
+      // Any modification here would break the cryptographic signature verification
       
       // 3. Submit the VERIFIED data to the blockchain
       const receipt = await proposeStrategy(decisionPayload);

@@ -14,6 +14,8 @@
  */
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
+import { walletService } from './services/walletService.js';
+import { blockchainService } from './services/blockchainService.js';
 import MarketOracleFeed from './components/MarketOracleFeed.jsx';
 import PendingProposals from './components/PendingProposals.jsx';
 import AgentControlPanel from './components/AgentControlPanel.jsx';
@@ -39,125 +41,130 @@ console.error = (...args) => {
 function App() {
   // State management
   const [account, setAccount] = useState(null); // Connected wallet address
+  const [provider, setProvider] = useState(null); // Web3 provider
+  const [signer, setSigner] = useState(null); // Wallet signer
+  const [isConnecting, setIsConnecting] = useState(false); // Connection loading state
+  const [networkError, setNetworkError] = useState(null); // Network error state
   const [vaultData, setVaultData] = useState({
-    totalAssets: 0,    // Total USDC assets in vault
-    userShares: 0,      // User's vault shares
-    apy: 0             // Current annual percentage yield
+    totalAssets: 0,    // Total USDC assets in vault (from blockchain)
+    userShares: 0,      // User's vault shares (from blockchain)
+    apy: 0             // Current annual percentage yield (from blockchain)
   });
 
   /**
-   * Connect user wallet using MetaMask or compatible browser wallet
-   * Fetches vault data after successful connection
-   * Handles multiple wallet extensions and injection conflicts
+   * Connect user wallet using proper non-custodial Web3 service
+   * User must approve connection and sign all transactions
+   * Implements self-custodial architecture for verifiable finance
    */
   const connectWallet = async () => {
+    if (isConnecting) return;
+    
+    setIsConnecting(true);
+    setNetworkError(null);
+    
     try {
-      // Wait for wallet extensions to fully inject
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('Initiating non-custodial wallet connection...');
       
-      // Check if any wallet is available
-      if (!window.ethereum) {
-        alert('Please install MetaMask or another compatible wallet!');
-        return;
-      }
-
-      // Try to detect and use MetaMask specifically to avoid conflicts
-      let provider;
-      if (window.ethereum.isMetaMask) {
-        provider = new ethers.BrowserProvider(window.ethereum);
-      } else if (window.ethereum.providers?.length) {
-        // Multiple wallets detected, find MetaMask
-        const metamaskProvider = window.ethereum.providers.find(p => p.isMetaMask);
-        if (metamaskProvider) {
-          provider = new ethers.BrowserProvider(metamaskProvider);
-        } else {
-          provider = new ethers.BrowserProvider(window.ethereum);
-        }
-      } else {
-        provider = new ethers.BrowserProvider(window.ethereum);
-      }
-
-      // Request account access with error handling
-      try {
-        await provider.send("eth_requestAccounts", []);
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-        setAccount(address);
+      // Connect using wallet service - USER MUST APPROVE
+      const result = await walletService.connect('metamask');
+      
+      if (result.success) {
+        console.log('Wallet connected successfully:', result);
         
-        // Fetch vault data
-        await fetchVaultData(address);
-      } catch (accountError) {
-        // Handle specific wallet connection errors
-        if (accountError.code === -32002) {
-          alert('Please unlock your wallet and approve the connection request.');
-        } else if (accountError.code === 4001) {
-          alert('Connection request was rejected. Please try again.');
-        } else {
-          console.error('Account access error:', accountError);
-          alert('Failed to access wallet accounts. Please check your wallet.');
+        setAccount(result.account);
+        setProvider(result.provider);
+        setSigner(result.signer);
+        
+        // Initialize blockchain service with user's Web3 provider
+        await blockchainService.initialize(result.provider, result.signer);
+        
+        // Check if on correct network (0G Testnet)
+        const OG_TESTNET_CHAIN_ID = '0x1a7'; // 423 in hex
+        if (!walletService.isCorrectNetwork(OG_TESTNET_CHAIN_ID)) {
+          console.log('Wrong network detected, switching to 0G Testnet...');
+          const switched = await walletService.switchNetwork(OG_TESTNET_CHAIN_ID);
+          if (!switched) {
+            setNetworkError('Please switch to 0G Testnet to use AutoYield AI');
+          }
         }
+        
+        // Fetch vault data directly from blockchain
+        await fetchVaultDataFromBlockchain(result.account);
+        
+      } else {
+        console.error('Wallet connection failed:', result.error);
+        setNetworkError(result.error);
       }
+      
     } catch (error) {
       console.error('Failed to connect wallet:', error);
-      
-      // Provide user-friendly error messages
-      if (error.message?.includes('message channel closed')) {
-        // This is the wallet extension injection error - ignore it silently
-        console.log('Wallet extension injection detected, continuing...');
-        return;
-      } else if (error.code === 'NETWORK_ERROR') {
-        alert('Network error. Please check your internet connection.');
-      } else {
-        alert('Failed to connect wallet. Please ensure your wallet is unlocked and try again.');
-      }
+      setNetworkError('Failed to connect wallet. Please try again.');
+    } finally {
+      setIsConnecting(false);
     }
   };
 
   /**
-   * Fetch user's vault data from backend API
-   * Retrieves total assets, shares, and current APY
+   * Fetch user's vault data directly from blockchain
+   * Replaces fake backend API with real Web3 data
    * 
    * @param {string} userAddress - Connected wallet address
    */
-  const fetchVaultData = async (userAddress) => {
+  const fetchVaultDataFromBlockchain = async (userAddress) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/vault/user/${userAddress}`);
-      const data = await response.json();
-      if (data.success) {
-        setVaultData(data.data);
-      }
+      console.log('Fetching vault data directly from blockchain...');
+      const data = await blockchainService.getVaultData(userAddress);
+      console.log('Real blockchain vault data:', data);
+      setVaultData(data);
     } catch (error) {
-      console.error('Failed to fetch vault data:', error);
+      console.error('Failed to fetch vault data from blockchain:', error);
+      // Set zero values on error to prevent UI crashes
+      setVaultData({
+        totalAssets: "0",
+        userShares: "0",
+        currentAPY: "0",
+        totalValueLocked: "0",
+        activeStrategies: 0
+      });
     }
   };
 
   /**
    * Handle strategy execution completion
    * Updates vault data with new shares and APY after execution
+   * Verifies blockchain transaction status
    * 
    * @param {Object} executionResult - Result of strategy execution
    */
   const handleExecutionComplete = async (executionResult) => {
     console.log('Strategy execution completed:', executionResult);
     
-    // Fetch real vault data from backend after execution
+    // CRITICAL: Verify transaction was successful on blockchain
+    if (executionResult.status === 0) {
+      console.error('Blockchain transaction failed:', executionResult);
+      alert('Transaction failed on blockchain! Please check the transaction and try again.');
+      return;
+    }
+    
+    // Fetch real vault data from blockchain after successful execution
     if (account) {
-      console.log('Fetching updated vault data after execution...');
-      await fetchVaultData(account);
+      console.log('Fetching updated vault data from blockchain after execution...');
+      await fetchVaultDataFromBlockchain(account);
     }
   };
 
   /**
    * Refresh vault data periodically and when account changes
+   * Fetches directly from blockchain, not fake backend
    */
   useEffect(() => {
     if (account) {
-      // Initial fetch
-      fetchVaultData(account);
+      // Initial fetch from blockchain
+      fetchVaultDataFromBlockchain(account);
       
-      // Set up periodic refresh every 30 seconds
+      // Set up periodic refresh every 30 seconds from blockchain
       const interval = setInterval(() => {
-        fetchVaultData(account);
+        fetchVaultDataFromBlockchain(account);
       }, 30000);
       
       return () => clearInterval(interval);
@@ -166,7 +173,8 @@ function App() {
 
   /**
    * Execute AI strategy for yield optimization
-   * Submits strategy to blockchain with 24-hour time-lock
+   * Submits strategy to blockchain with proper transaction verification
+   * Uses TEE-verified decisions and non-custodial execution
    */
   const runAIStrategy = async () => {
     // Check if wallet is connected
@@ -175,27 +183,45 @@ function App() {
       return;
     }
     
+    if (!walletService.isCorrectNetwork('0x1a7')) {
+      alert('Please switch to 0G Testnet to execute AI strategies!');
+      return;
+    }
+    
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/agent/run`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await response.json();
+      console.log('Initiating AI strategy execution with TEE verification...');
       
-      if (data.success) {
-        alert('AI strategy submitted to 10-second time-lock!');
-        console.log('Proposal ID:', data.proposalId);
+      // Use Server-Sent Events for real-time TEE execution
+      const eventSource = new EventSource(`${import.meta.env.VITE_API_URL}/agent/stream-tee`);
+      
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        console.log('TEE execution update:', data);
         
-        // Trigger proposal refresh without page reload
-        if (window.refreshProposals) {
-          window.refreshProposals();
+        // Handle different execution statuses
+        if (data.status === 'error') {
+          alert(`TEE Execution Error: ${data.message}`);
+          eventSource.close();
+        } else if (data.status === 'complete') {
+          alert('AI strategy successfully submitted to blockchain with TEE verification!');
+          eventSource.close();
+          
+          // Refresh proposals to show new strategy
+          if (window.refreshProposals) {
+            window.refreshProposals();
+          }
         }
-      } else {
-        alert('Failed to run AI strategy: ' + data.error);
-      }
+      };
+      
+      eventSource.onerror = (error) => {
+        console.error('TEE stream error:', error);
+        alert('Failed to connect to TEE service. Please try again.');
+        eventSource.close();
+      };
+      
     } catch (error) {
       console.error('Failed to run AI strategy:', error);
-      alert('Failed to run AI strategy');
+      alert('Failed to run AI strategy: ' + error.message);
     }
   };
 
@@ -218,16 +244,35 @@ function App() {
                   <span className="text-sm text-gray-400">
                     {account.substring(0, 6)}...{account.substring(38)}
                   </span>
-                  <button className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm">
+                  {networkError && (
+                    <span className="text-xs text-red-400">
+                      ⚠️ {networkError}
+                    </span>
+                  )}
+                  <button 
+                    onClick={() => {
+                      walletService.disconnect();
+                      setAccount(null);
+                      setProvider(null);
+                      setSigner(null);
+                      setNetworkError(null);
+                    }}
+                    className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg text-sm"
+                  >
                     Disconnect
                   </button>
                 </div>
               ) : (
                 <button 
                   onClick={connectWallet}
-                  className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium"
+                  disabled={isConnecting}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    isConnecting 
+                      ? 'bg-gray-600 cursor-not-allowed opacity-50' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
-                  Connect Wallet
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                 </button>
               )}
             </div>
@@ -309,7 +354,11 @@ function App() {
           <AgentControlPanel />
           
           {/* Pending Proposals - Time-lock Management */}
-          <PendingProposals account={account} onExecutionComplete={handleExecutionComplete} />
+          <PendingProposals 
+            account={account} 
+            onExecutionComplete={handleExecutionComplete}
+            blockchainService={blockchainService}
+          />
         </div>
       </main>
 
