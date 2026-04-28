@@ -11,9 +11,7 @@ pragma solidity ^0.8.20;
  * - Agent status tracking
  * - Ownership transfer capability
  * 
- * @contract AgentRegistry
  * @author AutoYield AI Team
- * @version 1.0.0
  */
 contract AgentRegistry {
     // ========================================

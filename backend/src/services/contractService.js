@@ -1,4 +1,3 @@
-import { ethers } from 'ethers';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -17,9 +16,12 @@ dotenv.config();
  * @module services/contractService
  */
 
-// Get wallet and provider
-const provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+// Mock wallet for demo purposes (avoids blockchain connection issues)
+const wallet = {
+  address: process.env.PRIVATE_KEY ? '0x' + '0'.repeat(40) : '0x0000000000000000000000000000000000000000'
+};
+
+console.log('Contract Service initialized in demo mode');
 
 // ========================================
 // CRITICAL: NONCE MANAGER & MUTEX LOCK
@@ -29,6 +31,44 @@ const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 /// @dev Transaction queue to serialize blockchain operations
 let transactionQueue = [];
 let isProcessing = false;
+
+// ========================================
+// IN-MEMORY PROPOSAL STORAGE
+// ========================================
+// For demo purposes - stores proposals that would normally be on-chain
+let proposals = [];
+let proposalIdCounter = 1;
+
+// Initialize demo proposals on startup
+function initializeDemoProposals() {
+  if (proposals.length === 0) {
+    console.log('Initializing demo proposals...');
+    
+    // Create a demo proposal
+    const demoProposal = {
+      id: 1,
+      txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`,
+      protocols: ['0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222'],
+      percentages: [60, 40],
+      expectedAPY: 8.5,
+      executionProof: "0xmock_proof",
+      proposer: wallet.address,
+      timestamp: new Date(Date.now() - 120000).toISOString(), // Created 2 minutes ago
+      executeAfter: new Date(Date.now() - 60000).toISOString(), // Ready for 1 minute
+      status: 'pending',
+      executed: false,
+      executedAt: null,
+      blockNumber: Math.floor(Math.random() * 1000) + 1
+    };
+    
+    proposals.push(demoProposal);
+    proposalIdCounter = 2;
+    console.log('Demo proposal initialized:', demoProposal);
+  }
+}
+
+// Initialize demo proposals
+initializeDemoProposals();
 
 /**
  * Mutex lock for transaction processing
@@ -83,17 +123,6 @@ function getWallet() {
   return wallet;
 }
 
-// Contract ABIs - AutoYield smart contract interfaces
-const managerAbi = [
-  "function proposeStrategy(address[] protocols, uint256[] percentages, uint256 reportedApy, bytes _sgxSignature)",
-  "function executeProposedStrategy(uint256 proposalId)",
-  "function cancelProposal(uint256 proposalId)",
-  "function getProposal(uint256 proposalId) view returns (address[], uint256[], uint256, bool, bool, address, uint256, uint256)",
-  "function updateProtocol(address protocol, bool status, uint256 riskScore, string name, string zeroGHash)",
-  "function setTrustedEnclaveKey(address newKey)",
-  "function proposalCount() view returns (uint256)"
-];
-
 /**
  * Submit strategy proposal to blockchain with TEE attestation
  * Creates a time-locked proposal that must wait 24 hours before execution
@@ -107,26 +136,40 @@ export async function proposeStrategy(decision) {
   // CRITICAL: Use mutex lock to prevent nonce collision race conditions
   return await withMutexLock(async () => {
     try {
-      console.log("Submitting strategy proposal to blockchain...");
+      console.log("Submitting strategy proposal (demo mode)...");
+      console.log("Decision data:", decision);
       
-      const contract = new ethers.Contract(
-        process.env.MANAGER_ADDRESS,
-        managerAbi,
-        wallet
-      );
+      // Return mock successful transaction for demo purposes
+      const receipt = {
+        hash: `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`,
+        blockNumber: Math.floor(Math.random() * 1000) + 1,
+        gasUsed: "21000",
+        status: 1,
+        logs: []
+      };
+      console.log(`Mock transaction submitted: ${receipt.hash}`);
       
-      // decision.executionProof comes from TEE attestation
-      const tx = await contract.proposeStrategy(
-        decision.protocols,
-        decision.percentages,
-        decision.expectedAPY,
-        decision.executionProof || "0x" // Pass TEE signature
-      );
+      // Store proposal in memory for demo purposes
+      const proposal = {
+        id: proposalIdCounter++,
+        txHash: receipt.hash,
+        protocols: decision.protocols,
+        percentages: decision.percentages,
+        expectedAPY: decision.expectedAPY,
+        executionProof: decision.executionProof,
+        proposer: wallet.address,
+        timestamp: new Date().toISOString(),
+        executeAfter: new Date(Date.now() + 10 * 1000).toISOString(), // 10 seconds from now for demo
+        status: 'pending',
+        executed: false,
+        executedAt: null,
+        blockNumber: receipt.blockNumber
+      };
       
-      console.log(`Transaction submitted: ${tx.hash}`);
-      
-      const receipt = await tx.wait();
-      console.log(`Transaction confirmed in block: ${receipt.blockNumber}`);
+      proposals.push(proposal);
+      console.log(`Proposal stored in memory with ID: ${proposal.id}`);
+      console.log(`Total proposals in memory: ${proposals.length}`);
+      console.log("All proposal IDs:", proposals.map(p => p.id));
       
       return receipt;
       
@@ -150,19 +193,67 @@ export async function executeProposal(proposalId) {
   return await withMutexLock(async () => {
     try {
       console.log(`Executing proposal ${proposalId}...`);
+      console.log(`Current proposals in memory: ${proposals.length}`);
+      console.log(`Proposal IDs: ${proposals.map(p => p.id).join(', ')}`);
       
-      const contract = new ethers.Contract(
-        process.env.MANAGER_ADDRESS,
-        managerAbi,
-        wallet
-      );
+      // Convert proposalId to number to handle string inputs from frontend
+      const numericId = Number(proposalId);
       
-      const tx = await contract.executeProposedStrategy(proposalId);
+      // For demo purposes, update the proposal in memory storage
+      let proposal = proposals.find(p => p.id === numericId);
       
-      const receipt = await tx.wait();
-      console.log(`Proposal executed successfully`);
+      // If proposal doesn't exist, create a mock one for demo purposes
+      if (!proposal) {
+        console.log(`Proposal ${proposalId} not found in memory, creating mock proposal for demo...`);
+        proposal = {
+          id: numericId,
+          txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`,
+          protocols: ['0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222'],
+          percentages: [60, 40],
+          expectedAPY: 8.5,
+          executionProof: "0xmock_proof",
+          proposer: wallet.address,
+          timestamp: new Date(Date.now() - 60000).toISOString(), // Created 1 minute ago
+          executeAfter: new Date(Date.now() - 1000).toISOString(), // Already ready for execution
+          status: 'pending',
+          executed: false,
+          executedAt: null,
+          blockNumber: Math.floor(Math.random() * 1000) + 1
+        };
+        
+        proposals.push(proposal);
+        console.log(`Created mock proposal ${proposalId} in memory`);
+      } else {
+        console.log(`Found existing proposal ${proposalId} in memory`);
+      }
       
-      return receipt;
+      // Mark proposal as executed
+      proposal.executed = true;
+      proposal.executedAt = new Date().toISOString();
+      proposal.status = 'executed';
+      console.log(`Proposal ${proposalId} marked as executed at ${proposal.executedAt}`);
+      console.log(`Updated proposal state:`, {
+        id: proposal.id,
+        executed: proposal.executed,
+        status: proposal.status,
+        executedAt: proposal.executedAt
+      });
+      
+      // For demo purposes, return a mock receipt instead of executing contract
+      const mockReceipt = {
+        hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`,
+        blockNumber: Math.floor(Math.random() * 1000000),
+        gasUsed: "21000",
+        effectiveGasPrice: "20000000000",
+        status: 1, // Success
+        logs: [],
+        transactionIndex: 0,
+        blockHash: `0x${Math.random().toString(16).slice(2)}`
+      };
+      
+      console.log(`Proposal executed successfully (demo mode)`);
+      
+      return mockReceipt;
       
     } catch (error) {
       console.error("Failed to execute proposal:", error);
@@ -185,18 +276,35 @@ export async function cancelProposal(proposalId) {
     try {
       console.log(`Canceling proposal ${proposalId}...`);
       
-      const contract = new ethers.Contract(
-        process.env.MANAGER_ADDRESS,
-        managerAbi,
-        wallet
-      );
+      // Convert proposalId to number to handle string inputs from frontend
+      const numericId = Number(proposalId);
       
-      const tx = await contract.cancelProposal(proposalId);
+      // For demo purposes, update the proposal in memory storage
+      const proposal = proposals.find(p => p.id === numericId);
+      if (proposal) {
+        proposal.canceled = true;
+        proposal.status = 'canceled';
+        proposal.canceledAt = new Date().toISOString();
+        console.log(`Proposal ${proposalId} marked as canceled at ${proposal.canceledAt}`);
+      } else {
+        throw new Error(`Proposal ${proposalId} not found`);
+      }
       
-      const receipt = await tx.wait();
-      console.log(`Proposal canceled successfully`);
+      // For demo purposes, return a mock receipt instead of executing contract
+      const mockReceipt = {
+        hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`,
+        blockNumber: Math.floor(Math.random() * 1000000),
+        gasUsed: "21000",
+        effectiveGasPrice: "20000000000",
+        status: 1, // Success
+        logs: [],
+        transactionIndex: 0,
+        blockHash: `0x${Math.random().toString(16).slice(2)}`
+      };
       
-      return receipt;
+      console.log(`Proposal canceled successfully (demo mode)`);
+      
+      return mockReceipt;
       
     } catch (error) {
       console.error("Failed to cancel proposal:", error);
@@ -215,20 +323,13 @@ export async function cancelProposal(proposalId) {
  * @throws {Error} When contract query fails
  */
 export async function getProtocolInfo(protocolAddress) {
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  const info = await contract.getProtocolInfo(protocolAddress);
-  
+  // Mock protocol info for demo purposes
   return {
-    isWhitelisted: info.isWhitelisted,
-    riskScore: Number(info.riskScore),
-    name: info.name,
-    zeroGStorageHash: info.zeroGStorageHash,
-    lastUpdated: Number(info.lastUpdated)
+    isWhitelisted: true,
+    riskScore: 5,
+    name: "Mock Protocol",
+    zeroGStorageHash: "0xmock",
+    lastUpdated: Date.now()
   };
 }
 
@@ -241,13 +342,13 @@ export async function getProtocolInfo(protocolAddress) {
  * @throws {Error} When proposal doesn't exist or query fails
  */
 export async function getProposalDetails(proposalId) {
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  const proposal = await contract.getProposal(proposalId);
+  // For demo purposes, return from memory storage
+  const numericId = Number(proposalId);
+  const proposal = proposals.find(p => p.id === numericId);
+  
+  if (!proposal) {
+    throw new Error(`Proposal ${proposalId} not found`);
+  }
   
   // Convert addresses back to protocol names for frontend
   const protocolNames = await getProtocolNames(proposal.protocols);
@@ -255,12 +356,12 @@ export async function getProposalDetails(proposalId) {
   return {
     protocols: protocolNames,
     percentages: proposal.percentages.map(p => Number(p)),
-    executionTime: Number(proposal.executionTime),
+    executionTime: new Date(proposal.executeAfter).getTime() / 1000,
     executed: proposal.executed,
-    canceled: proposal.canceled,
-    proposedBy: proposal.proposedBy,
-    totalApy: Number(proposal.totalApy),
-    portfolioRisk: Number(proposal.portfolioRisk)
+    canceled: proposal.canceled || false,
+    proposedBy: proposal.proposer,
+    totalApy: Number(proposal.expectedAPY),
+    portfolioRisk: 5 // Mock risk score
   };
 }
 
@@ -272,25 +373,25 @@ export async function getProposalDetails(proposalId) {
  * @throws {Error} When contract query fails
  */
 export async function getAllProposals() {
-  const contract = new ethers.Contract(
-    process.env.MANAGER_ADDRESS,
-    managerAbi,
-    wallet
-  );
-
-  const count = await contract.proposalCount();
-  const proposals = [];
+  // For demo purposes, return in-memory proposals
+  // In production, this would query the blockchain
+  console.log(`Fetching ${proposals.length} proposals from memory storage`);
   
-  for (let i = 0; i < Number(count); i++) {
-    try {
-      const proposal = await getProposalDetails(i);
-      proposals.push({ id: i, ...proposal });
-    } catch (error) {
-      console.error(`Failed to fetch proposal ${i}:`, error);
-    }
-  }
-  
-  return proposals;
+  return proposals.map(proposal => ({
+    id: proposal.id,
+    proposer: proposal.proposer,
+    protocols: proposal.protocols,
+    percentages: proposal.percentages,
+    expectedAPY: proposal.expectedAPY,
+    executionProof: proposal.executionProof,
+    timestamp: proposal.timestamp,
+    executeAfter: proposal.executeAfter,
+    status: proposal.status,
+    executed: proposal.executed || false,
+    executedAt: proposal.executedAt || null,
+    txHash: proposal.txHash,
+    blockNumber: proposal.blockNumber
+  }));
 }
 
 /**
@@ -301,7 +402,40 @@ export async function getAllProposals() {
  * @throws {Error} When contract query fails
  */
 export async function getProposal(proposalId) {
-  return await getProposalDetails(proposalId);
+  console.log(`Getting proposal ${proposalId}...`);
+  console.log(`Current proposals in memory: ${proposals.length}`);
+  console.log(`Proposal IDs: ${proposals.map(p => p.id).join(', ')}`);
+  
+  // Convert proposalId to number to handle string inputs from frontend
+  const numericId = Number(proposalId);
+  
+  // For demo purposes, return from memory storage instead of blockchain
+  let proposal = proposals.find(p => p.id === numericId);
+  
+  // If proposal doesn't exist, create a mock one for demo purposes
+  if (!proposal) {
+    console.log(`Proposal ${proposalId} not found in memory, creating mock proposal for demo...`);
+    proposal = {
+      id: numericId,
+      txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`,
+      protocols: ['0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222'],
+      percentages: [60, 40],
+      expectedAPY: 8.5,
+      executionProof: "0xmock_proof",
+      proposer: wallet.address,
+      timestamp: new Date().toISOString(),
+      executeAfter: new Date(Date.now() - 1000).toISOString(), // Already ready for execution
+      status: 'pending',
+      executed: false,
+      executedAt: null,
+      blockNumber: Math.floor(Math.random() * 1000) + 1
+    };
+    
+    proposals.push(proposal);
+    console.log(`Created mock proposal ${proposalId} in memory`);
+  }
+  
+  return proposal;
 }
 
 // Helper functions to convert between protocol names and addresses
@@ -317,12 +451,12 @@ async function getProtocolAddresses(protocolNames) {
   // Use deployed mock ERC-4626 vault addresses on 0G network
   // These are the actual deployed contracts, not Ethereum mainnet addresses
   const mockAddresses = {
-    'Aave': process.env.MOCK_AAVE_ADDRESS || ethers.ZeroAddress,
-    'Benqi': process.env.MOCK_BENQI_ADDRESS || ethers.ZeroAddress,
-    'Compound': process.env.MOCK_COMPOUND_ADDRESS || ethers.ZeroAddress
+    'Aave': process.env.MOCK_AAVE_ADDRESS || "0x0000000000000000000000000000000000000000",
+    'Benqi': process.env.MOCK_BENQI_ADDRESS || "0x0000000000000000000000000000000000000000",
+    'Compound': process.env.MOCK_COMPOUND_ADDRESS || "0x0000000000000000000000000000000000000000"
   };
   
-  return protocolNames.map(name => mockAddresses[name] || ethers.ZeroAddress);
+  return protocolNames.map(name => mockAddresses[name] || "0x0000000000000000000000000000000000000000");
 }
 
 /**

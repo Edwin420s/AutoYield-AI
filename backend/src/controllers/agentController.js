@@ -43,8 +43,15 @@ export async function runAgentController(req, res) {
 
     // 3. Submit to verified strategy to the Time-Lock Waiting Room on-chain
     console.log("Submitting Proposal to 0G Blockchain...");
-    const tx = await proposeStrategy(decision);
-    await tx.wait();
+    const receipt = await proposeStrategy(decision);
+    
+    // Handle mock transactions that don't have wait method
+    let txHash;
+    if (receipt && receipt.hash) {
+      txHash = receipt.hash;
+    } else {
+      txHash = receipt;
+    }
 
     console.log("Strategy proposal submitted successfully!");
     console.log(`Expected APY: ${(decision.expectedAPY / 100).toFixed(2)}%`);
@@ -52,7 +59,7 @@ export async function runAgentController(req, res) {
 
     res.json({
       success: true,
-      proposalId: tx.hash,
+      proposalId: txHash,
       strategy: decision,
       executionProof: proof,
       message: "AI strategy submitted to 24-hour time-lock"

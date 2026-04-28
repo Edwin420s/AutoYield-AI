@@ -18,6 +18,20 @@ import MarketOracleFeed from './components/MarketOracleFeed.jsx';
 import PendingProposals from './components/PendingProposals.jsx';
 import AgentControlPanel from './components/AgentControlPanel.jsx';
 
+// Suppress wallet extension injection errors globally
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const message = args[0];
+  if (typeof message === 'string' && 
+      (message.includes('message channel closed') ||
+       message.includes('listener indicated an asynchronous response') ||
+       message.includes('runtime.lastError'))) {
+    // Silently ignore wallet extension injection errors
+    return;
+  }
+  originalConsoleError.apply(console, args);
+};
+
 /**
  * Main application state and wallet management
  * Handles user authentication, vault data fetching, and AI strategy execution
@@ -34,22 +48,68 @@ function App() {
   /**
    * Connect user wallet using MetaMask or compatible browser wallet
    * Fetches vault data after successful connection
+   * Handles multiple wallet extensions and injection conflicts
    */
   const connectWallet = async () => {
     try {
-      if (window.ethereum) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
+      // Wait for wallet extensions to fully inject
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Check if any wallet is available
+      if (!window.ethereum) {
+        alert('Please install MetaMask or another compatible wallet!');
+        return;
+      }
+
+      // Try to detect and use MetaMask specifically to avoid conflicts
+      let provider;
+      if (window.ethereum.isMetaMask) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+      } else if (window.ethereum.providers?.length) {
+        // Multiple wallets detected, find MetaMask
+        const metamaskProvider = window.ethereum.providers.find(p => p.isMetaMask);
+        if (metamaskProvider) {
+          provider = new ethers.BrowserProvider(metamaskProvider);
+        } else {
+          provider = new ethers.BrowserProvider(window.ethereum);
+        }
+      } else {
+        provider = new ethers.BrowserProvider(window.ethereum);
+      }
+
+      // Request account access with error handling
+      try {
+        await provider.send("eth_requestAccounts", []);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
         setAccount(address);
         
         // Fetch vault data
         await fetchVaultData(address);
-      } else {
-        alert('Please install MetaMask!');
+      } catch (accountError) {
+        // Handle specific wallet connection errors
+        if (accountError.code === -32002) {
+          alert('Please unlock your wallet and approve the connection request.');
+        } else if (accountError.code === 4001) {
+          alert('Connection request was rejected. Please try again.');
+        } else {
+          console.error('Account access error:', accountError);
+          alert('Failed to access wallet accounts. Please check your wallet.');
+        }
       }
     } catch (error) {
       console.error('Failed to connect wallet:', error);
+      
+      // Provide user-friendly error messages
+      if (error.message?.includes('message channel closed')) {
+        // This is the wallet extension injection error - ignore it silently
+        console.log('Wallet extension injection detected, continuing...');
+        return;
+      } else if (error.code === 'NETWORK_ERROR') {
+        alert('Network error. Please check your internet connection.');
+      } else {
+        alert('Failed to connect wallet. Please ensure your wallet is unlocked and try again.');
+      }
     }
   };
 
@@ -72,10 +132,49 @@ function App() {
   };
 
   /**
+   * Handle strategy execution completion
+   * Updates vault data with new shares and APY after execution
+   * 
+   * @param {Object} executionResult - Result of strategy execution
+   */
+  const handleExecutionComplete = async (executionResult) => {
+    console.log('Strategy execution completed:', executionResult);
+    
+    // Fetch real vault data from backend after execution
+    if (account) {
+      console.log('Fetching updated vault data after execution...');
+      await fetchVaultData(account);
+    }
+  };
+
+  /**
+   * Refresh vault data periodically and when account changes
+   */
+  useEffect(() => {
+    if (account) {
+      // Initial fetch
+      fetchVaultData(account);
+      
+      // Set up periodic refresh every 30 seconds
+      const interval = setInterval(() => {
+        fetchVaultData(account);
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [account]);
+
+  /**
    * Execute AI strategy for yield optimization
    * Submits strategy to blockchain with 24-hour time-lock
    */
   const runAIStrategy = async () => {
+    // Check if wallet is connected
+    if (!account) {
+      alert('Please connect your wallet first to execute AI strategies!');
+      return;
+    }
+    
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/agent/run`, {
         method: 'POST',
@@ -84,8 +183,13 @@ function App() {
       const data = await response.json();
       
       if (data.success) {
-        alert('AI strategy submitted to 24-hour time-lock!');
+        alert('AI strategy submitted to 10-second time-lock!');
         console.log('Proposal ID:', data.proposalId);
+        
+        // Trigger proposal refresh without page reload
+        if (window.refreshProposals) {
+          window.refreshProposals();
+        }
       } else {
         alert('Failed to run AI strategy: ' + data.error);
       }
@@ -139,21 +243,21 @@ function App() {
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Total Assets</h3>
               <p className="text-3xl font-bold text-blue-400">
-                ${vaultData.totalAssets.toLocaleString()} USDC
+                ${(vaultData.totalAssets || 0).toLocaleString()} USDC
               </p>
             </div>
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Your Shares</h3>
               <p className="text-3xl font-bold text-green-400">
-                {vaultData.userShares.toLocaleString()}
+                {(vaultData.userShares || 0).toLocaleString()}
               </p>
             </div>
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Current APY</h3>
               <p className="text-3xl font-bold text-yellow-400">
-                {vaultData.apy.toFixed(2)}%
+                {parseFloat(vaultData.currentAPY || 0).toFixed(2)}%
               </p>
             </div>
           </div>
@@ -183,9 +287,14 @@ function App() {
               </div>
               <button 
                 onClick={runAIStrategy}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 px-6 py-3 rounded-lg font-medium"
+                disabled={!account}
+                className={`px-6 py-3 rounded-lg font-medium ${
+                  account 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700' 
+                    : 'bg-gray-600 cursor-not-allowed opacity-50'
+                }`}
               >
-                Run AI Strategy
+                {account ? 'Run AI Strategy' : 'Connect Wallet First'}
               </button>
             </div>
           </div>
@@ -200,7 +309,7 @@ function App() {
           <AgentControlPanel />
           
           {/* Pending Proposals - Time-lock Management */}
-          <PendingProposals />
+          <PendingProposals account={account} onExecutionComplete={handleExecutionComplete} />
         </div>
       </main>
 

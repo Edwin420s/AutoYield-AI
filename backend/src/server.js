@@ -18,6 +18,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import agentRoutes from './routes/agentRoutes.js';
+import contractRoutes from './routes/contractRoutes.js';
 
 dotenv.config();
 
@@ -50,6 +51,11 @@ app.use(express.json());
  * Mount agent routes under /api/agent prefix
  */
 app.use('/api/agent', agentRoutes);
+
+/**
+ * Mount contract routes under /api/contract prefix
+ */
+app.use('/api/contract', contractRoutes);
 
 /**
  * Health check endpoint for monitoring and load balancers
@@ -109,5 +115,6 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`AutoYield AI Backend Server running on port ${PORT}`);
   console.log(`Agent API available at: http://localhost:${PORT}/api/agent`);
+  console.log(`Contract API available at: http://localhost:${PORT}/api/contract`);
   console.log(`Health check: http://localhost:${PORT}/health`);
 });

@@ -18,9 +18,7 @@ import "@openzeppelin/contracts/interfaces/IERC4626.sol";
  * - Emergency liquidation mechanisms
  * - Basis Points (BPS) precision for allocations
  * 
- * @contract AutoYieldVault
  * @author AutoYield AI Team
- * @version 1.0.0
  */
 contract AutoYieldVault is ERC20 {
     using SafeERC20 for IERC20;
@@ -256,6 +254,12 @@ contract AutoYieldVault is ERC20 {
 
             // Deposit to protocol
             IERC4626(protocol).transferFrom(address(this), _receiver, protocolAssets);
+        }
+
+        emit Rebalanced(_protocols, _percentages, availableAssets);
+    }
+
+    // ========================================
     // 2.5. LIQUIDATION HELPER
     // ========================================
     
