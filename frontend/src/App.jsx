@@ -78,13 +78,13 @@ function App() {
         // Initialize blockchain service with user's Web3 provider
         await blockchainService.initialize(result.provider, result.signer);
         
-        // Check if on correct network (0G Testnet)
-        const OG_TESTNET_CHAIN_ID = '0x1a7'; // 423 in hex
-        if (!walletService.isCorrectNetwork(OG_TESTNET_CHAIN_ID)) {
-          console.log('Wrong network detected, switching to 0G Testnet...');
-          const switched = await walletService.switchNetwork(OG_TESTNET_CHAIN_ID);
+        // Check if on correct network (Local Hardhat)
+        const LOCALHARDHAT_CHAIN_ID = '0x7d69'; // 31337 in hex
+        if (!walletService.isCorrectNetwork(LOCALHARDHAT_CHAIN_ID)) {
+          console.log('Wrong network detected, switching to Local Hardhat...');
+          const switched = await walletService.switchNetwork(LOCALHARDHAT_CHAIN_ID);
           if (!switched) {
-            setNetworkError('Please switch to 0G Testnet to use AutoYield AI');
+            setNetworkError('Please switch to Local Hardhat (localhost:8545) to use AutoYield AI');
           }
         }
         

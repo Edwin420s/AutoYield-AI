@@ -39,7 +39,8 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
     fetchProposals();
     
     // Set up blockchain event listeners for real-time updates
-    if (blockchainService) {
+    // Only set up listeners if blockchain service is properly initialized
+    if (blockchainService && blockchainService.strategyManagerContract) {
       console.log('Setting up blockchain event listeners...');
       
       blockchainService.setupEventListeners(

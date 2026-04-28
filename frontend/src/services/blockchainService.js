@@ -24,11 +24,11 @@ const AUTOYIELD_VAULT_ABI = [
 
 const STRATEGY_MANAGER_ABI = [
   "function proposalCount() external view returns (uint256)",
-  "function proposals(uint256 proposalId) external view returns (tuple(address[] protocols, uint256[] percentages, uint256 executionTime, bool executed, bool canceled))",
+  "function getProposal(uint256 proposalId) external view returns (address[] memory protocols, uint256[] memory percentages, uint256 executionTime, bool executed, bool canceled, address proposedBy, uint256 totalApy, uint256 portfolioRisk)",
   "function executeProposedStrategy(uint256 proposalId) external",
   "function cancelProposal(uint256 proposalId) external",
-  "event StrategyProposed(uint256 indexed proposalId, uint256 executionTime, address indexed proposer)",
-  "event StrategyExecuted(address indexed agent, uint256 indexed proposalId, uint256 totalApy, uint256 portfolioRisk)",
+  "event StrategyProposed(uint256 indexed proposalId, uint256 executeAfter, address indexed proposer)",
+  "event StrategyExecuted(address indexed agent, uint256 proposalId, uint256 totalApy, uint256 portfolioRisk)",
   "event ProposalCanceled(uint256 indexed proposalId, address indexed canceler)"
 ];
 
@@ -39,9 +39,9 @@ class BlockchainService {
     this.vaultContract = null;
     this.strategyManagerContract = null;
     this.contractAddresses = {
-      vault: process.env.VITE_AUTOYIELD_VAULT_ADDRESS || "0x0000000000000000000000000000000000000000",
-      strategyManager: process.env.VITE_STRATEGY_MANAGER_ADDRESS || "0x0000000000000000000000000000000000000000",
-      usdc: process.env.VITE_USDC_ADDRESS || "0x0000000000000000000000000000000000000000"
+      vault: import.meta.env.VITE_VAULT_ADDRESS || "0x0000000000000000000000000000000000000000",
+      strategyManager: import.meta.env.VITE_MANAGER_ADDRESS || "0x0000000000000000000000000000000000000000",
+      usdc: import.meta.env.VITE_UNDERLYING_ASSET || "0x0000000000000000000000000000000000000000"
     };
   }
 
@@ -210,7 +210,7 @@ class BlockchainService {
       const maxProposals = Math.min(Number(count), 50);
       for (let i = 0; i < maxProposals; i++) {
         try {
-          const proposal = await this.strategyManagerContract.proposals(i);
+          const proposal = await this.strategyManagerContract.getProposal(i);
           proposals.push({
             id: i,
             protocols: proposal.protocols,
@@ -242,7 +242,7 @@ class BlockchainService {
         return this.getMockProposal(proposalId);
       }
       
-      const proposal = await this.strategyManagerContract.proposals(proposalId);
+      const proposal = await this.strategyManagerContract.getProposal(proposalId);
       return {
         id: proposalId,
         protocols: proposal.protocols,

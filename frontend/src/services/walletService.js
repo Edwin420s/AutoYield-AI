@@ -254,18 +254,35 @@ class WalletService {
    */
   async addNetwork(chainId) {
     try {
-      // 0G Testnet configuration
-      const networkConfig = {
-        chainId: chainId,
-        chainName: '0G Testnet',
-        nativeCurrency: {
-          name: '0G',
-          symbol: '0G',
-          decimals: 18
-        },
-        rpcUrls: ['https://rpc.0g.ai/testnet'],
-        blockExplorerUrls: ['https://blockscout.0g.ai/testnet']
-      };
+      let networkConfig;
+      
+      // Local Hardhat network configuration
+      if (chainId === '0x7d69') {
+        networkConfig = {
+          chainId: chainId,
+          chainName: 'Local Hardhat',
+          nativeCurrency: {
+            name: 'ETH',
+            symbol: 'ETH',
+            decimals: 18
+          },
+          rpcUrls: ['http://127.0.0.1:8545'],
+          blockExplorerUrls: []
+        };
+      } else {
+        // 0G Testnet configuration (fallback)
+        networkConfig = {
+          chainId: chainId,
+          chainName: '0G Testnet',
+          nativeCurrency: {
+            name: '0G',
+            symbol: '0G',
+            decimals: 18
+          },
+          rpcUrls: ['https://rpc.0g.ai/testnet'],
+          blockExplorerUrls: ['https://blockscout.0g.ai/testnet']
+        };
+      }
 
       await this.provider.send('wallet_addEthereumChain', [networkConfig]);
       this.chainId = chainId;
