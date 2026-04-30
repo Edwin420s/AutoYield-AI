@@ -257,7 +257,7 @@ class WalletService {
       let networkConfig;
       
       // Local Hardhat network configuration
-      if (chainId === '0x7d69') {
+      if (chainId === '0x7a69') {
         networkConfig = {
           chainId: chainId,
           chainName: 'Local Hardhat',

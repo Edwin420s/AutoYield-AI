@@ -62,10 +62,10 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
       );
     }
 
-    // Set up polling for TEE-created proposals (every 5 seconds)
+    // Set up polling for TEE-created proposals (every 30 seconds)
     const pollInterval = setInterval(() => {
       fetchProposals();
-    }, 5000);
+    }, 30000);
 
     return () => {
       if (blockchainService) {
@@ -145,6 +145,11 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
             ...result // Include transaction result for verification
           });
         }
+        
+        // Refresh proposals to update the UI
+        setTimeout(() => {
+          fetchProposals();
+        }, 1000); // Small delay to ensure backend is updated
       } else {
         throw new Error('Execution transaction failed');
       }

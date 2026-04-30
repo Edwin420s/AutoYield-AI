@@ -79,13 +79,23 @@ function App() {
         await blockchainService.initialize(result.provider, result.signer);
         
         // Check if on correct network (Local Hardhat)
-        const LOCALHARDHAT_CHAIN_ID = '0x7d69'; // 31337 in hex
+        const LOCALHARDHAT_CHAIN_ID = `0x${parseInt(import.meta.env.VITE_CHAIN_ID).toString(16)}`;
         if (!walletService.isCorrectNetwork(LOCALHARDHAT_CHAIN_ID)) {
           console.log('Wrong network detected, switching to Local Hardhat...');
           const switched = await walletService.switchNetwork(LOCALHARDHAT_CHAIN_ID);
           if (!switched) {
             setNetworkError('Please switch to Local Hardhat (localhost:8545) to use AutoYield AI');
+            return;
           }
+          
+          // Reinitialize blockchain service with updated provider after network switch
+          const updatedProvider = new ethers.BrowserProvider(window.ethereum);
+          const updatedSigner = await updatedProvider.getSigner();
+          await blockchainService.initialize(updatedProvider, updatedSigner);
+          
+          // Update state with new provider/signer
+          setProvider(updatedProvider);
+          setSigner(updatedSigner);
         }
         
         // Fetch vault data directly from blockchain
@@ -183,8 +193,8 @@ function App() {
       return;
     }
     
-    if (!walletService.isCorrectNetwork('0x1a7')) {
-      alert('Please switch to 0G Testnet to execute AI strategies!');
+    if (!walletService.isCorrectNetwork('0x7a69')) {
+      alert('Please switch to Localhost 8545 to execute AI strategies!');
       return;
     }
     
@@ -222,6 +232,40 @@ function App() {
     } catch (error) {
       console.error('Failed to run AI strategy:', error);
       alert('Failed to run AI strategy: ' + error.message);
+    }
+  };
+
+  /**
+   * Handle USDC deposit into vault
+   * Allows users to deposit funds and see their shares
+   */
+  const handleDeposit = async () => {
+    try {
+      if (!account || !signer) {
+        alert('Please connect your wallet first!');
+        return;
+      }
+
+      // Prompt user for deposit amount
+      const amount = prompt('Enter amount of USDC to deposit:');
+      if (!amount || parseFloat(amount) <= 0) {
+        return;
+      }
+
+      console.log('Depositing USDC:', amount);
+      
+      // Call the deposit function from blockchain service
+      const result = await blockchainService.deposit(account, amount, signer);
+      
+      console.log('Deposit successful:', result);
+      alert(`Successfully deposited ${amount} USDC! You now have ${result.shares} vault shares.`);
+      
+      // Refresh vault data to show updated shares
+      await fetchVaultDataFromBlockchain(account);
+      
+    } catch (error) {
+      console.error('Deposit failed:', error);
+      alert('Deposit failed: ' + error.message);
     }
   };
 
@@ -294,9 +338,20 @@ function App() {
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Your Shares</h3>
-              <p className="text-3xl font-bold text-green-400">
+              <p className="text-3xl font-bold text-green-400 mb-3">
                 {(vaultData.userShares || 0).toLocaleString()}
               </p>
+              <button 
+                onClick={handleDeposit}
+                disabled={!account}
+                className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                  account 
+                    ? 'bg-green-600 hover:bg-green-700 text-white' 
+                    : 'bg-gray-600 cursor-not-allowed opacity-50 text-gray-400'
+                }`}
+              >
+                Deposit USDC
+              </button>
             </div>
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">

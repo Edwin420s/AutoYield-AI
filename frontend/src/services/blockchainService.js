@@ -85,12 +85,25 @@ class BlockchainService {
       }
       
       const totalAssets = await this.vaultContract.totalAssets();
-      console.log('Real TVL from blockchain:', ethers.formatUnits(totalAssets, 6));
-      return ethers.formatUnits(totalAssets, 6); // USDC has 6 decimals
+      console.log('Real TVL from blockchain (raw):', totalAssets.toString());
+      
+      // The vault returns 18 decimals (like ETH), but we need to display as USDC (6 decimals)
+      // So we divide by 10^12 to convert from 18 to 6 decimals
+      const formattedAssets = ethers.formatUnits(totalAssets, 18);
+      console.log('Real TVL from blockchain (18 decimals):', formattedAssets);
+      
+      // Convert to USDC format (6 decimals) by dividing by 10^12
+      const assetsNumber = Number(formattedAssets) / 1000000000000;
+      console.log('Real TVL in USDC format:', assetsNumber.toString());
+      
+      return assetsNumber.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
     } catch (error) {
       console.error('Failed to get total assets from contract:', error);
       // Return 0 for demo if contract not deployed
-      return "0";
+      return "0.00";
     }
   }
 
@@ -199,35 +212,29 @@ class BlockchainService {
    */
   async getAllProposals() {
     try {
-      if (!this.strategyManagerContract) {
-        // Return mock data for demo if contract not deployed
-        return this.getMockProposals();
+      // Fetch proposals from backend API where they're actually stored
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/proposals`);
+      const result = await response.json();
+      
+      if (result.success) {
+        return result.proposals.map(p => ({
+          id: p.id,
+          protocols: p.protocols,
+          percentages: p.percentages,
+          executionTime: new Date(p.executeAfter).getTime() / 1000,
+          executed: p.executed,
+          canceled: p.canceled || false,
+          expectedAPY: p.expectedAPY,
+          proposer: p.proposer,
+          timestamp: p.timestamp
+        }));
+      } else {
+        console.error('Failed to fetch proposals from backend:', result.error);
+        return [];
       }
-      
-      const count = await this.strategyManagerContract.proposalCount();
-      const proposals = [];
-      
-      const maxProposals = Math.min(Number(count), 50);
-      for (let i = 0; i < maxProposals; i++) {
-        try {
-          const proposal = await this.strategyManagerContract.getProposal(i);
-          proposals.push({
-            id: i,
-            protocols: proposal.protocols,
-            percentages: proposal.percentages.map(p => Number(p)),
-            executionTime: Number(proposal.executionTime),
-            executed: proposal.executed,
-            canceled: proposal.canceled
-          });
-        } catch (error) {
-          console.error(`Failed to fetch proposal ${i}:`, error);
-        }
-      }
-      
-      return proposals;
     } catch (error) {
-      console.error('Failed to get proposals from blockchain:', error);
-      return this.getMockProposals();
+      console.error('Failed to fetch proposals:', error);
+      return [];
     }
   }
 
@@ -396,6 +403,63 @@ class BlockchainService {
         expectedAPY: 8.5
       }
     ];
+  }
+
+  /**
+   * Deposit USDC into the vault
+   * @param {string} userAddress - User's wallet address
+   * @param {string} amount - Amount to deposit in USDC (6 decimals)
+   * @param {ethers.Signer} signer - User's signer for transaction
+   * @returns {Promise<Object>} Transaction result
+   */
+  async deposit(userAddress, amount, signer) {
+    try {
+      if (!this.vaultContract) {
+        throw new Error('Vault contract not initialized');
+      }
+
+      // Convert amount to wei (USDC uses 6 decimals)
+      const depositAmount = ethers.parseUnits(amount, 6);
+      
+      // First approve the vault to spend USDC
+      const usdcContract = new ethers.Contract(
+        this.contractAddresses.usdc,
+        [
+          "function approve(address spender, uint256 amount) external returns (bool)",
+          "function balanceOf(address account) external view returns (uint256)"
+        ],
+        signer
+      );
+
+      // Check user's USDC balance
+      const usdcBalance = await usdcContract.balanceOf(userAddress);
+      console.log('User USDC balance:', ethers.formatUnits(usdcBalance, 6));
+
+      if (usdcBalance < depositAmount) {
+        throw new Error(`Insufficient USDC balance. You have ${ethers.formatUnits(usdcBalance, 6)} USDC, trying to deposit ${amount} USDC`);
+      }
+
+      // Approve vault to spend USDC
+      const approveTx = await usdcContract.approve(this.contractAddresses.vault, depositAmount);
+      await approveTx.wait();
+      console.log('USDC approved for vault');
+
+      // Deposit USDC into vault
+      const depositTx = await this.vaultContract.connect(signer).deposit(depositAmount, userAddress);
+      await depositTx.wait();
+      console.log('USDC deposited into vault');
+
+      return {
+        success: true,
+        transactionHash: depositTx.hash,
+        amount: amount,
+        shares: await this.getUserShares(userAddress)
+      };
+
+    } catch (error) {
+      console.error('Deposit failed:', error);
+      throw error;
+    }
   }
 
   getMockProposal(proposalId) {
