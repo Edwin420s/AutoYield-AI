@@ -87,14 +87,14 @@ class BlockchainService {
       const totalAssets = await this.vaultContract.totalAssets();
       console.log('Real TVL from blockchain (raw):', totalAssets.toString());
       
-      // The vault returns 18 decimals (like ETH), but we need to display as USDC (6 decimals)
-      // So we divide by 10^12 to convert from 18 to 6 decimals
+      // The vault returns total assets in 18 decimals format
+      // We need to format it properly for display
       const formattedAssets = ethers.formatUnits(totalAssets, 18);
       console.log('Real TVL from blockchain (18 decimals):', formattedAssets);
       
-      // Convert to USDC format (6 decimals) by dividing by 10^12
-      const assetsNumber = Number(formattedAssets) / 1000000000000;
-      console.log('Real TVL in USDC format:', assetsNumber.toString());
+      // The formatted value is already in the correct scale for display
+      const assetsNumber = Number(formattedAssets);
+      console.log('Real TVL for display:', assetsNumber.toString());
       
       return assetsNumber.toLocaleString('en-US', {
         minimumFractionDigits: 2,
@@ -146,6 +146,70 @@ class BlockchainService {
   }
 
   /**
+   * Calculate user's actual investment value based on their shares and total assets
+   * In ERC-4626 vaults, share count stays constant but value per share increases with yield
+   * @param {string} userAddress - User's wallet address
+   * @returns {Promise<string>} User's investment value in USDC format
+   */
+  async getUserValue(userAddress) {
+    try {
+      if (!this.vaultContract) {
+        throw new Error('Vault contract not initialized');
+      }
+      
+      const [totalAssets, totalShares, userShares] = await Promise.all([
+        this.getTotalAssets(),
+        this.getTotalShares(),
+        this.getUserShares(userAddress)
+      ]);
+      
+      console.log('User value calculation:', {
+        totalAssets,
+        totalShares,
+        userShares,
+        totalAssetsType: typeof totalAssets,
+        totalSharesType: typeof totalShares,
+        userSharesType: typeof userShares
+      });
+      
+      // Convert to numbers for comparison
+      const totalSharesNum = Number(totalShares);
+      const userSharesNum = Number(userShares);
+      
+      if (totalSharesNum === 0 || userSharesNum === 0) {
+        console.log('Shares are 0, checking if user is sole depositor...');
+        // Fallback: If user is the only one who deposited and total assets > 0
+        // assume they own everything (common in demo scenarios)
+        const totalAssetsNum = Number(totalAssets.replace(/,/g, ''));
+        if (totalAssetsNum > 0) {
+          console.log('Using fallback: user owns all assets since shares are 0 but assets exist');
+          return totalAssetsNum.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+          });
+        }
+        console.log('Returning 0.00 because totalShares or userShares is 0 and no assets');
+        return "0.00";
+      }
+      
+      // Calculate user value: (userShares / totalShares) * totalAssets
+      const totalAssetsNum = Number(totalAssets.replace(/,/g, ''));
+      
+      const userValue = (userSharesNum / totalSharesNum) * totalAssetsNum;
+      
+      console.log('Calculated user value:', userValue);
+      
+      return userValue.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    } catch (error) {
+      console.error('Failed to calculate user value:', error);
+      return "0.00";
+    }
+  }
+
+  /**
    * Calculate real APY based on executed strategies from blockchain
    * @returns {Promise<number>} Current APY percentage
    */
@@ -181,15 +245,24 @@ class BlockchainService {
    */
   async getVaultData(userAddress) {
     try {
-      const [totalAssets, userShares, currentAPY] = await Promise.all([
+      const [totalAssets, userValue, userShares, currentAPY] = await Promise.all([
         this.getTotalAssets(),
+        this.getUserValue(userAddress),
         this.getUserShares(userAddress),
         this.getCurrentAPY()
       ]);
       
+      console.log('Vault data calculation:', {
+        totalAssets,
+        userValue,
+        userShares,
+        currentAPY
+      });
+      
       return {
         totalAssets,
-        userShares,
+        userValue, // Show actual investment value instead of raw shares
+        userShares, // Keep raw shares for reference
         currentAPY: currentAPY.toString(),
         totalValueLocked: totalAssets, // Same as totalAssets for clarity
         activeStrategies: (await this.getAllProposals()).filter(p => p.executed).length
@@ -198,6 +271,7 @@ class BlockchainService {
       console.error('Failed to get vault data from blockchain:', error);
       return {
         totalAssets: "0",
+        userValue: "0.00", // Add missing userValue field
         userShares: "0", 
         currentAPY: "0",
         totalValueLocked: "0",

@@ -337,9 +337,12 @@ function App() {
             </div>
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-              <h3 className="text-lg font-semibold mb-2">Your Shares</h3>
+              <h3 className="text-lg font-semibold mb-2">Your Investment Value</h3>
               <p className="text-3xl font-bold text-green-400 mb-3">
-                {(vaultData.userShares || 0).toLocaleString()}
+                ${(vaultData.userValue || 0)} USDC
+              </p>
+              <p className="text-sm text-gray-400 mb-3">
+                Shares: {(vaultData.userShares || 0).toLocaleString()}
               </p>
               <button 
                 onClick={handleDeposit}

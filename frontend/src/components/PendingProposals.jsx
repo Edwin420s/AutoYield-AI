@@ -10,27 +10,34 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
   // 1. Fetch Proposals directly from Blockchain Service
   // Replaces backend API with direct Web3 calls
   const fetchProposals = async () => {
-    // Don't fetch proposals if wallet is not connected
-    if (!account || !blockchainService) {
+    setLoading(true);
+    
+    try {
+      console.log('Fetching proposals from backend API...');
+      const response = await fetch('http://localhost:3000/api/proposals');
+      const data = await response.json();
+      console.log('Backend proposals:', data.proposals);
+      setProposals(data.proposals || []);
       setLoading(false);
-      return;
-    }
-      
-      setLoading(true);
-      
-      try {
-        console.log('Fetching proposals directly from blockchain...');
-        const proposals = await blockchainService.getAllProposals();
-        console.log('Blockchain proposals:', proposals);
-        setProposals(proposals);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching proposals from blockchain:", error);
-        // Set empty state to prevent infinite loading
+    } catch (error) {
+      console.error("Error fetching proposals from backend:", error);
+      // Fallback to blockchain if backend fails
+      if (blockchainService && blockchainService.strategyManagerContract) {
+        try {
+          console.log('Fallback: Fetching proposals from blockchain...');
+          const proposals = await blockchainService.getAllProposals();
+          console.log('Blockchain proposals:', proposals);
+          setProposals(proposals);
+        } catch (blockchainError) {
+          console.error("Error fetching proposals from blockchain:", blockchainError);
+          setProposals([]);
+        }
+      } else {
         setProposals([]);
-        setLoading(false);
       }
-    };
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Expose fetchProposals globally for real-time updates
@@ -135,6 +142,25 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
         alert(executionDetails);
         console.log('Execution transaction successful:', result);
         
+        // Update backend to mark proposal as executed
+        try {
+          console.log(`Updating backend to mark proposal ${id} as executed...`);
+          const backendResponse = await fetch(`http://localhost:3000/api/proposals/${id}/execute`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (backendResponse.ok) {
+            console.log('Backend updated successfully');
+          } else {
+            console.warn('Failed to update backend, but blockchain execution succeeded');
+          }
+        } catch (backendError) {
+          console.warn('Backend update failed, but blockchain execution succeeded:', backendError);
+        }
+        
         // Call parent callback to update vault data
         if (onExecutionComplete) {
           onExecutionComplete({
@@ -201,7 +227,19 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
               let isReady = false;
               let timeRemaining = 0;
               
-              if (typeof prop.executionTime === 'string') {
+              // Debug: Log the proposal object to see what fields we have
+              console.log(`Proposal #${prop.id} fields:`, {
+                executeAfter: prop.executeAfter,
+                executionTime: prop.executionTime,
+                allKeys: Object.keys(prop)
+              });
+              
+              if (prop.executeAfter) {
+                // Use executeAfter field from backend API
+                const executeAfterTime = new Date(prop.executeAfter).getTime();
+                timeRemaining = executeAfterTime - Date.now();
+                isReady = timeRemaining <= 0;
+              } else if (typeof prop.executionTime === 'string') {
                 // If it's an ISO string, convert to timestamp
                 const executeAfterTime = new Date(prop.executionTime).getTime();
                 timeRemaining = executeAfterTime - Date.now();
