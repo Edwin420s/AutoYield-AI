@@ -378,14 +378,14 @@ function App() {
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Total Assets</h3>
               <p className="text-3xl font-bold text-blue-400">
-                ${(vaultData.totalAssets || 0).toLocaleString()} USDC
+                ${vaultData.totalAssets || "0.00"} USDC
               </p>
             </div>
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
               <h3 className="text-lg font-semibold mb-2">Your Investment Value</h3>
               <p className="text-3xl font-bold text-green-400 mb-3">
-                ${(vaultData.userValue || 0)} USDC
+                ${vaultData.userValue || "0.00"} USDC
               </p>
               <p className="text-sm text-gray-400 mb-3">
                 Shares: {(vaultData.userShares || 0).toLocaleString()}
