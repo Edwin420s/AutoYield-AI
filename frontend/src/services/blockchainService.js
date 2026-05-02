@@ -398,6 +398,77 @@ class BlockchainService {
   }
 
   /**
+   * Withdraw USDC from the vault (burn shares + get assets + yield)
+   * @param {string} userAddress - User's wallet address
+   * @param {string} sharesAmount - Amount of shares to withdraw (human-readable format)
+   * @param {ethers.Signer} signer - User's signer for transaction
+   * @returns {Promise<Object>} Transaction result
+   */
+  async withdraw(userAddress, sharesAmount, signer) {
+    try {
+      if (!this.vaultContract) {
+        throw new Error('Vault contract not initialized');
+      }
+
+      // Convert human-readable shares to 18 decimals format
+      const shares = ethers.parseUnits(sharesAmount, 18);
+      console.log('Withdrawing shares (human):', sharesAmount);
+      console.log('Withdrawing shares (18 decimals):', shares.toString());
+
+      // Get user's current shares to validate withdrawal amount
+      const userShares = await this.vaultContract.balanceOf(userAddress);
+      console.log('User current shares:', userShares.toString());
+
+      if (userShares < shares) {
+        throw new Error('Insufficient shares balance');
+      }
+
+      // Execute withdrawal transaction
+      const tx = await this.vaultContract.connect(signer).withdraw(shares, userAddress);
+      console.log('Withdrawal transaction submitted:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Withdrawal confirmed:', receipt.hash);
+
+      // Calculate expected withdrawal amount using vault's formula
+      const totalAssets = await this.vaultContract.totalAssets(); // 18 decimals
+      const totalShares = await this.vaultContract.getTotalShares(); // 18 decimals
+      
+      // Vault formula: (shares * totalAssets) / totalShares = assets in 18 decimals
+      const expectedAssets = (shares * totalAssets) / totalShares;
+      
+      console.log('Withdrawal calculation debug:');
+      console.log('- Total assets (18 decimals):', totalAssets.toString());
+      console.log('- Total shares (18 decimals):', totalShares.toString());
+      console.log('- Shares to withdraw (18 decimals):', shares.toString());
+      console.log('- Expected assets (18 decimals):', expectedAssets.toString());
+      
+      // Convert from 18 decimals to USDC (6 decimals): remove 12 decimal places
+      const assetsInUSDC = ethers.formatUnits(expectedAssets, 12);
+      const formattedAssets = Number(assetsInUSDC).toLocaleString('en-US', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+      });
+      
+      console.log('- USDC amount (6 decimals):', assetsInUSDC);
+      console.log('- Formatted USDC:', formattedAssets);
+
+      return {
+        success: true,
+        hash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        status: receipt.status,
+        sharesWithdrawn: sharesAmount,
+        usdcReceived: formattedAssets
+      };
+    } catch (error) {
+      console.error('Withdrawal failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Cancel proposal on blockchain
    * @param {number} proposalId - Proposal ID to cancel
    * @returns {Promise<Object>} Transaction receipt

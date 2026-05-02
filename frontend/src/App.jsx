@@ -269,6 +269,52 @@ function App() {
     }
   };
 
+  /**
+   * Handle USDC withdrawal from vault
+   * Allows users to withdraw their shares and receive USDC + yield
+   */
+  const handleWithdraw = async () => {
+    try {
+      if (!account || !signer) {
+        alert('Please connect your wallet first!');
+        return;
+      }
+
+      // Get user's current shares
+      const userShares = vaultData.userShares || '0';
+      if (parseFloat(userShares) <= 0) {
+        alert('You have no shares to withdraw!');
+        return;
+      }
+
+      // Prompt user for withdrawal amount
+      const amount = prompt(`Enter amount of shares to withdraw (max: ${userShares}):`);
+      if (!amount || parseFloat(amount) <= 0) {
+        return;
+      }
+
+      if (parseFloat(amount) > parseFloat(userShares)) {
+        alert('Insufficient shares balance!');
+        return;
+      }
+
+      console.log('Withdrawing shares:', amount);
+      
+      // Call the withdraw function from blockchain service
+      const result = await blockchainService.withdraw(account, amount, signer);
+      
+      console.log('Withdrawal successful:', result);
+      alert(`Successfully withdrawn ${result.sharesWithdrawn} shares! You received ${result.usdcReceived} USDC.`);
+      
+      // Refresh vault data to show updated shares and assets
+      await fetchVaultDataFromBlockchain(account);
+      
+    } catch (error) {
+      console.error('Withdrawal failed:', error);
+      alert('Withdrawal failed: ' + error.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {/* Application Header */}
@@ -344,17 +390,30 @@ function App() {
               <p className="text-sm text-gray-400 mb-3">
                 Shares: {(vaultData.userShares || 0).toLocaleString()}
               </p>
-              <button 
-                onClick={handleDeposit}
-                disabled={!account}
-                className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                  account 
-                    ? 'bg-green-600 hover:bg-green-700 text-white' 
-                    : 'bg-gray-600 cursor-not-allowed opacity-50 text-gray-400'
-                }`}
-              >
-                Deposit USDC
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleDeposit}
+                  disabled={!account}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    account 
+                      ? 'bg-green-600 hover:bg-green-700 text-white' 
+                      : 'bg-gray-600 cursor-not-allowed opacity-50 text-gray-400'
+                  }`}
+                >
+                  Deposit USDC
+                </button>
+                <button 
+                  onClick={handleWithdraw}
+                  disabled={!account}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                    account 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'bg-gray-600 cursor-not-allowed opacity-50 text-gray-400'
+                  }`}
+                >
+                  Withdraw USDC
+                </button>
+              </div>
             </div>
             
             <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
