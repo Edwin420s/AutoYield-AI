@@ -252,8 +252,12 @@ contract AutoYieldVault is ERC20 {
                 IERC4626(protocol).transferFrom(address(this), protocol, protocolAssets);
             }
 
-            // Deposit to protocol
-            IERC4626(protocol).transferFrom(address(this), _receiver, protocolAssets);
+            // CRITICAL: Approve the protocol to take our USDC before depositing
+            if (protocolAssets > 0) {
+                underlyingAsset.approve(protocol, protocolAssets);
+                // Deposit to protocol
+                IERC4626(protocol).deposit(protocolAssets, _receiver);
+            }
         }
 
         emit Rebalanced(_protocols, _percentages, availableAssets);

@@ -28,6 +28,33 @@
 - **Explorer Integration:** Every action references 0G Testnet Explorer for public verification
 - **Event-Driven Updates:** Real-time UI updates via blockchain event listeners
 
+## 🚨 Critical Production Notice - Decimal Precision
+
+### **V1 Mock Environment vs V2 Production Deployment**
+
+**⚠️ V1 Demo Limitation:** This prototype utilizes **18 decimals** for all assets (including MockUSDC) to maintain consistency with standard ERC-20 tutorials and Hardhat testing environments.
+
+**🔧 V2 Production Upgrade:** The production version will natively parse dynamic ERC-20 `decimals()` to support **6-decimal stablecoins** (USDC/USDT) to prevent magnitude routing failures that could cause transaction reverts when deploying to mainnet.
+
+> **"V1 Mock Environment utilizes 18 decimals for asset consistency. Production V2 natively parses dynamic ERC-20 `decimals()` to support 6-decimal stablecoins (USDC/USDT) to prevent magnitude routing failures."**
+
+**Impact:** When connecting to real USDC contracts, ensure decimal precision is handled to avoid trillion-dollar magnitude errors.
+
+## 🚨 Critical Deployment Notice - Nonce Cache Stalling
+
+### **Hardhat Node + Backend Restart Synchronization**
+
+**⚠️ Nonce Cache Issue:** When running a local Hardhat node with Express backend, `ethers.js` caches wallet nonces to speed up transactions.
+
+**🔧 Required Restart Procedure:** If you restart `npx hardhat node`, you **must** also restart `npm run dev` in the backend to reset the Node.js wallet's internal nonce tracker.
+
+**Failure Mode:** 
+- Hardhat resets nonce to `0` but backend cache thinks nonce is `5+`
+- Transactions hang indefinitely in mempool waiting for missing nonces
+- UI shows infinite loading spinner
+
+**Solution:** Always restart both servers together when resetting the blockchain.
+
 ## Overview
 AutoYield AI is an intelligent DeFi vault that uses AI to monitor lending rates (Aave, Benqi, etc.) and automatically move funds to the highest‑yielding opportunity while respecting risk limits. Unlike simple bots, every decision is executed inside **0G's Trusted Execution Environments**, verified on-chain via **0G Chain**, with full reasoning stored on **0G Storage**. The result is a fully transparent, auditable, and front‑running‑resistant autonomous asset manager.
 
