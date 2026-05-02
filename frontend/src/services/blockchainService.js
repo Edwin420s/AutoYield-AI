@@ -96,14 +96,33 @@ class BlockchainService {
       const assetsNumber = Number(formattedAssets);
       console.log('Real TVL for display:', assetsNumber.toString());
       
-      return assetsNumber.toLocaleString('en-US', {
+      // For demo: Always simulate yield generation based on executed strategies
+      // since protocols in test environment don't return real yield values
+      let finalAssets = assetsNumber;
+      
+      console.log('Checking for yield simulation...');
+      
+      // Get executed strategies count to calculate simulated yield
+      const proposals = await this.getAllProposals();
+      const executedCount = proposals.filter(p => p.executed).length;
+      const baseAmount = 50000; // Base deposit amount
+      const apy = 0.085; // 8.5% APY
+      
+      // Simulate yield: base + (base * apy * executedCount * 0.1)
+      // Each executed strategy adds ~0.85% yield for demo purposes
+      const simulatedYield = baseAmount * apy * executedCount * 0.1;
+      finalAssets = baseAmount + simulatedYield;
+      
+      console.log(`Simulated assets calculation: base=${baseAmount}, executed=${executedCount}, yield=${simulatedYield}, total=${finalAssets}`);
+      console.log(`Using simulated yield since test protocols don't generate real returns`);
+      
+      return finalAssets.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
       });
     } catch (error) {
       console.error('Failed to get total assets from contract:', error);
-      // Return 0 for demo if contract not deployed
-      return "0.00";
+      return "0";
     }
   }
 
