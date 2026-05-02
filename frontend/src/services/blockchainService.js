@@ -96,25 +96,26 @@ class BlockchainService {
       const assetsNumber = Number(formattedAssets);
       console.log('Real TVL for display:', assetsNumber.toString());
       
-      // For demo: Always simulate yield generation based on executed strategies
-      // since protocols in test environment don't return real yield values
+      // Use the real blockchain data for total assets
+      console.log('Using real blockchain data for total assets');
+      
+      // For demo: Add simulated yield on top of real assets if there are executed strategies
       let finalAssets = assetsNumber;
       
-      console.log('Checking for yield simulation...');
-      
-      // Get executed strategies count to calculate simulated yield
       const proposals = await this.getAllProposals();
       const executedCount = proposals.filter(p => p.executed).length;
-      const baseAmount = 50000; // Base deposit amount
-      const apy = 0.085; // 8.5% APY
       
-      // Simulate yield: base + (base * apy * executedCount * 0.1)
-      // Each executed strategy adds ~0.85% yield for demo purposes
-      const simulatedYield = baseAmount * apy * executedCount * 0.1;
-      finalAssets = baseAmount + simulatedYield;
-      
-      console.log(`Simulated assets calculation: base=${baseAmount}, executed=${executedCount}, yield=${simulatedYield}, total=${finalAssets}`);
-      console.log(`Using simulated yield since test protocols don't generate real returns`);
+      if (executedCount > 0 && assetsNumber > 0) {
+        // Add realistic yield based on actual assets
+        const apy = 0.085; // 8.5% APY
+        const simulatedYield = assetsNumber * apy * executedCount * 0.1;
+        finalAssets = assetsNumber + simulatedYield;
+        
+        console.log(`Yield calculation: base=${assetsNumber}, executed=${executedCount}, yield=${simulatedYield}, total=${finalAssets}`);
+        console.log(`Added simulated yield to real blockchain assets`);
+      } else {
+        console.log(`Using real blockchain assets without yield simulation: ${assetsNumber}`);
+      }
       
       return finalAssets.toLocaleString('en-US', {
         minimumFractionDigits: 2,
@@ -443,14 +444,16 @@ class BlockchainService {
       console.log('- Shares to withdraw (18 decimals):', shares.toString());
       console.log('- Expected assets (18 decimals):', expectedAssets.toString());
       
-      // Convert from 18 decimals to USDC (6 decimals): remove 12 decimal places
-      const assetsInUSDC = ethers.formatUnits(expectedAssets, 12);
-      const formattedAssets = Number(assetsInUSDC).toLocaleString('en-US', { 
+      // Convert from 18 decimals to readable USDC amount
+      // The vault formula gives us the correct USDC amount in 18 decimals
+      // We just need to format it properly for display
+      const usdcAmount = Number(ethers.formatUnits(expectedAssets, 18));
+      const formattedAssets = usdcAmount.toLocaleString('en-US', { 
         minimumFractionDigits: 2, 
         maximumFractionDigits: 2 
       });
       
-      console.log('- USDC amount (6 decimals):', assetsInUSDC);
+      console.log('- USDC amount (6 decimals):', usdcAmount.toString());
       console.log('- Formatted USDC:', formattedAssets);
 
       return {
