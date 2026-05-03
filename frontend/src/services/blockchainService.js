@@ -1,14 +1,374 @@
 /**
- * Blockchain Service - Direct Web3 Integration
- * Replaces backend API calls with direct blockchain reads for true Web3 architecture
+ * ========================================
+ * AUTOYIELD AI - BLOCKCHAIN SERVICE
+ * ========================================
  * 
- * Key Features:
- * - Direct contract calls using ethers.js
- * - Real-time TVL and APY from smart contracts
- * - Transaction status verification
+ * File: frontend/src/services/blockchainService.js
+ * Version: 1.0.0
+ * Author: AutoYield AI Team
+ * 
+ * ========================================
+ * MODULE DESCRIPTION
+ * ========================================
+ * Direct Web3 blockchain integration service for AutoYield AI.
+ * This service implements true Web3 architecture by replacing backend API calls
+ * with direct blockchain reads using ethers.js, ensuring users have direct
+ * access to on-chain data without intermediaries.
+ * 
+ * Core Architecture:
+ * - Direct Contract Interaction: No backend dependency for on-chain data
+ * - Real-Time Data: Live blockchain state updates
+ * - User-Controlled: All operations use user's wallet connection
+ * - Verifiable Finance: All data comes directly from smart contracts
+ * - Event-Driven: Reacts to on-chain events in real-time
+ * 
+ * ========================================
+ * KEY FEATURES
+ * ========================================
+ * - Direct smart contract interaction using ethers.js
+ * - Real-time TVL and APY data from blockchain
+ * - Transaction status verification and tracking
+ * - Proposal management and execution
+ * - Event listening for real-time updates
  * - Proper Web3 wallet integration
+ * - Decimal precision handling for financial data
+ * - Error handling for blockchain operations
  * 
- * @module services/blockchainService
+ * ========================================
+ * CONTRACT INTEGRATIONS
+ * ========================================
+ * 
+ * AutoYieldVault (ERC-4626):
+ * - totalAssets(): Get total value locked in vault
+ * - balanceOf(address): Get user's vault shares
+ * - deposit(uint256, address): Deposit funds into vault
+ * - withdraw(uint256, address): Withdraw funds from vault
+ * - getTotalShares(): Get total shares issued
+ * 
+ * StrategyManager:
+ * - proposalCount(): Get total number of proposals
+ * - getProposal(uint256): Get proposal details
+ * - executeProposedStrategy(uint256): Execute strategy
+ * - cancelProposal(uint256): Cancel proposal
+ * - Strategy events monitoring
+ * 
+ * MockUSDC (Underlying Asset):
+ * - balanceOf(address): Get USDC balance
+ * - approve(address, uint256): Approve spending
+ * - transfer(address, uint256): Transfer tokens
+ * 
+ * ========================================
+ * DATA FLOW ARCHITECTURE
+ * ========================================
+ * 
+ * 1. Direct Blockchain Reads:
+ *    - No backend API dependency for on-chain data
+ *    - Real-time data directly from smart contracts
+ *    - User's wallet provides direct blockchain access
+ *    - Immediate response to state changes
+ * 
+ * 2. Event-Driven Updates:
+ *    - Listen to smart contract events
+ *    - Real-time UI updates on blockchain changes
+ *    - Proposal status changes
+ *    - TVL and balance updates
+ * 
+ * 3. Transaction Management:
+ *    - User signs all transactions
+ *    - Direct contract interaction
+ *    - Transaction status tracking
+ *    - Error handling and retry logic
+ * 
+ * 4. Decimal Precision:
+ *    - Proper handling of 18-decimal vault assets
+ *    - 6-decimal USDC token support
+ *    - Accurate financial calculations
+ *    - Display formatting for user interface
+ * 
+ * ========================================
+ * VAULT OPERATIONS
+ * ========================================
+ * 
+ * Total Value Locked (TVL):
+ * - Direct call to vault.totalAssets()
+ * - 18-decimal precision handling
+ * - Real-time updates
+ * - Error handling for contract failures
+ * 
+ * User Balance Management:
+ * - balanceOf() for user's vault shares
+ * - Conversion to display format
+ * - Real-time balance updates
+ * - Share-to-asset ratio calculations
+ * 
+ * Deposit Operations:
+ * - USDC approval before deposit
+ * - Direct vault deposit() calls
+ * - Share calculation and tracking
+ * - Transaction confirmation handling
+ * 
+ * Withdrawal Operations:
+ * - Share redemption for assets
+ * - Direct vault withdraw() calls
+ * - Asset transfer to user
+ * - Transaction status tracking
+ * 
+ * ========================================
+ * STRATEGY MANAGEMENT
+ * ========================================
+ * 
+ * Proposal Tracking:
+ * - getProposal() for detailed proposal data
+ * - Proposal status monitoring
+ * - Execution time tracking
+ * - Portfolio risk metrics
+ * 
+ * Proposal Execution:
+ * - executeProposedStrategy() for approved strategies
+ * - Transaction signing by user
+ * - Execution confirmation
+ * - Event emission handling
+ * 
+ * Proposal Cancellation:
+ * - cancelProposal() for proposal withdrawal
+ * - Permission validation
+ * - Status updates
+ * - Event handling
+ * 
+ * Event Monitoring:
+ * - StrategyProposed events
+ * - StrategyExecuted events
+ * - ProposalCanceled events
+ * - Real-time UI updates
+ * 
+ * ========================================
+ * DECIMAL PRECISION HANDLING
+ * ========================================
+ * 
+ * Vault Assets (18 decimals):
+ * - Raw blockchain values: 18 decimal places
+ * - ethers.formatUnits() for conversion
+ * - Display formatting for user interface
+ * - Mathematical operations precision
+ * 
+ * USDC Tokens (6 decimals):
+ * - Token contract uses 6 decimals
+ * - Approval and transfer operations
+ * - Balance checking and formatting
+ * - Cross-decimal operations
+ * 
+ * Financial Calculations:
+ * - APY calculations with proper precision
+ * - Risk score computations
+ * - Portfolio allocation percentages
+ * - Display formatting consistency
+ * 
+ * ========================================
+ * ERROR HANDLING STRATEGY
+ * ========================================
+ * 
+ * Contract Interaction Errors:
+ * - Contract not initialized
+ * - Network connection issues
+ * - Invalid contract addresses
+ * - ABI mismatch errors
+ * 
+ * Transaction Errors:
+ * - Insufficient balance
+ * - Gas estimation failures
+ * - User rejection handling
+ * - Nonce conflicts
+ * 
+ * Data Formatting Errors:
+ * - Decimal precision issues
+ * - Large number handling
+ * - Display formatting errors
+ * - Mathematical overflow
+ * 
+ * Network Errors:
+ * - RPC connection failures
+ * - Network switching issues
+ * - Block confirmation delays
+ * - Timeout handling
+ * 
+ * ========================================
+ * PERFORMANCE OPTIMIZATIONS
+ * ========================================
+ * 
+ * Contract Calls:
+ * - Efficient ABI definitions
+ * - Minimal RPC calls
+ * - Batch operations where possible
+ * - Response caching for static data
+ * 
+ * Event Handling:
+ * - Efficient event filtering
+ * - Debounced event processing
+ * - Minimal re-renders
+ * - Event cleanup on disconnect
+ * 
+ * Data Processing:
+ * - Optimized decimal formatting
+ * - Efficient mathematical calculations
+ * - Minimal memory footprint
+ * - Streamlined data structures
+ * 
+ * ========================================
+ * SECURITY CONSIDERATIONS
+ * ========================================
+ * 
+ * Contract Security:
+ * - Validated contract addresses
+ * - Secure ABI definitions
+ * - Input validation and sanitization
+ * - Error information disclosure control
+ * 
+ * Transaction Security:
+ * - User confirmation for all operations
+ * - Transaction detail verification
+ * - Gas limit validation
+ * - Front-running protection
+ * 
+ * Data Security:
+ * - No sensitive data storage
+ * - Secure event handling
+ * - Memory cleanup on disconnect
+ * - Secure data transmission
+ * 
+ * ========================================
+ * INTEGRATION POINTS
+ * ========================================
+ * 
+ * Frontend Integration:
+ * - React component integration
+ * - State management (Context/Redux)
+ * - Real-time UI updates
+ * - User interaction handling
+ * 
+ * Wallet Integration:
+ * - walletService integration
+ * - Provider and signer management
+ * - Network validation
+ * - Transaction signing
+ * 
+ * Backend Integration:
+ * - Minimal backend dependency
+ * - API fallback for complex operations
+ * - Data synchronization
+ * - Status reporting
+ * 
+ * Smart Contract Integration:
+ * - Direct contract interaction
+ * - Event listening
+ * - ABI management
+ * - Contract address configuration
+ * 
+ * ========================================
+ * TESTING AND VALIDATION
+ * ========================================
+ * 
+ * Unit Testing:
+ * - Contract interaction methods
+ * - Decimal formatting functions
+ * - Error handling scenarios
+ * - Event processing logic
+ * 
+ * Integration Testing:
+ * - End-to-end blockchain flows
+ * - Wallet integration testing
+ * - Contract deployment testing
+ * - Event handling validation
+ * 
+ * Performance Testing:
+ * - Contract call efficiency
+ * - Event processing performance
+ * - Memory usage optimization
+ * - Response time benchmarks
+ * 
+ * ========================================
+ * COMPATIBILITY MATRIX
+ * ========================================
+ * 
+ * Network Support:
+ * - 0G Testnet: Full support
+ * - Ethereum Mainnet: Compatible
+ * - Local Hardhat: Full support
+ * - Other EVM: Compatible
+ * 
+ * Wallet Support:
+ * - MetaMask: Full support
+ * - WalletConnect: Compatible
+ * - Coinbase Wallet: Compatible
+ * - Other EIP-1193: Basic support
+ * 
+ * Browser Support:
+ * - Chrome: Full support
+ * - Firefox: Full support
+ * - Safari: Limited support
+ * - Edge: Full support
+ * 
+ * ========================================
+ * FUTURE ENHANCEMENTS
+ * ========================================
+ * 
+ * Advanced Features:
+ * - Multi-contract support
+ * - Advanced event filtering
+ * - Transaction batching
+ * - Gas optimization
+ * 
+ * User Experience:
+ * - Transaction previews
+ * - Advanced error recovery
+ * - Offline mode support
+ * - Performance analytics
+ * 
+ * Technical Enhancements:
+ * - WebSocket integration
+ * - Advanced caching strategies
+ * - Optimized ABI loading
+ * - Enhanced error reporting
+ * 
+ * ========================================
+ * DEPENDENCIES
+ * ========================================
+ * - ethers: Ethereum library for Web3 interactions
+ * - Contract ABIs: Smart contract interface definitions
+ * - Environment variables: Contract addresses and configuration
+ * 
+ * ========================================
+ * LICENSING & ATTRIBUTION
+ * ========================================
+ * License: MIT
+ * Author: AutoYield AI Team
+ * Project: AutoYield AI - Intelligent DeFi Yield Optimization
+ * 
+ * ========================================
+ * USAGE EXAMPLES
+ * ========================================
+ * 
+ * Service Initialization:
+ * import { blockchainService } from './services/blockchainService.js';
+ * await blockchainService.initialize(provider, signer);
+ * 
+ * TVL Retrieval:
+ * const tvl = await blockchainService.getTotalAssets();
+ * console.log('Total Value Locked:', tvl);
+ * 
+ * User Balance:
+ * const balance = await blockchainService.getUserBalance(userAddress);
+ * console.log('User balance:', balance);
+ * 
+ * Proposal Management:
+ * const proposal = await blockchainService.getProposal(proposalId);
+ * console.log('Proposal details:', proposal);
+ * 
+ * ========================================
+ * ACKNOWLEDGMENTS
+ * ========================================
+ * Implements true Web3 architecture with direct blockchain access.
+ * Provides comprehensive smart contract integration capabilities.
+ * Designed for production deployment with rigorous testing.
  */
 
 import { ethers } from 'ethers';

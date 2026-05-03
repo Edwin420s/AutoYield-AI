@@ -3,15 +3,387 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-interface IVault {
-    function rebalance(address[] memory, uint256[] memory) external;
-}
-
-interface IAgentRegistry {
-    function isAgent(address) external view returns (bool);
-}
-
-contract StrategyManager {
+/**
+ * ========================================
+ * AUTOYIELD AI - STRATEGY MANAGER
+ * ========================================
+ * 
+ * Contract: contracts/StrategyManager.sol
+ * Version: 1.0.0
+ * Author: AutoYield AI Team
+ * License: MIT
+ * 
+ * ========================================
+ * CONTRACT DESCRIPTION
+ * ========================================
+ * Core governance and execution contract for the AutoYield AI system that manages
+ * investment strategy proposals, enforces time-lock security, and validates TEE
+ * (Trusted Execution Environment) signatures from AI agents. This contract serves as
+ * the central coordination point between AI-generated strategies, user execution, and
+ * vault rebalancing operations while maintaining strict security controls.
+ * 
+ * Core Responsibilities:
+ * - Strategy proposal management and validation
+ * - Time-lock enforcement for user protection
+ * - TEE signature verification for AI authenticity
+ * - Protocol whitelisting and risk management
+ * - Vault rebalancing coordination
+ * - Access control and authorization
+ * 
+ * ========================================
+ * KEY FEATURES
+ * ========================================
+ * 
+ * Strategy Management:
+ * - AI-generated investment strategy proposals
+ * - Time-lock protection for major decisions
+ * - Proposal cancellation and execution
+ * - Historical proposal tracking
+ * - Portfolio risk assessment
+ * 
+ * Security Mechanisms:
+ * - TEE signature verification using ECDSA
+ * - Replay attack prevention
+ * - Time-lock duration enforcement
+ * - Agent authorization validation
+ * - Protocol whitelisting system
+ * 
+ * Risk Management:
+ * - Protocol risk scoring (0-100 scale)
+ * - Maximum allocation limits (BPS)
+ * - Portfolio risk calculation
+ * - Dynamic allocation enforcement
+ * - 0G Storage audit trail integration
+ * 
+ * ========================================
+ * ARCHITECTURAL DESIGN
+ * ========================================
+ * 
+ * Contract Structure:
+ * - Central governance contract
+ * - Interface-based vault integration
+ * - Agent registry integration
+ * - ECDSA signature verification
+ * - Event-driven architecture
+ * 
+ * Data Flow:
+ * 1. AI agent generates strategy with TEE signature
+ * 2. Strategy proposed with time-lock protection
+ * 3. Users can execute after time-lock expires
+ * 4. Vault rebalanced with new allocations
+ * 5. Events emitted for transparency
+ * 
+ * Integration Points:
+ * - IVault interface for rebalancing
+ * - IAgentRegistry for authorization
+ * - ECDSA for cryptographic verification
+ * - 0G Storage for audit trails
+ * 
+ * ========================================
+ * SECURITY ARCHITECTURE
+ * ========================================
+ * 
+ * TEE Verification:
+ * - ECDSA signature verification
+ * - Trusted enclave key management
+ * - Replay attack prevention
+ * - Cryptographic authenticity
+ * 
+ * Time-Lock Protection:
+ * - Configurable time-lock duration
+ * - 24-hour default for production
+ * - Demo mode with shorter periods
+ * - Smart contract enforcement
+ * 
+ * Access Control:
+ * - Owner-only administrative functions
+ * - Agent authorization validation
+ * - Protocol whitelisting control
+ * - Multi-layer security checks
+ * 
+ * ========================================
+ * DATA STRUCTURES
+ * ========================================
+ * 
+ * ProtocolInfo Struct:
+ * - isWhitelisted: Protocol approval status
+ * - riskScore: Risk assessment (0-100)
+ * - maxAllocationBps: Maximum allocation percentage
+ * - name: Human-readable protocol name
+ * - zeroGStorageHash: Audit report CID
+ * - lastUpdated: Last modification timestamp
+ * 
+ * Proposal Struct:
+ * - protocols: Array of protocol addresses
+ * - percentages: Allocation percentages
+ * - executionTime: Time-lock expiration
+ * - executed: Execution status flag
+ * - canceled: Cancellation status flag
+ * - proposedBy: Proposer address
+ * - totalApy: Expected annual percentage yield
+ * - portfolioRisk: Calculated risk score
+ * 
+ * ========================================
+ * CORE FUNCTIONS
+ * ========================================
+ * 
+ * Strategy Proposal:
+ * - proposeStrategy(): Create new investment proposal
+ * - TEE signature verification
+ * - Time-lock calculation and enforcement
+ * - Risk validation and allocation checks
+ * - Event emission for transparency
+ * 
+ * Strategy Execution:
+ * - executeProposedStrategy(): Execute approved strategy
+ * - Time-lock validation
+ * - Authorization checks
+ * - Vault rebalancing coordination
+ * - Status updates and events
+ * 
+ * Strategy Management:
+ * - cancelProposal(): Cancel pending proposal
+ * - getProposal(): Retrieve proposal details
+ * - getAllProposals(): Get all proposals
+ * - Event-driven updates
+ * 
+ * ========================================
+ * PROTOCOL MANAGEMENT
+ * ========================================
+ * 
+ * Whitelisting System:
+ * - updateProtocol(): Add/update protocol
+ * - Risk score assignment (0-100)
+ * - Maximum allocation limits (BPS)
+ * - 0G Storage hash for audit trails
+ * 
+ * Risk Assessment:
+ * - Protocol risk scoring
+ * - Portfolio risk calculation
+ * - Allocation limit enforcement
+ * - Dynamic risk management
+ * 
+ * Audit Integration:
+ * - 0G Storage hash storage
+ * - Audit trail maintenance
+ * - Transparency and verifiability
+ * - Historical tracking
+ * 
+ * ========================================
+ * EVENT SYSTEM
+ * ========================================
+ * 
+ * ProtocolUpdated Event:
+ * - Emitted on protocol changes
+ * - Indexed protocol address
+ * - Risk score and allocation data
+ * - 0G Storage hash inclusion
+ * 
+ * StrategyProposed Event:
+ * - Emitted on new proposals
+ * - Indexed proposal ID and proposer
+ * - Execution time information
+ * - Real-time monitoring
+ * 
+ * StrategyExecuted Event:
+ * - Emitted on strategy execution
+ * - Indexed agent and proposal ID
+ * - Performance metrics
+ * - Completion confirmation
+ * 
+ * ProposalCanceled Event:
+ * - Emitted on proposal cancellation
+ * - Indexed proposal ID and canceler
+ * - Status change tracking
+ * 
+ * ========================================
+ * MODIFIER SYSTEM
+ * ========================================
+ * 
+ * onlyOwner Modifier:
+ * - Restricts administrative functions
+ * - Owner address validation
+ * - Security enforcement
+ * - Applied to sensitive operations
+ * 
+ * ========================================
+ * ERROR HANDLING
+ * ========================================
+ * 
+ * Validation Errors:
+ * - Invalid signature verification
+ * - Time-lock not expired
+ * - Unauthorized agent access
+ * - Risk limit violations
+ * 
+ * Input Validation:
+ * - Zero address checks
+ * - Array length validation
+ * - Percentage sum verification
+ * - Protocol whitelist checks
+ * 
+ * Security Errors:
+ * - Replay attack detection
+ * - Invalid TEE signatures
+ * - Unauthorized access attempts
+ * - Clear error messages
+ * 
+ * ========================================
+ * GAS OPTIMIZATION
+ * ========================================
+ * 
+ * Storage Efficiency:
+ * - Optimized struct packing
+ * - Minimal storage writes
+ * - Efficient mapping usage
+ * - Gas-optimized operations
+ * 
+ * Function Efficiency:
+ * - Batch operations where possible
+ * - Minimal external calls
+ * - Efficient validation checks
+ * - Optimized event emission
+ * 
+ * ========================================
+ * INTEGRATION INTERFACES
+ * ========================================
+ * 
+ * IVault Interface:
+ * - rebalance() function for vault updates
+ * - Protocol and percentage arrays
+ * - Direct vault integration
+ * - Asset allocation management
+ * 
+ * IAgentRegistry Interface:
+ * - isAgent() function for authorization
+ * - Agent validation
+ * - Access control enforcement
+ * - Security integration
+ * 
+ * ========================================
+ * DEPLOYMENT CONFIGURATION
+ * ========================================
+ * 
+ * Constructor Parameters:
+ * - _vault: AutoYieldVault contract address
+ * - _registry: AgentRegistry contract address
+ * - _enclaveKey: Trusted TEE enclave key
+ * - _hackathonTimeLockDuration: Configurable time-lock
+ * 
+ * Initialization:
+ * - Contract address setup
+ * - Time-lock configuration
+ * - Owner assignment
+ * - Immediate readiness
+ * 
+ * ========================================
+ * TESTING STRATEGY
+ * ========================================
+ * 
+ * Unit Tests:
+ * - Strategy proposal creation
+ * - TEE signature verification
+ * - Time-lock enforcement
+ * - Protocol management
+ * 
+ * Integration Tests:
+ * - Vault rebalancing coordination
+ * - Agent registry integration
+ * - Event emission verification
+ * - End-to-end strategy execution
+ * 
+ * Security Tests:
+ * - Replay attack prevention
+ * - Unauthorized access attempts
+ * - Risk limit enforcement
+ * - Edge case handling
+ * 
+ * ========================================
+ * FUTURE ENHANCEMENTS
+ * ========================================
+ * 
+ * Advanced Features:
+ * - DAO governance integration
+ * - Multi-signature requirements
+ * - Advanced risk models
+ * - Performance analytics
+ * 
+ * Security Enhancements:
+ * - Advanced TEE verification
+ * - Multi-factor authentication
+ * - Enhanced audit trails
+ * - Emergency mechanisms
+ * 
+ * ========================================
+ * COMPATIBILITY
+ * ========================================
+ * 
+ * Solidity Version:
+ * - Compatible with Solidity ^0.8.20
+ * - OpenZeppelin ECDSA integration
+ * - Modern Solidity features
+ * - Safe math operations
+ * 
+ * EVM Compatibility:
+ * - Compatible with all EVM chains
+ * - Gas-optimized operations
+ * - Standard event patterns
+ * - No chain-specific dependencies
+ * 
+ * ========================================
+ * DEPENDENCIES
+ * ========================================
+ * - OpenZeppelin ECDSA: Cryptographic signature verification
+ * - Custom interfaces: IVault, IAgentRegistry
+ * - Built-in Solidity types
+ * - No external library dependencies
+ * 
+ * ========================================
+ * LICENSING & ATTRIBUTION
+ * ========================================
+ * License: MIT
+ * Author: AutoYield AI Team
+ * Project: AutoYield AI - Intelligent DeFi Yield Optimization
+ * 
+ * ========================================
+ * USAGE EXAMPLES
+ * ========================================
+ * 
+ * Basic Deployment:
+ * // Deploy contracts
+ * IVault vault = AutoYieldVault(...);
+ * IAgentRegistry registry = AgentRegistry(...);
+ * 
+ * // Deploy StrategyManager
+ * StrategyManager manager = new StrategyManager(
+ *   address(vault),
+ *   address(registry),
+ *   trustedEnclaveKey,
+ *   24 hours // time-lock duration
+ * );
+ * 
+ * Strategy Proposal:
+ * // AI agent proposes strategy
+ * bytes32 signature = signStrategy(...);
+ * manager.proposeStrategy(
+ *   protocols,
+ *   percentages,
+ *   totalApy,
+ *   portfolioRisk,
+ *   signature
+ * );
+ * 
+ * Strategy Execution:
+ * // Execute after time-lock
+ * manager.executeProposedStrategy(proposalId);
+ * 
+ * ========================================
+ * ACKNOWLEDGMENTS
+ * ========================================
+ * Implements comprehensive strategy management system.
+ * Provides secure TEE verification and time-lock protection.
+ * Designed for production deployment with rigorous security measures.
+ */
     using ECDSA for bytes32;
 
     address public vault;

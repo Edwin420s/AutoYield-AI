@@ -7,18 +7,352 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 /**
- * @title AutoYieldVault
- * @dev An autonomous, ERC-4626 inspired vault that physically routes underlying assets 
- * into external DeFi protocols based on AI agent strategies.
+ * ========================================
+ * AUTOYIELD AI - AUTOYIELD VAULT
+ * ========================================
  * 
- * Key Features:
- * - Physical asset routing to ERC-4626 vaults
- * - AI-driven rebalancing with time-lock protection
+ * Contract: contracts/AutoYieldVault.sol
+ * Version: 1.0.0
+ * Author: AutoYield AI Team
+ * License: MIT
+ * 
+ * ========================================
+ * CONTRACT DESCRIPTION
+ * ========================================
+ * Autonomous, ERC-4626 inspired vault that physically routes underlying assets
+ * into external DeFi protocols based on AI agent strategies. This contract serves
+ * as the core vault component of the AutoYield AI system, enabling users to
+ * deposit funds that are automatically allocated across various DeFi protocols
+ * to optimize yield while maintaining security through time-lock mechanisms.
+ * 
+ * Core Architecture:
+ * - ERC-4626 Inspired: Follows ERC-4626 standard principles for vault design
+ * - Physical Asset Routing: Actually moves assets to external DeFi protocols
+ * - AI-Driven Rebalancing: Responds to AI agent strategy decisions
+ * - Time-Lock Protection: 24-hour waiting period for major changes
+ * - Emergency Mechanisms: Liquidation and pause functionality
+ * 
+ * ========================================
+ * KEY FEATURES
+ * ========================================
+ * 
+ * Yield Optimization:
+ * - Automatic allocation across multiple DeFi protocols
  * - Real-time yield tracking and accounting
- * - Emergency liquidation mechanisms
- * - Basis Points (BPS) precision for allocations
+ * - Dynamic rebalancing based on market conditions
+ * - Risk-adjusted allocation strategies
  * 
- * @author AutoYield AI Team
+ * Security Features:
+ * - Time-lock protection for major decisions
+ * - Emergency liquidation mechanisms
+ * - Authorized strategy manager only access
+ * - Comprehensive event logging
+ * 
+ * User Experience:
+ * - Standard ERC-4626 interface compatibility
+ * - Real-time share value calculation
+ * - Transparent allocation tracking
+ * - Gas-efficient operations
+ * 
+ * ========================================
+ * ARCHITECTURAL DESIGN
+ * ========================================
+ * 
+ * Vault Structure:
+ * - Inherits from ERC20 for share tokens
+ * - Implements SafeERC20 for secure token operations
+ * - Uses IERC4626 interface for standardization
+ * - Immutable underlying asset reference
+ * 
+ * Allocation Management:
+ * - Basis Points (BPS) precision for allocations
+ * - Array-based allocation storage
+ * - Protocol address validation
+ * - Percentage sum verification (10000 BPS = 100%)
+ * 
+ * Asset Flow:
+ * 1. User deposits underlying assets
+ * 2. Vault shares minted to user
+ * 3. Assets allocated to DeFi protocols
+ * 4. Yield generated in protocols
+ * 5. Shares appreciate in value
+ * 6. User withdraws with accumulated yield
+ * 
+ * ========================================
+ * DATA STRUCTURES
+ * ========================================
+ * 
+ * Allocation Struct:
+ * - protocol: Address of ERC-4626 compatible DeFi protocol
+ * - percentage: Allocation in Basis Points (10000 = 100%)
+ * - Validation: Protocol must be ERC-4626 compatible
+ * - Precision: BPS enables exact allocation calculations
+ * 
+ * State Variables:
+ * - underlyingAsset: Immutable reference to managed token
+ * - strategyManager: Authorized address for rebalancing
+ * - currentAllocations: Array of active protocol allocations
+ * - Total assets tracking across all protocols
+ * 
+ * ========================================
+ * CORE FUNCTIONS
+ * ========================================
+ * 
+ * Deposit Operations:
+ * - deposit(): User deposits underlying assets
+ * - Mint vault shares based on current share price
+ * - Update internal accounting
+ * - Emit Deposit event
+ * 
+ * Withdrawal Operations:
+ * - withdraw(): User burns shares for underlying assets
+ * - Calculate proportional share of total assets
+ * - Withdraw from allocated protocols if needed
+ * - Emit Withdraw event
+ * 
+ * Rebalancing Operations:
+ * - rebalance(): Authorized strategy manager only
+ * - Withdraw from current allocations
+ * - Deposit to new allocations
+ * - Update allocation array
+ * - Emit Rebalanced event
+ * 
+ * ========================================
+ * SECURITY MECHANISMS
+ * ========================================
+ * 
+ * Access Control:
+ * - onlyStrategyManager modifier for rebalancing
+ * - Immutable strategy manager address
+ * - No unauthorized allocation changes
+ * 
+ * Time-Lock Protection:
+ * - 24-hour waiting period for major changes
+ * - Implemented in StrategyManager contract
+ * - Emergency override capabilities
+ * - User protection mechanisms
+ * 
+ * Emergency Features:
+ * - Emergency liquidation functionality
+ * - Pause mechanisms for critical situations
+ * - Asset recovery procedures
+ * - Circuit breaker patterns
+ * 
+ * ========================================
+ * YIELD TRACKING
+ * ========================================
+ * 
+ * Asset Accounting:
+ * - Real-time total assets tracking
+ * - Per-protocol allocation tracking
+ * - Yield accumulation calculation
+ * - Share price appreciation
+ * 
+ * Performance Metrics:
+ * - Total Value Locked (TVL)
+ * - Annual Percentage Yield (APY)
+ * - Share price over time
+ * - Allocation efficiency
+ * 
+ * ========================================
+ * GAS OPTIMIZATION
+ * ========================================
+ * 
+ * Efficient Operations:
+ * - Minimal external calls
+ * - Batch operations where possible
+ * - Optimized storage patterns
+ * - Event-based notifications
+ * 
+ * Storage Optimization:
+ * - Immutable variables where possible
+ * - Packed data structures
+ * - Efficient array management
+ * - Minimal storage writes
+ * 
+ * ========================================
+ * EVENT SYSTEM
+ * ========================================
+ * 
+ * Rebalanced Event:
+ * - Emitted on allocation changes
+ * - Contains new protocol addresses
+ * - Includes allocation percentages
+ * - Shows total assets deployed
+ * 
+ * Deposit Event:
+ * - Emitted on user deposits
+ * - Tracks sender and receiver
+ * - Records assets and shares amounts
+ * - Enables off-chain tracking
+ * 
+ * Withdraw Event:
+ * - Emitted on user withdrawals
+ * - Complete transaction details
+ * - Asset and share amounts
+ * - Addresses for all participants
+ * 
+ * ========================================
+ * ERC-4626 COMPATIBILITY
+ * ========================================
+ * 
+ * Standard Implementation:
+ * - deposit() and mint() functions
+ * - withdraw() and redeem() functions
+ * - totalAssets() calculation
+ * - convertToShares() and convertToAssets()
+ * - previewDeposit() and previewWithdraw()
+ * 
+ * Deviation Notes:
+ * - Custom rebalancing mechanism
+ * - AI agent integration
+ * - Time-lock protection
+ * - Emergency features
+ * 
+ * ========================================
+ * INTEGRATION POINTS
+ * ========================================
+ * 
+ * StrategyManager Integration:
+ * - Authorized rebalancing calls
+ * - Time-lock coordination
+ * - Proposal execution
+ * - Emergency procedures
+ * 
+ * DeFi Protocol Integration:
+ * - ERC-4626 compatible vaults
+ * - Lending protocol interfaces
+ * - Yield farming protocols
+ * - Liquidity pool protocols
+ * 
+ * Frontend Integration:
+ * - Real-time data queries
+ * - User interface updates
+ * - Transaction status tracking
+ * - Event monitoring
+ * 
+ * ========================================
+ * RISK MANAGEMENT
+ * ========================================
+ * 
+ * Protocol Risk:
+ * - Protocol validation before allocation
+ * - Diversification requirements
+ * - Risk score integration
+ * - Maximum allocation limits
+ * 
+ * Market Risk:
+ * - Real-time market monitoring
+ * - Automatic rebalancing triggers
+ * - Volatility protection mechanisms
+ * - Emergency liquidation triggers
+ * 
+ * Operational Risk:
+ * - Access control enforcement
+ * - Time-lock protection
+ * - Emergency procedures
+ * - Comprehensive logging
+ * 
+ * ========================================
+ * TESTING AND VALIDATION
+ * ========================================
+ * 
+ * Unit Tests:
+ * - Deposit and withdrawal operations
+ * - Share calculation accuracy
+ * - Allocation management
+ * - Access control validation
+ * 
+ * Integration Tests:
+ * - StrategyManager coordination
+ * - DeFi protocol integration
+ * - Time-lock functionality
+ * - Emergency procedures
+ * 
+ * Performance Tests:
+ * - Gas efficiency benchmarks
+ * - Large-scale operations
+ * - Concurrent transactions
+ * - Stress testing
+ * 
+ * ========================================
+ * FUTURE ENHANCEMENTS
+ * ========================================
+ * 
+ * Advanced Features:
+ * - Multi-asset vault support
+ * - Advanced yield strategies
+ * - Dynamic fee mechanisms
+ * - Governance integration
+ * 
+ * Optimizations:
+ * - Gas efficiency improvements
+ * - Storage optimization
+ * - Enhanced security features
+ * - Performance monitoring
+ * 
+ * ========================================
+ * DEPENDENCIES
+ * ========================================
+ * - OpenZeppelin ERC20: Standard token implementation
+ * - OpenZeppelin IERC20: Token interface
+ * - OpenZeppelin SafeERC20: Safe token operations
+ * - OpenZeppelin IERC4626: Vault standard interface
+ * 
+ * ========================================
+ * SECURITY CONSIDERATIONS
+ * ========================================
+ * 
+ * Smart Contract Security:
+ * - Access control enforcement
+ * - Reentrancy protection
+ * - Overflow/underflow prevention
+ * - Emergency mechanisms
+ * 
+ * Economic Security:
+ * - Share price manipulation protection
+ * - Front-running prevention
+ * - Liquidation cascade prevention
+ * - Yield extraction protection
+ * 
+ * Operational Security:
+ * - Time-lock protection
+ * - Authorized operator control
+ * - Emergency response procedures
+ * - Comprehensive audit trail
+ * 
+ * ========================================
+ * LICENSING & ATTRIBUTION
+ * ========================================
+ * License: MIT
+ * Author: AutoYield AI Team
+ * Project: AutoYield AI - Intelligent DeFi Yield Optimization
+ * 
+ * ========================================
+ * USAGE EXAMPLES
+ * ========================================
+ * 
+ * Basic Deposit:
+ * // User deposits 1000 USDC into vault
+ * vault.deposit(1000 * 10**6, userAddress);
+ * 
+ * Basic Withdrawal:
+ * // User withdraws all shares
+ * uint256 userShares = vault.balanceOf(userAddress);
+ * vault.withdraw(userShares, userAddress, userAddress);
+ * 
+ * Rebalancing (Strategy Manager only):
+ * // Reallocate to new protocols
+ * address[] memory protocols = [protocolA, protocolB];
+ * uint256[] memory percentages = [5000, 5000]; // 50% each
+ * vault.rebalance(protocols, percentages);
+ * 
+ * ========================================
+ * ACKNOWLEDGMENTS
+ * ========================================
+ * Implements ERC-4626 inspired vault architecture.
+ * Provides secure asset allocation and management.
+ * Designed for production deployment with comprehensive testing.
  */
 contract AutoYieldVault is ERC20 {
     using SafeERC20 for IERC20;
