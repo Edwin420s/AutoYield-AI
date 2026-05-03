@@ -124,19 +124,19 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
       
       if (result.success) {
         const executionDetails = `
-🎯 Strategy Execution Complete!
+Strategy Execution Complete!
 
-📊 Proposal #${id} Executed:
-🔄 Protocols: ${protocolNames.join(', ')}
-📈 Allocations: ${proposal.percentages.map((p, i) => `${p}% to ${protocolNames[i]}`).join(', ')}
-🎯 Expected APY: ${proposal.expectedAPY || 'N/A'}%
+Proposal #${id} Executed:
+Protocols: ${protocolNames.join(', ')}
+Allocations: ${proposal.percentages.map((p, i) => `${p}% to ${protocolNames[i]}`).join(', ')}
+Expected APY: ${proposal.expectedAPY || 'N/A'}%
 
-⛽ Transaction: ${result.hash}
-📦 Block: ${result.blockNumber}
-💰 Funds have been physically routed to the selected DeFi protocols.
-📡 Yield generation will begin immediately.
+Transaction: ${result.hash}
+Block: ${result.blockNumber}
+Funds have been physically routed to the selected DeFi protocols.
+Yield generation will begin immediately.
 
-✅ Status: ACTIVE & GENERATING YIELD
+Status: ACTIVE & GENERATING YIELD
         `.trim();
         
         alert(executionDetails);
@@ -219,7 +219,7 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
           <>
             {/* Pending Proposals Section */}
             <div>
-              <h3 className="text-lg font-semibold mb-3 text-yellow-400">⏱️ Pending Proposals</h3>
+              <h3 className="text-lg font-semibold mb-3 text-yellow-400">Pending Proposals</h3>
               <div className="space-y-4">
                 {proposals.filter(prop => !prop.executed && !prop.canceled).map((prop) => {
               // Check if proposal is ready for execution based on on-chain time-lock
@@ -357,7 +357,7 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
 
             {/* Executed Proposals Section */}
             <div>
-              <h3 className="text-lg font-semibold mb-3 text-green-400">✅ Active Strategies</h3>
+              <h3 className="text-lg font-semibold mb-3 text-green-400">Active Strategies</h3>
               <div className="space-y-4">
                 {proposals.filter(prop => prop.executed).map((prop) => {
                   const protocolNames = prop.protocols.map(addr => getProtocolName(addr));

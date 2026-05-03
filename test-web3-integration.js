@@ -43,7 +43,7 @@ class Web3IntegrationTester {
     
     this.testResults.push(result);
     
-    const status = passed ? '✅ PASS' : '❌ FAIL';
+    const status = passed ? 'PASS' : 'FAIL';
     console.log(`${status} ${testName}`);
     if (details) console.log(`   Details: ${details}`);
     if (error) console.log(`   Error: ${error.message}`);
@@ -56,7 +56,7 @@ class Web3IntegrationTester {
    */
   async testDirectBlockchainTVL() {
     try {
-      console.log('🧪 Testing Fatal Flaw 1: Direct Blockchain TVL Reads...');
+      console.log('Testing Fatal Flaw 1: Direct Blockchain TVL Reads...');
       
       // Initialize provider for test
       this.provider = new ethers.JsonRpcProvider(TEST_CONFIG.OG_TESTNET_RPC);
@@ -109,7 +109,7 @@ class Web3IntegrationTester {
    */
   async testNonCustodialWallet() {
     try {
-      console.log('🧪 Testing Fatal Flaw 2: Non-Custodial Wallet Architecture...');
+      console.log('Testing Fatal Flaw 2: Non-Custodial Wallet Architecture...');
       
       // Test wallet service initialization
       await walletService.initialize();
@@ -146,7 +146,7 @@ class Web3IntegrationTester {
    */
   async testTransactionStatusVerification() {
     try {
-      console.log('🧪 Testing Fatal Flaw 3: Transaction Status Verification...');
+      console.log('Testing Fatal Flaw 3: Transaction Status Verification...');
       
       // Initialize blockchain service
       await blockchainService.initialize(this.provider, this.signer);
@@ -207,7 +207,7 @@ class Web3IntegrationTester {
    */
   async testOnChainTimeLockEnforcement() {
     try {
-      console.log('🧪 Testing Fatal Flaw 4: On-Chain Time-Lock Enforcement...');
+      console.log('Testing Fatal Flaw 4: On-Chain Time-Lock Enforcement...');
       
       // Create mock strategy manager contract
       const strategyManagerABI = [
@@ -273,7 +273,7 @@ class Web3IntegrationTester {
    */
   async testEndToEndIntegration() {
     try {
-      console.log('🧪 Testing End-to-End Web3 Integration...');
+      console.log('Testing End-to-End Web3 Integration...');
       
       // Test that blockchain service can be initialized
       await blockchainService.initialize(this.provider, this.signer);
@@ -315,8 +315,8 @@ class Web3IntegrationTester {
    * Run all tests and generate report
    */
   async runAllTests() {
-    console.log('🚀 Starting Web3 Integration Test Suite');
-    console.log('🎯 Testing fixes for 0G APAC Hackathon Track 2');
+    console.log('Starting Web3 Integration Test Suite');
+    console.log('Testing fixes for 0G APAC Hackathon Track 2');
     console.log('=' .repeat(60));
     
     // Run all tests
@@ -335,7 +335,7 @@ class Web3IntegrationTester {
    */
   generateTestReport() {
     console.log('=' .repeat(60));
-    console.log('📊 TEST REPORT SUMMARY');
+    console.log('TEST REPORT SUMMARY');
     console.log('=' .repeat(60));
     
     const passedTests = this.testResults.filter(r => r.passed).length;
@@ -350,7 +350,7 @@ class Web3IntegrationTester {
     
     // Show individual results
     this.testResults.forEach(result => {
-      const status = result.passed ? '✅' : '❌';
+      const status = result.passed ? 'PASS' : 'FAIL';
       console.log(`${status} ${result.testName}`);
       if (result.details) {
         console.log(`    ${result.details}`);
@@ -361,17 +361,17 @@ class Web3IntegrationTester {
     });
     
     console.log('');
-    console.log('🎯 HACKATHON READINESS ASSESSMENT:');
+    console.log('HACKATHON READINESS ASSESSMENT:');
     
     if (successRate >= 80) {
-      console.log('✅ READY FOR 0G APAC HACKATHON DEMO');
+      console.log('READY FOR 0G APAC HACKATHON DEMO');
       console.log('   All critical Web3 architecture flaws have been addressed');
       console.log('   Frontend now reads from blockchain, not fake backend');
       console.log('   Users maintain self-custody of funds');
       console.log('   Transaction status is properly verified');
       console.log('   Time-lock is enforced by smart contract');
     } else {
-      console.log('⚠️  NEEDS ATTENTION BEFORE DEMO');
+      console.log('NEEDS ATTENTION BEFORE DEMO');
       console.log('   Some critical issues remain unresolved');
       console.log('   Review failed tests and fix before presentation');
     }

@@ -5,7 +5,7 @@ import axios from 'axios';
  * Filters for high-liquidity, stable pools to feed the TEE AI Engine.
  * 
  * 
- * ⚠️ CRITICAL SECURITY WARNING: ORACLE INGRESS VULNERABILITY
+ * CRITICAL SECURITY WARNING: ORACLE INGRESS VULNERABILITY
  * ==========================================================
  * This V1 prototype has a critical architectural vulnerability:
  * The TEE secures the *calculation*, but NOT the *data source*.

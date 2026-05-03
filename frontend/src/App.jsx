@@ -336,7 +336,7 @@ function App() {
                   </span>
                   {networkError && (
                     <span className="text-xs text-red-400">
-                      ⚠️ {networkError}
+                      {networkError}
                     </span>
                   )}
                   <button 

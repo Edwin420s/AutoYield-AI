@@ -1,13 +1,13 @@
 # AutoYield AI - Hackathon Demo Script
 
-## 🎯 Demo Overview
+## Demo Overview
 **Time**: 5-7 minutes  
 **Focus**: Autonomous DeFi Yield Optimization with TEE Protection  
 **Target**: 0G APAC Hackathon 2026 - Track 2: Agentic Trading Arena
 
 ---
 
-## 📋 Demo Checklist
+## Demo Checklist
 - [ ] Frontend loaded at http://localhost:5173
 - [ ] Backend running at http://localhost:3000
 - [ ] Wallet connected (MetaMask/Yoroi/Eternl)
@@ -16,7 +16,7 @@
 
 ---
 
-## 🎬 Demo Script
+## Demo Script
 
 ### **1. Introduction (30 seconds)**
 "Welcome to AutoYield AI - the autonomous DeFi yield optimizer powered by 0G Compute's Trusted Execution Environment. 
@@ -69,34 +69,34 @@ Our system uses AI to automatically optimize yield across DeFi protocols while e
 **TEE Console Script:**
 "Watch what happens in our TEE Console:"
 
-- ✅ **"Initializing 0G Compute TEE Connection..."** 
+- **"Initializing 0G Compute TEE Connection..."** 
   "First, we establish a secure connection to the Trusted Execution Environment"
 
-- ✅ **"TEE Service Initialized"**
+- **"TEE Service Initialized"**
   "Our TEE service is ready to process sensitive financial data"
 
-- ✅ **"Fetching Live Market Data (DefiLlama API)..."**
+- **"Fetching Live Market Data (DefiLlama API)..."**
   "We're fetching the latest market data from 15 protocols"
 
-- ✅ **"Retrieved 15 protocols"**
+- **"Retrieved 15 protocols"**
   "Perfect! We have current market conditions"
 
-- ✅ **"Sealing Market Data for TEE Processing..."**
+- **"Sealing Market Data for TEE Processing..."**
   "This is critical - we're sealing the data inside the TEE so no one can tamper with it"
 
-- ✅ **"Running AI in Trusted Execution Environment..."**
+- **"Running AI in Trusted Execution Environment..."**
   "Our AI is now running inside the secure enclave, making decisions based on real market data"
 
-- ✅ **"TEE Decision Completed (Job: tee_job_xxx)"**
+- **"TEE Decision Completed (Job: tee_job_xxx)"**
   "The AI has made its decision! Let's see what it selected"
 
-- ✅ **"Attestation Verified: {...}"**
+- **"Attestation Verified: {...}"**
   "This is the cryptographic proof that our AI ran securely inside the TEE"
 
-- ✅ **"Strategy: 2 protocols selected"**
+- **"Strategy: 2 protocols selected"**
   "The AI selected 2 optimal protocols from the 15 available"
 
-- ✅ **"Strategy Submitted! TX: 0x19dd072b..."**
+- **"Strategy Submitted! TX: 0x19dd072b..."**
   "The strategy has been submitted to the blockchain with cryptographic proof!"
 
 ---
@@ -126,17 +126,17 @@ The AI determined that allocating 60% to Aave and 40% to Benqi would give us the
 
 **Key Security Features to Highlight:**
 
-🔒 **TEE Protection**
+**TEE Protection**
 - AI decisions made inside secure enclave
 - Cryptographic attestation proves execution integrity
 - No tampering possible with market data or decisions
 
-🛡️ **Front-running Prevention**
+**Front-running Prevention**
 - 24-hour time-lock prevents MEV attacks
 - All strategies are public before execution
 - Fair execution for all users
 
-⚡ **Real-time Processing**
+**Real-time Processing**
 - Live oracle feeds every few seconds
 - AI responds to market conditions immediately
 - No delays in decision making
@@ -158,10 +158,10 @@ The AI determined that allocating 60% to Aave and 40% to Benqi would give us the
 ### **8. Conclusion & Impact (30 seconds)**
 "AutoYield AI represents the future of automated DeFi yield optimization:
 
-✅ **Autonomous**: No manual portfolio management required
-✅ **Secure**: TEE protection ensures trustworthy execution  
-✅ **Efficient**: AI optimizes across 15+ protocols in real-time
-✅ **Fair**: Time-lock prevents front-running and MEV attacks
+**Autonomous**: No manual portfolio management required
+**Secure**: TEE protection ensures trustworthy execution  
+**Efficient**: AI optimizes across 15+ protocols in real-time
+**Fair**: Time-lock prevents front-running and MEV attacks
 
 We're making sophisticated yield farming accessible to everyone while maintaining the highest security standards through 0G's Trusted Execution Environment."
 
@@ -170,30 +170,30 @@ We're making sophisticated yield farming accessible to everyone while maintainin
 
 ---
 
-## 🎯 Demo Success Metrics
+## Demo Success Metrics
 
 ### **Technical Success:**
-- ✅ All services running without errors
-- ✅ Real-time data flowing correctly
-- ✅ AI strategy executing successfully
-- ✅ TEE attestation working
-- ✅ Time-lock system functional
+- All services running without errors
+- Real-time data flowing correctly
+- AI strategy executing successfully
+- TEE attestation working
+- Time-lock system functional
 
 ### **User Experience Success:**
-- ✅ Clean, intuitive interface
-- ✅ Real-time feedback and updates
-- ✅ Clear strategy information
-- ✅ Security features visible
+- Clean, intuitive interface
+- Real-time feedback and updates
+- Clear strategy information
+- Security features visible
 
 ### **Innovation Success:**
-- ✅ TEE-protected DeFi automation
-- ✅ Real-time AI decision making
-- ✅ Front-running prevention
-- ✅ Cryptographic proof generation
+- TEE-protected DeFi automation
+- Real-time AI decision making
+- Front-running prevention
+- Cryptographic proof generation
 
 ---
 
-## 🔧 Troubleshooting Guide
+## Troubleshooting Guide
 
 ### **If Frontend Not Loading:**
 ```bash
@@ -217,7 +217,7 @@ cd backend && npm run dev
 
 ---
 
-## 🚀 Ready for Hackathon!
+## Ready for Hackathon!
 
 Your AutoYield AI system is now fully operational and ready to impress the judges. The demo showcases:
 
@@ -226,4 +226,4 @@ Your AutoYield AI system is now fully operational and ready to impress the judge
 3. **AI-powered automation** for optimization
 4. **Complete user experience** from interface to execution
 
-Good luck at the 0G APAC Hackathon 2026! 🎉
+Good luck at the 0G APAC Hackathon 2026!

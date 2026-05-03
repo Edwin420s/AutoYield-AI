@@ -22,12 +22,12 @@ console.log('Final display format:', finalDisplay);
 const buggyDisplay = Number(rawBigInt).toLocaleString();
 console.log('BUGGY DISPLAY (raw BigInt):', buggyDisplay);
 
-console.log('\n✅ Fix verified:');
+console.log('\nFix verified:');
 console.log('- Correct display:', finalDisplay);
 console.log('- Buggy display:', buggyDisplay);
 
 // Test with different values
-console.log('\n🧪 Testing with different values:');
+console.log('\nTesting with different values:');
 const testValues = [
   '10000000000000000000000', // 10,000
   '5000000000000000000000',  // 5,000

@@ -14,7 +14,7 @@ export class ZeroGComputeClient {
   }
 
   async submitJob({ code, input, requirements }) {
-    console.log("🔒 Mock TEE: Submitting compute job to enclave...");
+    console.log("Mock TEE: Submitting compute job to enclave...");
     
     // Simulate TEE processing delay
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -70,13 +70,13 @@ export class ZeroGComputeClient {
   }
 
   async waitForCompletion(jobId) {
-    console.log(`⏳ Mock TEE: Waiting for job ${jobId} completion...`);
+    console.log(`Mock TEE: Waiting for job ${jobId} completion...`);
     await new Promise(resolve => setTimeout(resolve, 1000));
     return { status: 'completed' };
   }
 
   async sealInput({ data, encryptionKey, integrityProtection }) {
-    console.log("🔒 Mock TEE: Sealing input data...");
+    console.log("Mock TEE: Sealing input data...");
     // Mock sealing - just return the data with a seal marker
     return {
       sealedData: data,
@@ -87,7 +87,7 @@ export class ZeroGComputeClient {
   }
 
   async verifyAttestation({ quote, report, signature, nonce }) {
-    console.log("🔍 Mock TEE: Verifying attestation...");
+    console.log("Mock TEE: Verifying attestation...");
     // Mock attestation verification - always succeed in demo
     return {
       isValid: true,
@@ -97,7 +97,7 @@ export class ZeroGComputeClient {
   }
 
   async verifyExecutionProof(proof) {
-    console.log("🔍 Mock TEE: Verifying execution proof...");
+    console.log("Mock TEE: Verifying execution proof...");
     // Mock proof verification - always succeed in demo
     return {
       isValid: true,
@@ -107,7 +107,7 @@ export class ZeroGComputeClient {
   }
 
   async getJobStatus(jobId) {
-    console.log(`📊 Mock TEE: Checking job status for ${jobId}...`);
+    console.log(`Mock TEE: Checking job status for ${jobId}...`);
     return {
       state: 'completed',
       executionTime: 1500,
@@ -116,7 +116,7 @@ export class ZeroGComputeClient {
   }
 
   async getJobResult(jobId) {
-    console.log(`📤 Mock TEE: Retrieving job result for ${jobId}...`);
+    console.log(`Mock TEE: Retrieving job result for ${jobId}...`);
     return {
       decryptedOutput: this.processDecision({ protocols: [] }),
       executionProof: this.generateMockProof({}),

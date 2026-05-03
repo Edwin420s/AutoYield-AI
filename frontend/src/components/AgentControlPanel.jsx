@@ -62,7 +62,7 @@ export default function AgentControlPanel() {
                 log.status === 'error' ? 'text-red-500' :
                 'text-blue-400'
               }>
-                {log.status === 'processing' ? '>> ' : log.status === 'complete' ? '✓ ' : 'ℹ '}
+                {log.status === 'processing' ? '>> ' : log.status === 'complete' ? 'DONE ' : 'INFO '}
                 {log.message}
               </span>
             </div>

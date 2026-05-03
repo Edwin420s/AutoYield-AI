@@ -63,7 +63,7 @@ export default function MarketOracleFeed() {
 
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold flex items-center gap-2">
-          📡 Live Oracle Feed
+          Live Oracle Feed
 
         </h2>
 

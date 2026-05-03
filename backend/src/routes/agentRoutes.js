@@ -89,7 +89,7 @@ router.get('/stream-tee', async (req, res) => {
         executionProof: teeResult.executionProof // THIS IS THE CRITICAL COMPONENT
       };
       
-      // 🔴 CRITICAL SECURITY BOUNDARY: The agent's output MUST be passed directly to blockchain
+      // CRITICAL SECURITY BOUNDARY: The agent's output MUST be passed directly to blockchain
       // NEVER multiply, modify, or alter the agent's cryptographic output
       // The routing layer is a secure pipe, not a data transformation layer
       // Any modification here would break the cryptographic signature verification

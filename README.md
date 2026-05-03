@@ -6,7 +6,7 @@
 
 **V1 Mission:** Demonstrate core TEE-based yield optimization architecture with full transparency about limitations and clear path to production-ready V2.
 
-## 🛡️ Keeper Architecture – Non-Custodial Web3 Design
+## Keeper Architecture – Non-Custodial Web3 Design
 
 **Critical Architecture Shift:** AutoYield AI implements a **Keeper-as-a-Service** architecture that transforms the centralized custody vulnerability into a Web3 UX feature.
 
@@ -28,25 +28,25 @@
 - **Explorer Integration:** Every action references 0G Testnet Explorer for public verification
 - **Event-Driven Updates:** Real-time UI updates via blockchain event listeners
 
-## 🚨 Critical Production Notice - Decimal Precision
+## Critical Production Notice - Decimal Precision
 
 ### **V1 Mock Environment vs V2 Production Deployment**
 
-**⚠️ V1 Demo Limitation:** This prototype utilizes **18 decimals** for all assets (including MockUSDC) to maintain consistency with standard ERC-20 tutorials and Hardhat testing environments.
+**V1 Demo Limitation:** This prototype utilizes 18 decimals for all assets (including MockUSDC) to maintain consistency with standard ERC-20 tutorials and Hardhat testing environments.
 
-**🔧 V2 Production Upgrade:** The production version will natively parse dynamic ERC-20 `decimals()` to support **6-decimal stablecoins** (USDC/USDT) to prevent magnitude routing failures that could cause transaction reverts when deploying to mainnet.
+**V2 Production Upgrade:** The production version will natively parse dynamic ERC-20 decimals() to support 6-decimal stablecoins (USDC/USDT) to prevent magnitude routing failures that could cause transaction reverts when deploying to mainnet.
 
-> **"V1 Mock Environment utilizes 18 decimals for asset consistency. Production V2 natively parses dynamic ERC-20 `decimals()` to support 6-decimal stablecoins (USDC/USDT) to prevent magnitude routing failures."**
+> "V1 Mock Environment utilizes 18 decimals for asset consistency. Production V2 natively parses dynamic ERC-20 `decimals()` to support 6-decimal stablecoins (USDC/USDT) to prevent magnitude routing failures."
 
 **Impact:** When connecting to real USDC contracts, ensure decimal precision is handled to avoid trillion-dollar magnitude errors.
 
-## 🚨 Critical Deployment Notice - Nonce Cache Stalling
+## Critical Deployment Notice - Nonce Cache Stalling
 
 ### **Hardhat Node + Backend Restart Synchronization**
 
-**⚠️ Nonce Cache Issue:** When running a local Hardhat node with Express backend, `ethers.js` caches wallet nonces to speed up transactions.
+**Nonce Cache Issue: When running a local Hardhat node with Express backend, ethers.js caches wallet nonces to speed up transactions.
 
-**🔧 Required Restart Procedure:** If you restart `npx hardhat node`, you **must** also restart `npm run dev` in the backend to reset the Node.js wallet's internal nonce tracker.
+**Required Restart Procedure: If you restart npx hardhat node, you must also restart npm run dev in the backend to reset the Node.js wallet's internal nonce tracker.
 
 **Failure Mode:** 
 - Hardhat resets nonce to `0` but backend cache thinks nonce is `5+`
@@ -423,13 +423,13 @@ autoyield-ai/
 └── README.md          # Complete project documentation
 ```
 
-## 🚨 Enterprise Security Audit & Production Hardening
+## Enterprise Security Audit & Production Hardening
 
-### **Critical Security Vulnerabilities Identified & Mitigated**
+## Critical Security Vulnerabilities Identified & Mitigated
 
 This section addresses the four most critical architectural vulnerabilities that would prevent safe mainnet deployment with real TVL.
 
-#### **🚨 FATAL FLAW 1: The Liquidity "Death Trap" (Vault Bricking)**
+## FATAL FLAW 1: The Liquidity "Death Trap" (Vault Bricking)
 
 **Problem:** The `rebalance()` function withdraws 100% of funds from all protocols before redepositing. If any protocol lacks liquidity (e.g., Aave at 99% utilization), the entire transaction reverts, permanently bricking the vault.
 
@@ -443,7 +443,7 @@ This section addresses the four most critical architectural vulnerabilities that
 - **Partial Withdrawal Logic:** Handle illiquid protocols gracefully without vault lockup
 - **Liquidity Prediction:** Pre-check protocol liquidity before rebalancing
 
-#### **🚨 FATAL FLAW 2: The "First Depositor" Inflation Attack**
+## FATAL FLAW 2: The "First Depositor" Inflation Attack**
 
 **Problem:** Custom vault implementation lacks OpenZeppelin ERC4626's virtual shares protection, making it vulnerable to donation attacks where hackers steal from first depositors.
 
@@ -457,7 +457,7 @@ This section addresses the four most critical architectural vulnerabilities that
 - **Virtual Shares Offset:** Implement virtual decimals to prevent donation attacks
 - **First Depositor Protection:** Burn initial shares to zero address
 
-#### **🚨 FATAL FLAW 3: Unbounded Array Gas Limits (O(n) Looping)**
+## FATAL FLAW 3: Unbounded Array Gas Limits (O(n) Looping)**
 
 **Problem:** No limits on protocol array length could cause gas limit exhaustion, permanently locking funds.
 
@@ -470,7 +470,7 @@ This section addresses the four most critical architectural vulnerabilities that
 - **Batch Processing:** Split large rebalances across multiple transactions
 - **Protocol Culling:** Automatically remove underperforming protocols
 
-#### **🚨 FATAL FLAW 4: The TEE Trust Paradox (Oracle Vulnerability)**
+## FATAL FLAW 4: The TEE Trust Paradox (Oracle Vulnerability)**
 
 **Problem:** TEE secures calculations but not data sources. Compromised backend can feed malicious data to TEE, generating valid proofs for harmful strategies.
 
@@ -488,11 +488,11 @@ This section addresses the four most critical architectural vulnerabilities that
 
 | Security Aspect | V1 Status | V2 Target | Priority |
 |----------------|-----------|-----------|----------|
-| Vault Bricking Risk | ⚠️ Mitigated | ✅ Delta-Rebalancing | **Critical** |
-| Inflation Attack Protection | ⚠️ Documented | ✅ ERC4626 Virtual Shares | **Critical** |
-| Gas Limit Safety | ✅ Protected | ✅ Dynamic Estimation | **High** |
-| Oracle Security | ⚠️ Documented | ✅ ZK Oracle Proofs | **Critical** |
-| TEE Attestation | ⚠️ ECDSA Proxy | ✅ DCAP Hardware | **High** |
+| Vault Bricking Risk | Mitigated | Delta-Rebalancing | **Critical** |
+| Inflation Attack Protection | Documented | ERC4626 Virtual Shares | **Critical** |
+| Gas Limit Safety | Protected | Dynamic Estimation | **High** |
+| Oracle Security | Documented | ZK Oracle Proofs | **Critical** |
+| TEE Attestation | ECDSA Proxy | DCAP Hardware | **High** |
 
 ### **Enterprise Deployment Checklist**
 
@@ -535,20 +535,20 @@ Before deploying with real TVL, the following MUST be implemented:
 
 ---
 
-## 🛡️ V2 Production Hardening (DeFi Threat Mitigation)
+## V2 Production Hardening (DeFi Threat Mitigation)
 
-### **Forensic Audit Findings & Production Solutions**
+## Forensic Audit Findings & Production Solutions
 
 This section addresses the critical systemic vulnerabilities identified during enterprise-grade forensic audit. These fixes are **essential** before any mainnet deployment with real TVL.
 
-#### **🚨 FATAL SYSTEM CRASH 1: Nonce Collision Race Condition**
+## FATAL SYSTEM CRASH 1: Nonce Collision Race Condition**
 
 **V1 Vulnerability:** Multiple simultaneous user interactions cause nonce collisions, crashing the entire Node.js backend.
 
 **V1 Mitigation Applied:**
-- ✅ Implemented mutex lock with transaction queue in `contractService.js`
-- ✅ Added structured error handling for EVM nonce conflicts
-- ✅ Sequential transaction processing prevents race conditions
+- Implemented mutex lock with transaction queue in `contractService.js`
+- Added structured error handling for EVM nonce conflicts
+- Sequential transaction processing prevents race conditions
 
 **V2 Production Enhancement:**
 ```javascript
@@ -567,14 +567,14 @@ class NonceManager {
 }
 ```
 
-#### **🚨 SMART CONTRACT DOS 2: Illiquid Protocol Bricking**
+## SMART CONTRACT DOS 2: Illiquid Protocol Bricking**
 
 **V1 Vulnerability:** Single failed protocol call bricks entire vault, permanently locking user funds.
 
 **V1 Mitigation Applied:**
-- ✅ Added `try/catch` blocks in `_liquidateForWithdrawal()`
-- ✅ Skip illiquid protocols instead of failing completely
-- ✅ Added gas limit protection (max 10 protocols)
+- Added `try/catch` blocks in `_liquidateForWithdrawal()`
+- Skip illiquid protocols instead of failing completely
+- Added gas limit protection (max 10 protocols)
 
 **V2 Production Solution:**
 ```solidity
@@ -600,14 +600,14 @@ function deltaRebalance(uint256[] memory targetPercentages) external {
 }
 ```
 
-#### **🚨 ARCHITECTURAL PARADOX 3: Oracle Ingress Vulnerability**
+## ARCHITECTURAL PARADOX 3: Oracle Ingress Vulnerability**
 
 **V1 Vulnerability:** TEE secures calculations but not data sources. Backend compromise allows data manipulation.
 
 **V1 Mitigation Applied:**
-- ✅ Comprehensive security warnings in `apyService.js`
-- ✅ Documented exploit scenarios and V2 solutions
-- ✅ Clear architectural limitations outlined
+- Comprehensive security warnings in `apyService.js`
+- Documented exploit scenarios and V2 solutions
+- Clear architectural limitations outlined
 
 **V2 Production Solution:**
 ```javascript
@@ -624,14 +624,14 @@ class TEEOracleManager {
 }
 ```
 
-#### **🚨 MINOR SYNTAX BUGS 4: Ghost History in Frontend**
+## MINOR SYNTAX BUGS 4: Ghost History in Frontend**
 
 **V1 Vulnerability:** Page refresh wipes proposal history, creating poor user experience.
 
 **V1 Mitigation Applied:**
-- ✅ Added backend API fallback in `PendingProposals.jsx`
-- ✅ Implemented loading states and error handling
-- ✅ Added safety limits to prevent gas limit issues
+- Added backend API fallback in `PendingProposals.jsx`
+- Implemented loading states and error handling
+- Added safety limits to prevent gas limit issues
 
 **V2 Production Enhancement:**
 ```javascript
@@ -653,12 +653,12 @@ const proposalIndexer = `
 
 | Vulnerability | V1 Status | V2 Solution | Priority |
 |---------------|-----------|-------------|----------|
-| **Nonce Collisions** | ✅ Mitigated | Advanced Nonce Manager | **Critical** |
-| **Vault Bricking** | ✅ Protected | Delta-Rebalancing | **Critical** |
-| **Oracle Security** | ⚠️ Documented | Direct TEE-Oracle | **Critical** |
-| **Ghost History** | ✅ Fixed | The Graph Indexing | **High** |
-| **Gas Limits** | ✅ Protected | Dynamic Estimation | **High** |
-| **TEE Attestation** | ⚠️ ECDSA Proxy | DCAP Hardware | **High** |
+| **Nonce Collisions** | Mitigated | Advanced Nonce Manager | **Critical** |
+| **Vault Bricking** | Protected | Delta-Rebalancing | **Critical** |
+| **Oracle Security** | Documented | Direct TEE-Oracle | **Critical** |
+| **Ghost History** | Fixed | The Graph Indexing | **High** |
+| **Gas Limits** | Protected | Dynamic Estimation | **High** |
+| **TEE Attestation** | ECDSA Proxy | DCAP Hardware | **High** |
 
 ### **Enterprise Deployment Checklist**
 

@@ -26,6 +26,6 @@ console.log('Final display format:', finalDisplay);
 const buggyDisplay = rawBigInt.toLocaleString();
 console.log('BUGGY DISPLAY (raw BigInt):', buggyDisplay);
 
-console.log('\n✅ Fix verified:');
+console.log('\nFix verified:');
 console.log('- Correct display:', finalDisplay);
 console.log('- Buggy display:', buggyDisplay);

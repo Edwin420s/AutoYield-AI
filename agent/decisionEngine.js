@@ -58,7 +58,7 @@ export function decideStrategy(protocols, protocolLimits = {}) {
       ...p, 
       score, 
       safetyFactor,
-      // 🔴 CRITICAL: Include on-chain trust limits
+      // CRITICAL: Include on-chain trust limits
       maxAllocationBps: protocolLimits[p.address] || p.maxAllocationBps || 5000 // Default 50% if not specified
     };
   });
@@ -80,12 +80,12 @@ export function decideStrategy(protocols, protocolLimits = {}) {
   // ========================================
   
   // Calculate proportional weights using Basis Points (BPS) for precision
-  // 🔴 CRITICAL: Respect on-chain trust limits during optimization
+  // CRITICAL: Respect on-chain trust limits during optimization
   let allocations = selected.map(p => {
     // Calculate raw BPS (10000 = 100%)
     let rawBps = (p.score / totalScore) * 10000;
     
-    // 🔴 SECURITY: Enforce protocol trust limits (maxAllocationBps)
+    // SECURITY: Enforce protocol trust limits (maxAllocationBps)
     const maxAllowedBps = p.maxAllocationBps || 5000; // Default 50% if not specified
     const finalBps = Math.min(rawBps, maxAllowedBps);
     
@@ -96,7 +96,7 @@ export function decideStrategy(protocols, protocolLimits = {}) {
       risk: p.risk,
       // Round to nearest integer BPS for precise blockchain execution
       percentageBps: Math.round(finalBps),
-      // 🔴 CRITICAL: Track if limited by trust score
+      // CRITICAL: Track if limited by trust score
       limited: finalBps < rawBps,
       originalBps: Math.round(rawBps)
     };
@@ -166,7 +166,7 @@ function generateOutput(protocolObjects, percentagesBps) {
     percentages: percentagesBps, // Now using BPS values
     expectedAPY: Math.round(blendedApy * 100), // Multiply by 100 for integer math on chain (e.g. 5.25% -> 525)
     riskScore: Math.round(blendedRisk),
-    // 🔴 CRITICAL: Add nonce and timestamp for replay protection
+    // CRITICAL: Add nonce and timestamp for replay protection
     nonce: Date.now(), // Unique timestamp-based nonce
     executionTimestamp: Math.floor(Date.now() / 1000) // Unix timestamp for uniqueness
   };
@@ -213,9 +213,9 @@ export function testAgenticMath() {
   if (result.allocations) {
     result.allocations.forEach(allocation => {
       if (allocation.limited) {
-        console.log(`⚠️  ${allocation.name}: LIMITED to ${allocation.percentageBps} BPS (was ${allocation.originalBps} BPS)`);
+        console.log(`${allocation.name}: LIMITED to ${allocation.percentageBps} BPS (was ${allocation.originalBps} BPS)`);
       } else {
-        console.log(`✅ ${allocation.name}: ALLOCATED ${allocation.percentageBps} BPS (within trust limit)`);
+        console.log(`${allocation.name}: ALLOCATED ${allocation.percentageBps} BPS (within trust limit)`);
       }
     });
   }

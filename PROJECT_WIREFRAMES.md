@@ -79,7 +79,7 @@
 │  │ Proposed by: 0x7d27...8dE2                                   ││
 │  │ Expected APY: 9.1% | Risk: 42/100                            ││
 │  │                                                               ││
-│  │ 📋 Allocation: Aave 70%, Compound 30%                        ││
+│  │ Allocation: Aave 70%, Compound 30%                        ││
 │  │                                                               ││
 │  [Emergency Cancel] [Execute Strategy]
 │  └─────────────────────────────────────────────────────────────┘│

@@ -186,7 +186,7 @@ VITE_API_URL="http://localhost:3000"
   console.log("Frontend .env file updated");
 
   console.log("==========================================");
-  console.log("📋 Contract Addresses:");
+  console.log("Contract Addresses:");
   console.log(`USDC: ${usdcAddress}`);
   console.log(`Vault: ${vaultAddress}`);
   console.log(`Manager: ${managerAddress}`);
