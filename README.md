@@ -1175,12 +1175,12 @@ We're actively looking for contributors in:
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ### License Summary
-- ✅ **Commercial use** allowed
-- ✅ **Modification** allowed  
-- ✅ **Distribution** allowed
-- ✅ **Private use** allowed
-- ❌ **Liability** - No warranty provided
-- ❌ **Trademark** - Project name and branding protected
+- **Commercial use** allowed
+- **Modification** allowed  
+- **Distribution** allowed
+- **Private use** allowed
+- **Liability** - No warranty provided
+- **Trademark** - Project name and branding protected
 
 ### Attribution
 When using or modifying this code, please maintain the original attribution:
