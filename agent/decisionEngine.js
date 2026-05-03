@@ -1,203 +1,26 @@
 /**
- * ========================================
- * AUTOYIELD AI - DECISION ENGINE
- * ========================================
- * 
- * File: agent/decisionEngine.js
- * Version: 1.0.0
- * Author: AutoYield AI Team
- * 
- * ========================================
- * MODULE DESCRIPTION
- * ========================================
  * The core mathematical engine for AutoYield AI.
  * Evaluates available protocols, calculates risk-adjusted scores,
  * and determines optimal safe fund allocation using rigorous mathematical optimization.
  * 
- * This module serves as the brain of the AI agent, implementing sophisticated
- * portfolio optimization algorithms that balance yield maximization with risk management.
- * It uses mathematical principles from modern portfolio theory and risk management
- * to ensure safe and optimal fund allocation across DeFi protocols.
- * 
- * ========================================
- * KEY FEATURES
- * ========================================
+ * Key Features:
  * - Risk-adjusted scoring using safety factors
  * - Sharpe ratio approximation for risk-adjusted returns
  * - Portfolio risk constraint enforcement (MAX_PORTFOLIO_RISK = 70)
  * - Basis Points (BPS) precision for blockchain execution
  * - Mathematical validation and safety fallbacks
- * - Trust score integration for protocol limits
- * - Replay protection with nonces and timestamps
- * - Comprehensive mathematical constraint verification
  * 
- * ========================================
- * ALGORITHM PROCESS
- * ========================================
+ * Algorithm Process:
  * 1. Calculate risk-adjusted scores for all protocols
- *    - Apply safety factor: (100 - risk) / 100
- *    - Calculate raw score: APY * safetyFactor
- *    - Sort protocols by highest score to lowest risk
- * 
- * 2. Select top 2-3 protocols for diversification
- *    - Avoid single points of failure
- *    - Ensure portfolio diversification
- *    - Current implementation selects top 2 protocols
- * 
- * 3. Calculate proportional weights using BPS
- *    - BPS (Basis Points): 10000 = 100%
- *    - Calculate raw allocation based on score proportion
- *    - Apply protocol trust limits (maxAllocationBps)
- *    - Ensure no single protocol exceeds trust limits
- * 
- * 4. Guarantee exact 10000 BPS total
- *    - Force last protocol to absorb rounding error
- *    - Ensure mathematical precision for blockchain execution
- *    - Maintain portfolio balance integrity
- * 
- * 5. Verify portfolio risk constraint
- *    - Calculate blended risk: sum(risk * percentage/10000)
- *    - Check against MAX_PORTFOLIO_RISK (70)
- *    - Engage safety fallback if constraint violated
- * 
+ * 2. Sort by highest score to lowest risk
+ * 3. Select top 2-3 protocols for diversification
+ * 4. Calculate proportional weights using BPS (10000 = 100%)
+ * 5. Enforce portfolio risk constraint
  * 6. Format output for smart contract execution
- *    - Convert to blockchain-compatible format
- *    - Add replay protection (nonce, timestamp)
- *    - Include mathematical proof metadata
  * 
- * ========================================
- * MATHEMATICAL MODELS
- * ========================================
- * 
- * Risk-Adjusted Score Formula:
- * score = APY * safetyFactor
- * safetyFactor = (100 - risk) / 100
- * 
- * Portfolio Risk Calculation:
- * blendedRisk = sum(protocol.risk * (percentageBps / 10000))
- * 
- * Portfolio APY Calculation:
- * blendedApy = sum(protocol.apy * (percentageBps / 10000))
- * 
- * Constraint Verification:
- * blendedRisk <= MAX_PORTFOLIO_RISK (70)
- * sum(percentages) == 10000 BPS (100%)
- * 
- * ========================================
- * SAFETY MECHANISMS
- * ========================================
- * 1. Trust Score Integration:
- *    - Each protocol has maxAllocationBps based on trust score
- *    - A+ protocols (85-100): max 50% allocation
- *    - A protocols (70-84): max 35% allocation
- *    - B protocols (55-69): max 20% allocation
- *    - C protocols (40-54): max 10% allocation
- *    - F protocols (0-39): max 5% allocation
- * 
- * 2. Portfolio Risk Constraint:
- *    - Maximum blended risk score: 70
- *    - Prevents excessive risk exposure
- *    - Engages safety fallback on violation
- * 
- * 3. Safety Fallback:
- *    - Selects single safest protocol
- *    - 100% allocation to minimize risk
- *    - Prevents catastrophic allocation errors
- * 
- * 4. Replay Protection:
- *    - Unique nonce based on timestamp
- *    - Execution timestamp for uniqueness
- *    - Prevents transaction replay attacks
- * 
- * ========================================
- * BLOCKCHAIN INTEGRATION
- * ========================================
- * - Uses protocol addresses instead of names for on-chain execution
- * - BPS precision ensures accurate smart contract calculations
- * - Nonce and timestamp for transaction uniqueness
- * - Compatible with ERC-4626 vault standards
- * - Supports time-lock execution for high-risk decisions
- * 
- * ========================================
- * USAGE EXAMPLES
- * ========================================
- * 
- * Basic Usage:
- * import { decideStrategy } from './agent/decisionEngine.js';
- * const protocols = [
- *   { name: 'Aave', address: '0x...', apy: 4.5, risk: 15, maxAllocationBps: 6000 },
- *   { name: 'Benqi', address: '0x...', apy: 12.0, risk: 45, maxAllocationBps: 3500 }
- * ];
- * const strategy = decideStrategy(protocols);
- * 
- * Testing:
- * import { testAgenticMath } from './agent/decisionEngine.js';
- * const testResult = testAgenticMath();
- * 
- * ========================================
- * DEPENDENCIES
- * ========================================
- * - No external dependencies required
- * - Pure mathematical computation
- * - ES6 modules support
- * 
- * ========================================
- * EXPORTS
- * ========================================
- * - decideStrategy(): Main optimization function
- * - testAgenticMath(): Testing and demonstration function
- * 
- * ========================================
- * ERROR HANDLING
- * ========================================
- * - Throws Error when no protocol data provided
- * - Throws Error when constraints cannot be satisfied
- * - Logs warnings for safety fallback engagement
- * - Comprehensive validation of input parameters
- * 
- * ========================================
- * PERFORMANCE CONSIDERATIONS
- * ========================================
- * - O(n log n) time complexity due to sorting
- * - O(n) space complexity for protocol arrays
- * - Optimized for typical DeFi protocol counts (5-50)
- * - Mathematical operations are computationally efficient
- * 
- * ========================================
- * TESTING & VALIDATION
- * ========================================
- * - Comprehensive test suite included
- * - Edge case handling for extreme values
- * - Mathematical constraint verification
- * - Scam prevention demonstration
- * - Conservative portfolio optimization
- * 
- * ========================================
- * FUTURE ENHANCEMENTS
- * ========================================
- * - Multi-objective optimization (risk, return, liquidity)
- * - Dynamic risk adjustment based on market conditions
- * - Machine learning integration for risk scoring
- * - Advanced portfolio theory implementation
- * - Cross-protocol correlation analysis
- * 
- * ========================================
- * SECURITY CONSIDERATIONS
- * ========================================
- * - Input validation prevents malicious data injection
- * - Mathematical constraints prevent dangerous allocations
- * - Trust score limits prevent overexposure to risky protocols
- * - Replay protection prevents transaction duplication
- * - Safety fallback prevents catastrophic failures
- * 
- * ========================================
- * AUDIT TRAIL
- * ========================================
- * - All decisions include mathematical proof
- * - Risk calculations are transparent and verifiable
- * - Constraint violations are logged and handled
- * - Safety fallback triggers are recorded
- * - Complete decision reasoning is preserved
+ * @module agent/decisionEngine
+ * @author AutoYield AI Team
+ * @version 1.0.0
  */
 
 // ========================================
