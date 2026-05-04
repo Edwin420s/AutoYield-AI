@@ -307,7 +307,7 @@ class BlockchainService {
   async getAllProposals() {
     try {
       // Fetch proposals from backend API where they're actually stored
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/proposals`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/proposals`);
       const result = await response.json();
       
       if (result.success) {
@@ -371,8 +371,25 @@ class BlockchainService {
       
       console.log(`Executing proposal ${proposalId} on blockchain...`);
       
-      // Submit transaction to blockchain
-      const tx = await this.strategyManagerContract.executeProposedStrategy(proposalId);
+      // Get proposal data to convert percentages to BPS
+      const proposalResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/proposals`);
+      const proposalData = await proposalResponse.json();
+      const proposal = proposalData.proposals.find(p => p.id === proposalId);
+      
+      if (!proposal) {
+        throw new Error(`Proposal ${proposalId} not found`);
+      }
+      
+      // Convert percentages to basis points (BPS) where 100% = 10000 BPS
+      const percentagesBPS = proposal.percentages.map(p => p * 100);
+      
+      console.log(`Converting percentages ${proposal.percentages} to BPS: ${percentagesBPS}`);
+      
+      // Submit transaction to blockchain with BPS percentages
+      const tx = await this.strategyManagerContract.executeProposedStrategy(
+        proposalId,
+        percentagesBPS
+      );
       
       // Wait for transaction to be mined and get receipt
       const receipt = await tx.wait();

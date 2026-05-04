@@ -7,9 +7,13 @@ import { decideStrategy } from '../../../agent/decisionEngine.js';
 dotenv.config();
 
 /**
- * ACTUAL 0G Compute Service for TEE-based AI Execution
- * This service runs AI decision-making inside Trusted Execution Environments
- * to prevent front-running and ensure strategy privacy.
+ * MOCK 0G Compute Service for DEMO PURPOSES ONLY
+ * 
+ * SECURITY WARNING: This is a SIMULATED TEE implementation for demonstration.
+ * In production, this would use actual Intel SGX enclaves with hardware attestation.
+ * 
+ * DO NOT USE WITH REAL FUNDS - This provides NO actual security guarantees.
+ * The mock implementation simulates TEE behavior but offers no real protection.
  */
 
 class ZeroGComputeService {
@@ -292,22 +296,24 @@ module.exports = result;
   }
 
   /**
-   * Verify output integrity using execution proof
+   * MOCK: Verify output integrity using execution proof
+   * SECURITY WARNING: This is a MOCK implementation - NO real verification occurs
    * @param {Object} decision - AI decision output
    * @param {Object} proof - Execution proof
-   * @returns {Promise<boolean>} - Integrity verification
+   * @returns {Promise<boolean>} - Always returns true in mock mode
    */
   async verifyOutputIntegrity(decision, proof) {
     try {
-      // For mock/demo purposes, always return true
-      // In production, this would verify actual cryptographic proofs
-      console.log('Mock TEE: Verifying output integrity...');
+      // SECURITY WARNING: MOCK IMPLEMENTATION - NO REAL SECURITY
+      console.log('MOCK TEE: Fake integrity verification - NO REAL SECURITY');
+      console.log('WARNING: This provides NO actual protection against tampering');
       
-      // Mock verification - always succeed in demo
+      // In production, this would verify actual cryptographic proofs
+      // Mock implementation always returns true for demo purposes
       return true;
       
     } catch (error) {
-      console.error('Output integrity verification failed:', error);
+      console.error('Mock integrity verification failed:', error);
       return false;
     }
   }

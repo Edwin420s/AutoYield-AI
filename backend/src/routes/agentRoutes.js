@@ -2,11 +2,13 @@ import express from 'express';
 import { runAgent, testAgenticMathEngine, runAgentWithMathValidation } from '../services/agentService.js';
 import { ZeroGComputeService } from '../services/ogComputeService.js';
 import { fetchAPYData } from '../services/apyService.js';
+import { authenticateApiKey, rateLimit, verifySignature, secureAgentEndpoint } from '../middleware/auth.js';
+import { validateProtocolData, validateStrategyProposal } from '../middleware/validation.js';
 
 const router = express.Router();
 
-// Original agent route
-router.post('/run', async (req, res) => {
+// Original agent route - SECURED
+router.post('/run', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 10 }), async (req, res) => {
   try {
     const result = await runAgent();
     res.json(result);
@@ -25,10 +27,10 @@ router.post('/test-math', async (req, res) => {
   }
 });
 
-// Enhanced route with mathematical validation
-router.post('/run-with-math', async (req, res) => {
+// Enhanced route with mathematical validation - SECURED
+router.post('/run-with-math', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 10 }), validateProtocolData, async (req, res) => {
   try {
-    const result = await runAgentWithMathValidation();
+    const result = await runAgentWithMathValidation(req.body.protocols);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -37,7 +39,8 @@ router.post('/run-with-math', async (req, res) => {
 
 // NEW: Streaming route for the React "Hollywood Terminal"
 // NOTE: This uses actual 0G Compute TEE service when available
-router.get('/stream-tee', async (req, res) => {
+// CRITICAL: This endpoint triggers fund movements - maximum security
+router.get('/stream-tee', secureAgentEndpoint, async (req, res) => {
   // Set headers to keep the connection open for a live stream
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');

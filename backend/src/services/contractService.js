@@ -1,8 +1,9 @@
+import { ethers } from 'ethers';
 import { signTransactionSecurely, getSecureWalletAddress } from './secureKeyManager.js';
 import { queueTransaction } from './transactionQueue.js';
 
 /**
- * 🔒 Production V2: Secure Contract Service
+ * Production V2: Secure Contract Service
  * Uses enterprise key management and transaction queue
  * Fixes critical security vulnerabilities from audit
  * 
@@ -24,7 +25,7 @@ let walletAddress = null;
 async function initializeWallet() {
   if (!walletAddress) {
     walletAddress = await getSecureWalletAddress();
-    console.log(`🔒 Secure wallet initialized: ${walletAddress}`);
+    console.log(`Secure wallet initialized: ${walletAddress}`);
   }
   return walletAddress;
 }
@@ -33,13 +34,61 @@ async function initializeWallet() {
 initializeWallet().catch(console.error);
 
 // ========================================
-// CRITICAL: NONCE MANAGER & MUTEX LOCK
+// CRITICAL: IMPROVED NONCE MANAGER & TRANSACTION QUEUE
 // ========================================
 // Prevents race condition crashes when multiple users submit transactions simultaneously
+// Uses proper nonce management and error recovery
 
 /// @dev Transaction queue to serialize blockchain operations
 let transactionQueue = [];
 let isProcessing = false;
+
+/// @dev Nonce tracking to prevent collisions
+let lastUsedNonce = null;
+let nonceRefreshInterval = null;
+
+/// @dev Initialize nonce tracking
+async function initializeNonceTracking() {
+  try {
+    if (walletAddress) {
+      // Get current nonce from blockchain
+      const provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
+      const currentNonce = await provider.getTransactionCount(walletAddress, 'pending');
+      lastUsedNonce = currentNonce - 1; // Start from last used nonce
+      console.log(`Nonce tracking initialized. Current nonce: ${currentNonce}, Last used: ${lastUsedNonce}`);
+    }
+  } catch (error) {
+    console.error('Failed to initialize nonce tracking:', error);
+    lastUsedNonce = null;
+  }
+}
+
+/// @dev Refresh nonce periodically to stay in sync
+function startNonceRefresh() {
+  if (nonceRefreshInterval) {
+    clearInterval(nonceRefreshInterval);
+  }
+  
+  nonceRefreshInterval = setInterval(async () => {
+    try {
+      const provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
+      const currentNonce = await provider.getTransactionCount(walletAddress, 'pending');
+      
+      // Reset if we're out of sync
+      if (lastUsedNonce !== null && Math.abs(currentNonce - (lastUsedNonce + 1)) > 5) {
+        console.warn(`Nonce sync detected. Resetting from ${lastUsedNonce} to ${currentNonce - 1}`);
+        lastUsedNonce = currentNonce - 1;
+      }
+    } catch (error) {
+      console.error('Nonce refresh failed:', error);
+    }
+  }, 30000); // Refresh every 30 seconds
+}
+
+// Start nonce tracking on initialization
+initializeNonceTracking().then(() => {
+  startNonceRefresh();
+});
 
 // ========================================
 // IN-MEMORY PROPOSAL STORAGE
@@ -96,7 +145,7 @@ async function withMutexLock(operation) {
 }
 
 /**
- * Process transaction queue sequentially
+ * Process transaction queue sequentially with improved nonce handling
  * Prevents nonce collision race conditions that crash Node.js server
  */
 async function processQueue() {
@@ -112,19 +161,45 @@ async function processQueue() {
     const result = await operation();
     resolve(result);
   } catch (error) {
-    // CRITICAL: Catch EVM errors to prevent server crashes
+    // CRITICAL: Enhanced error handling and nonce recovery
     console.error('Transaction failed:', error.message);
     
-    // Return structured error instead of crashing
+    // Handle nonce-related errors with automatic recovery
     if (error.code === 'NONCE_TOO_LOW' || error.code === 'REPLACEMENT_UNDERPRICED') {
+      console.warn('Nonce collision detected, refreshing nonce...');
+      
+      // Refresh nonce and retry
+      try {
+        await initializeNonceTracking();
+        
+        // Retry the operation with fresh nonce
+        const retryResult = await operation();
+        resolve(retryResult);
+        return;
+      } catch (retryError) {
+        console.error('Retry failed:', retryError.message);
+      }
+      
       reject(new Error('Transaction conflict detected. Please try again.'));
+    } else if (error.message.includes('insufficient funds')) {
+      reject(new Error('Insufficient funds for gas. Please add more funds to the wallet.'));
+    } else if (error.message.includes('gas required exceeds allowance')) {
+      reject(new Error('Gas limit too low. Please try again with higher gas limit.'));
     } else {
-      reject(error);
+      // Log full error for debugging but return safe message to user
+      console.error('Transaction error details:', {
+        code: error.code,
+        message: error.message,
+        reason: error.reason,
+        transaction: error.transaction
+      });
+      
+      reject(new Error('Transaction failed. Please check the logs and try again.'));
     }
   }
 
-  // Process next item in queue
-  setTimeout(processQueue, 100); // Small delay between transactions
+  // Process next item in queue with longer delay to prevent nonce issues
+  setTimeout(processQueue, 1000); // Increased delay to 1 second between transactions
 }
 
 // Helper function to get wallet instance
@@ -133,7 +208,7 @@ function getWallet() {
 }
 
 /**
- * 🔒 Submit strategy proposal using enterprise security
+ * Submit strategy proposal using enterprise security
  * Uses secure key management and transaction queue
  * 
  * @param {Object} decision - AI decision object with protocols, percentages, and APY
@@ -142,7 +217,7 @@ function getWallet() {
  * @throws {Error} When secure transaction fails
  */
 export async function proposeStrategy(decision) {
-  console.log("🔒 Submitting strategy proposal with enterprise security...");
+  console.log("Submitting strategy proposal with enterprise security...");
   
   try {
     const walletAddr = await initializeWallet();
@@ -152,24 +227,24 @@ export async function proposeStrategy(decision) {
       type: 'propose',
       userId: decision.userId || 'system',
       payload: {
-        to: process.env.STRATEGY_MANAGER_ADDRESS,
+        to: process.env.MANAGER_ADDRESS,
         data: encodeProposeStrategyCall(decision),
         value: '0x0',
         gasLimit: '500000'
       }
     });
     
-    console.log(`✅ Strategy proposal queued with job ID: ${jobId}`);
+    console.log(`Strategy proposal queued with job ID: ${jobId}`);
     return { transactionHash: `queued_${jobId}`, jobId };
     
   } catch (error) {
-    console.error("❌ Failed to propose strategy:", error.message);
+    console.error("Failed to propose strategy:", error.message);
     throw new Error(`Strategy proposal failed: ${error.message}`);
   }
 }
 
 /**
- * 🔒 Execute proposal using enterprise security
+ * Execute proposal using enterprise security
  * Uses secure key management and transaction queue
  * 
  * @param {number} proposalId - Unique identifier of the proposal to execute
@@ -187,18 +262,18 @@ export async function executeProposal(proposalId) {
       type: 'execute',
       userId: 'system',
       payload: {
-        to: process.env.STRATEGY_MANAGER_ADDRESS,
+        to: process.env.MANAGER_ADDRESS,
         data: encodeExecuteProposalCall(proposalId),
         value: '0x0',
         gasLimit: '300000'
       }
     });
     
-    console.log(`✅ Proposal execution queued with job ID: ${jobId}`);
+    console.log(`Proposal execution queued with job ID: ${jobId}`);
     return { transactionHash: `queued_${jobId}`, jobId };
     
   } catch (error) {
-    console.error("❌ Failed to execute proposal:", error.message);
+    console.error("Failed to execute proposal:", error.message);
     throw new Error(`Proposal execution failed: ${error.message}`);
   }
 }

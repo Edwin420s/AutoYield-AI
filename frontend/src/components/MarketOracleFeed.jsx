@@ -11,7 +11,7 @@ export default function MarketOracleFeed() {
 
     try {
       // Call the real backend oracle API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/oracle/live`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/oracle/live`);
       const result = await response.json();
       
       if (result.success) {

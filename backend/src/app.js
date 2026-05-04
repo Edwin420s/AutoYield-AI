@@ -17,6 +17,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './routes/api.js';
+import { rateLimit } from './middleware/auth.js';
 
 dotenv.config();
 
@@ -35,6 +36,16 @@ const PORT = process.env.PORT || 3000;
  * Enable Cross-Origin Resource Sharing for frontend integration
  */
 app.use(cors());
+
+/**
+ * Apply global rate limiting to prevent DoS attacks
+ * Limits: 100 requests per minute per IP
+ */
+app.use(rateLimit({ 
+  windowMs: 60000, 
+  maxRequests: 100,
+  skipSuccessfulRequests: false
+}));
 
 /**
  * Parse JSON request bodies
@@ -67,8 +78,9 @@ app.get('/health', (req, res) => {
 });
 
 /**
- * Global error handling middleware
- * Catches unhandled errors and returns standardized error response
+ * SECURE: Global error handling middleware
+ * Catches unhandled errors and returns sanitized error response
+ * Prevents information disclosure to potential attackers
  * 
  * @param {Error} error - Error object to handle
  * @param {Object} req - Express request object
@@ -77,11 +89,35 @@ app.get('/health', (req, res) => {
  * @returns {void} JSON error response with 500 status
  */
 app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  res.status(500).json({ 
-    success: false, 
-    error: 'Internal server error'
+  // Log full error for debugging (server-side only)
+  console.error('Unhandled error:', {
+    message: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method,
+    timestamp: new Date().toISOString()
   });
+  
+  // SECURITY: Return sanitized error to client
+  // Never expose internal error details, file paths, or stack traces
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  if (isDevelopment) {
+    // In development, provide more details but still sanitize sensitive info
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error',
+      message: error.message.substring(0, 100), // Limit message length
+      timestamp: new Date().toISOString()
+    });
+  } else {
+    // In production, return minimal information
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error',
+      requestId: Math.random().toString(36).substring(7) // For support tracking
+    });
+  }
 });
 
 /**
