@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 
 interface IVault {
     function rebalance(address[] memory, uint256[] memory) external;
@@ -11,7 +12,7 @@ interface IAgentRegistry {
     function isAgent(address) external view returns (bool);
 }
 
-contract StrategyManager {
+contract StrategyManager is EIP712 {
     using ECDSA for bytes32;
 
     address public vault;
@@ -31,7 +32,13 @@ contract StrategyManager {
     // requiring actual Intel SGX hardware infrastructure.
     address public trustedEnclaveKey;
     
-    // SECURITY: Prevent replay attacks by tracking used signatures
+    // EIP-712 TypeHash for strategy signing
+    bytes32 private constant STRATEGY_TYPEHASH = keccak256(
+        "Strategy(address[] protocols,uint256[] percentagesBps,uint256 reportedApy,uint256 chainId,uint256 nonce)"
+    );
+    
+    // SECURITY: Prevent replay attacks by tracking used nonces
+    mapping(address => uint256) public nonces;
     mapping(bytes32 => bool) public usedSignatures;
     
     struct ProtocolInfo {
@@ -65,7 +72,8 @@ contract StrategyManager {
     event StrategyExecuted(address indexed agent, uint256 proposalId, uint256 totalApy, uint256 portfolioRisk);
     event ProposalCanceled(uint256 indexed proposalId, address indexed canceler);
     
-    constructor(address _vault, address _registry, address _enclaveKey, uint256 _hackathonTimeLockDuration) {
+    constructor(address _vault, address _registry, address _enclaveKey, uint256 _hackathonTimeLockDuration) 
+        EIP712("AutoYield Strategy Manager", "1") {
         vault = _vault;
         agentRegistry = _registry;
         trustedEnclaveKey = _enclaveKey; // Set this during deployment
@@ -161,24 +169,37 @@ contract StrategyManager {
         require(_protocols.length > 0, "No protocols specified");
 
         // ==========================================
-        // TEE HARDWARE ATTESTATION VERIFICATION
+        // EIP-712 TEE SIGNATURE VERIFICATION
         // ==========================================
         
-        // 1. Recreate the exact hash of the data that enclave *should* have signed
-        bytes32 strategyHash = keccak256(abi.encodePacked(_protocols, _percentagesBps, _reportedApy));
+        // 1. Get current nonce for this agent
+        uint256 currentNonce = nonces[msg.sender];
         
-        // NEW: Prevent Replay Attacks!
-        require(!usedSignatures[strategyHash], "SECURITY: Signature already used (Replay Attack)");
-        usedSignatures[strategyHash] = true; // Burn the signature so it can never be used again
+        // 2. Create EIP-712 compliant typed data hash
+        bytes32 strategyHash = keccak256(abi.encode(
+            STRATEGY_TYPEHASH,
+            keccak256(abi.encodePacked(_protocols)), // Hash of protocols array
+            keccak256(abi.encodePacked(_percentagesBps)), // Hash of percentages array
+            _reportedApy,
+            block.chainid, // CRITICAL: Include chain ID to prevent cross-chain replay
+            currentNonce
+        ));
         
-        // 2. Convert it to an Ethereum signed message hash standard (professional implementation)
-        bytes32 ethSignedMessageHash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", strategyHash));
+        // 3. Create the EIP-712 digest
+        bytes32 digest = _hashTypedDataV4(strategyHash);
         
-        // 3. Recover the address that signed this payload
-        address recoveredSigner = ethSignedMessageHash.recover(_sgxAttestationProof);
+        // 4. Recover the address that signed this payload
+        address recoveredSigner = ECDSA.recover(digest, _sgxAttestationProof);
         
-        // 4. THE ULTIMATE CHECK: Did our specific TEE enclave sign this exact data?
+        // 5. THE ULTIMATE CHECK: Did our specific TEE enclave sign this exact data?
         require(recoveredSigner == trustedEnclaveKey, "CRITICAL: TEE Attestation Failed! Payload altered or untrusted hardware.");
+        
+        // 6. Prevent replay attacks by burning this signature
+        require(!usedSignatures[digest], "SECURITY: Signature already used (Replay Attack)");
+        usedSignatures[digest] = true;
+        
+        // 7. Increment nonce for this agent
+        nonces[msg.sender] = currentNonce + 1;
         
         // ==========================================
         
