@@ -24,6 +24,9 @@ contract StrategyManager is EIP712 {
     uint256 public timeLockDuration = 24 hours;
     uint256 public maxPortfolioRisk = 75;
     
+    // EMERGENCY CONTROLS
+    bool public paused = false;
+    
     // NEW: The exact public address of the 0G Compute Intel SGX Enclave
     // HACKATHON DEMO: Represents the Intel SGX public key. In production, this address 
     // is hardcoded via DCAP attestation registry and cannot be a standard EOA.
@@ -69,8 +72,10 @@ contract StrategyManager is EIP712 {
     // Events
     event ProtocolUpdated(address indexed protocol, bool status, uint256 riskScore, uint256 maxAllocationBps, string zeroGHash);
     event StrategyProposed(uint256 indexed proposalId, uint256 executeAfter, address indexed proposer);
-    event StrategyExecuted(address indexed agent, uint256 proposalId, uint256 totalApy, uint256 portfolioRisk);
-    event ProposalCanceled(uint256 indexed proposalId, address indexed canceler);
+    event StrategyExecuted(address indexed agent, uint256 indexed proposalId, uint256 totalApy, uint256 portfolioRisk);
+    event StrategyCanceled(uint256 indexed proposalId, address indexed canceler);
+    event EmergencyPaused(address indexed pausedBy, uint256 timestamp);
+    event EmergencyUnpaused(address indexed unpausedBy, uint256 timestamp);
     
     constructor(address _vault, address _registry, address _enclaveKey, uint256 _hackathonTimeLockDuration) 
         EIP712("AutoYield Strategy Manager", "1") {
@@ -92,7 +97,7 @@ contract StrategyManager is EIP712 {
     /**
      * @dev Admin can update the enclave key if hardware is upgraded
      */
-    function setTrustedEnclaveKey(address _newKey) external onlyOwner {
+    function setTrustedEnclaveKey(address _newKey) external onlyOwner whenNotPaused {
         require(_newKey != address(0), "Invalid enclave key");
         trustedEnclaveKey = _newKey;
     }
@@ -100,6 +105,32 @@ contract StrategyManager is EIP712 {
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
         _;
+    }
+    
+    /**
+     * @dev Emergency stop modifier - prevents operations when paused
+     */
+    modifier whenNotPaused() {
+        require(!paused, "StrategyManager: Contract is paused - emergency mode active");
+        _;
+    }
+    
+    /**
+     * @dev Emergency pause - halts all strategy operations
+     * Can only be called by owner in emergency situations
+     */
+    function emergencyPause() external onlyOwner {
+        paused = true;
+        emit EmergencyPaused(msg.sender, block.timestamp);
+    }
+    
+    /**
+     * @dev Emergency unpause - resumes normal operations
+     * Can only be called by owner after emergency is resolved
+     */
+    function emergencyUnpause() external onlyOwner {
+        paused = false;
+        emit EmergencyUnpaused(msg.sender, block.timestamp);
     }
     
     /**
@@ -113,10 +144,10 @@ contract StrategyManager is EIP712 {
         uint256 _maxAllocationBps,
         string calldata _name,
         string calldata _zeroGHash
-    ) external onlyOwner {
+    ) external onlyOwner whenNotPaused {
         require(_protocol != address(0), "Invalid protocol address");
-        require(_riskScore <= 100, "Invalid risk score");
-        require(_maxAllocationBps <= 10000, "Invalid max allocation BPS");
+        require(_riskScore <= 100, "Risk score must be 0-100");
+        require(_maxAllocationBps <= 10000, "Max allocation must be <= 10000 BPS (100%)");
         
         protocolRegistry[_protocol] = ProtocolInfo({
             isWhitelisted: _status,
@@ -159,11 +190,11 @@ contract StrategyManager is EIP712 {
      * @dev The AI agent calls this to PROPOSE a strategy (Time-Lock version)
      */
     function proposeStrategy(
-        address[] calldata _protocols,
-        uint256[] calldata _percentagesBps, // Now using Basis Points (10000 = 100%)
+        address[] memory _protocols,
+        uint256[] memory _percentagesBps,
         uint256 _reportedApy,
         bytes calldata _sgxAttestationProof
-    ) external {
+    ) external onlyAgent whenNotPaused {
         require(IAgentRegistry(agentRegistry).isAgent(msg.sender), "Not authorized agent");
         require(_protocols.length == _percentagesBps.length, "Arrays length mismatch");
         require(_protocols.length > 0, "No protocols specified");

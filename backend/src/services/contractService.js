@@ -2,6 +2,9 @@ import { ethers } from 'ethers';
 import { signTransactionSecurely, getSecureWalletAddress } from './secureKeyManager.js';
 import { queueTransaction } from './transactionQueue.js';
 
+// Import secure key manager for production
+import { secureKeyManager } from './secureKeyManager.js';
+
 /**
  * Production V2: Secure Contract Service
  * Uses enterprise key management and transaction queue
@@ -18,16 +21,28 @@ import { queueTransaction } from './transactionQueue.js';
  * @version 2.0.0 - Enterprise Security
  */
 
-// Get secure wallet address from enterprise key manager
+// ========================================
+// SECURE WALLET INITIALIZATION (PRODUCTION V2)
+// ========================================
 let walletAddress = null;
 
-// Initialize secure wallet address
+/**
+ * @dev Initialize secure wallet using enterprise key management
+ * Replaces raw private key storage with AWS KMS/MPC integration
+ */
 async function initializeWallet() {
-  if (!walletAddress) {
-    walletAddress = await getSecureWalletAddress();
-    console.log(`Secure wallet initialized: ${walletAddress}`);
+  try {
+    if (walletAddress) {
+      return walletAddress; // Already initialized
+    }
+    
+    // Use secure key manager instead of raw private keys
+    walletAddress = await secureKeyManager.getWalletAddress();
+    console.log(`🔐 Secure wallet initialized: ${walletAddress}`);
+  } catch (error) {
+    console.error('Failed to initialize secure wallet:', error);
+    throw error;
   }
-  return walletAddress;
 }
 
 // Initialize on startup
@@ -422,44 +437,6 @@ export async function getProposal(proposalId) {
   console.log(`Current proposals in memory: ${proposals.length}`);
   console.log(`Proposal IDs: ${proposals.map(p => p.id).join(', ')}`);
   
-  // Convert proposalId to number to handle string inputs from frontend
-  const numericId = Number(proposalId);
-  
-  // For demo purposes, return from memory storage instead of blockchain
-  let proposal = proposals.find(p => p.id === numericId);
-  
-  // If proposal doesn't exist, create a mock one for demo purposes
-  if (!proposal) {
-    console.log(`Proposal ${proposalId} not found in memory, creating mock proposal for demo...`);
-    proposal = {
-      id: numericId,
-      txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`,
-      protocols: ['0x1111111111111111111111111111111111111111', '0x2222222222222222222222222222222222222222'],
-      percentages: [60, 40],
-      expectedAPY: 8.5,
-      executionProof: "0xmock_proof",
-      proposer: wallet.address,
-      timestamp: new Date().toISOString(),
-      executeAfter: new Date(Date.now() - 1000).toISOString(), // Already ready for execution
-      status: 'pending',
-      executed: false,
-      executedAt: null,
-      blockNumber: Math.floor(Math.random() * 1000) + 1
-    };
-    
-    proposals.push(proposal);
-    console.log(`Created mock proposal ${proposalId} in memory`);
-  }
-  
-  return proposal;
-}
-
-// ========================================
-// HELPER FUNCTIONS FOR ENCODING TRANSACTIONS
-// ========================================
-
-/**
- * Encode proposeStrategy function call for blockchain transaction
  * @param {Object} decision - AI decision object
  * @returns {string} Encoded transaction data
  */

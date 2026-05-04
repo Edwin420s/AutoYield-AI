@@ -1,5 +1,6 @@
 import express from 'express';
 import { executeProposal, getAllProposals } from '../services/contractService.js';
+import { authenticateApiKey, rateLimit } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -7,7 +8,7 @@ const router = express.Router();
  * Execute a proposal by ID
  * POST /contract/execute/:id
  */
-router.post('/execute/:id', async (req, res) => {
+router.post('/execute/:id', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 5 }), async (req, res) => {
   try {
     const proposalId = parseInt(req.params.id);
     

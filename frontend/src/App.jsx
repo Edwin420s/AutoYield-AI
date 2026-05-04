@@ -5,9 +5,11 @@
  * Features:
  * - Wallet connection and management
  * - Real-time market data display
- * - AI strategy execution with TEE protection
+ * - AI strategy execution (demo mode)
  * - Proposal tracking and management
  * - Portfolio performance monitoring
+ * 
+ * SECURITY NOTE: TEE protection is simulated for demo purposes only
  * 
  * @component App
  * @returns {JSX.Element} Main application component
@@ -184,7 +186,7 @@ function App() {
   /**
    * Execute AI strategy for yield optimization
    * Submits strategy to blockchain with proper transaction verification
-   * Uses TEE-verified decisions and non-custodial execution
+   * SECURITY NOTE: TEE verification is simulated for demo purposes only
    */
   const runAIStrategy = async () => {
     // Check if wallet is connected
@@ -199,21 +201,21 @@ function App() {
     }
     
     try {
-      console.log('Initiating AI strategy execution with TEE verification...');
+      console.log('Initiating AI strategy execution (demo mode)...');
       
-      // Use Server-Sent Events for real-time TEE execution
+      // Use Server-Sent Events for real-time execution monitoring
       const eventSource = new EventSource(`${import.meta.env.VITE_API_URL}/agent/stream-tee`);
       
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log('TEE execution update:', data);
+        console.log('Execution update:', data);
         
         // Handle different execution statuses
         if (data.status === 'error') {
-          alert(`TEE Execution Error: ${data.message}`);
+          alert(`Execution Error: ${data.message}`);
           eventSource.close();
         } else if (data.status === 'complete') {
-          alert('AI strategy successfully submitted to blockchain with TEE verification!');
+          alert('AI strategy successfully submitted to blockchain!');
           eventSource.close();
           
           // Refresh proposals to show new strategy
@@ -224,8 +226,8 @@ function App() {
       };
       
       eventSource.onerror = (error) => {
-        console.error('TEE stream error:', error);
-        alert('Failed to connect to TEE service. Please try again.');
+        console.error('Execution stream error:', error);
+        alert('Failed to connect to execution service. Please try again.');
         eventSource.close();
       };
       
@@ -438,8 +440,8 @@ function App() {
                 </p>
                 <div className="flex items-center space-x-4 text-sm">
                   <span className="flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    TEE Enabled
+                    <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                    Demo Mode
                   </span>
                   <span className="flex items-center">
                     <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>

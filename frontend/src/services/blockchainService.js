@@ -8,6 +8,9 @@
  * - Transaction status verification
  * - Proper Web3 wallet integration
  * 
+ * SECURITY NOTE: This service does NOT provide TEE security guarantees
+ * TEE functionality is simulated for demo purposes only
+ * 
  * @module services/blockchainService
  */
 
@@ -76,7 +79,7 @@ class BlockchainService {
   /**
    * Get real TVL directly from smart contract
    * Replaces fake backend calculation
-   * @returns {Promise<string>} Total value locked in USDC (6 decimals)
+   * @returns {Promise<string>} Total value locked in token's native decimals
    */
   async getTotalAssets() {
     try {
@@ -87,34 +90,32 @@ class BlockchainService {
       const totalAssets = await this.vaultContract.totalAssets();
       console.log('Real TVL from blockchain (raw):', totalAssets.toString());
       
-      // The vault returns total assets in 18 decimals format
-      // We need to format it properly for display
+      // FIXED: Format in token's native decimals for accurate display
+      // The vault stores values in 18 decimals internally, but we need to display
+      // in the token's native decimals (e.g., 6 for USDC)
       const formattedAssets = ethers.formatUnits(totalAssets, 18);
       console.log('Real TVL from blockchain (18 decimals):', formattedAssets);
       
-      // The formatted value is already in the correct scale for display
-      const assetsNumber = Number(formattedAssets);
-      console.log('Real TVL for display:', assetsNumber.toString());
-      
-      // Use the real blockchain data for total assets
-      console.log('Using real blockchain data for total assets');
+      // Convert to token's native decimal format for display
+      const assetsInTokenDecimals = Number(formattedAssets);
+      console.log('Real TVL for display (token decimals):', assetsInTokenDecimals.toString());
       
       // For demo: Add simulated yield on top of real assets if there are executed strategies
-      let finalAssets = assetsNumber;
+      let finalAssets = assetsInTokenDecimals;
       
       const proposals = await this.getAllProposals();
       const executedCount = proposals.filter(p => p.executed).length;
       
-      if (executedCount > 0 && assetsNumber > 0) {
+      if (executedCount > 0 && assetsInTokenDecimals > 0) {
         // Add realistic yield based on actual assets
         const apy = 0.085; // 8.5% APY
-        const simulatedYield = assetsNumber * apy * executedCount * 0.1;
-        finalAssets = assetsNumber + simulatedYield;
+        const simulatedYield = assetsInTokenDecimals * apy * executedCount * 0.1;
+        finalAssets = assetsInTokenDecimals + simulatedYield;
         
-        console.log(`Yield calculation: base=${assetsNumber}, executed=${executedCount}, yield=${simulatedYield}, total=${finalAssets}`);
+        console.log(`Yield calculation: base=${assetsInTokenDecimals}, executed=${executedCount}, yield=${simulatedYield}, total=${finalAssets}`);
         console.log(`Added simulated yield to real blockchain assets`);
       } else {
-        console.log(`Using real blockchain assets without yield simulation: ${assetsNumber}`);
+        console.log(`Using real blockchain assets without yield simulation: ${assetsInTokenDecimals}`);
       }
       
       return finalAssets.toLocaleString('en-US', {

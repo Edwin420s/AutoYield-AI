@@ -2,16 +2,17 @@ import express from 'express';
 import { runAgentController, getAgentStatus, getTEEPerformance } from '../controllers/agentController.js';
 import { fetchAPYData } from '../services/apyService.js';
 import { getAllProposals, getProposal, executeProposal, cancelProposal } from '../services/contractService.js';
+import { authenticateApiKey, rateLimit } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Agent Routes
-router.post('/agent/run', runAgentController);
+// Agent Routes - SECURED
+router.post('/agent/run', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 5 }), runAgentController);
 router.get('/agent/status', getAgentStatus);
 router.get('/agent/tee-performance', getTEEPerformance);
 
-// TEE Streaming Route (Server-Sent Events) - Real Implementation
-router.get('/agent/stream-tee', async (req, res) => {
+// TEE Streaming Route (Server-Sent Events) - SECURED
+router.get('/agent/stream-tee', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 2 }), async (req, res) => {
   // Import the real TEE service
   const ZeroGComputeService = (await import('../services/ogComputeService.js')).default;
   const { fetchAPYData } = await import('../services/apyService.js');
@@ -143,7 +144,7 @@ router.get('/proposals/:id', async (req, res) => {
   }
 });
 
-router.post('/proposals/:id/execute', async (req, res) => {
+router.post('/proposals/:id/execute', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 3 }), async (req, res) => {
   try {
     const proposalId = req.params.id;
     const receipt = await executeProposal(proposalId);
@@ -154,7 +155,7 @@ router.post('/proposals/:id/execute', async (req, res) => {
   }
 });
 
-router.post('/proposals/:id/cancel', async (req, res) => {
+router.post('/proposals/:id/cancel', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 3 }), async (req, res) => {
   try {
     const proposalId = req.params.id;
     const receipt = await cancelProposal(proposalId);
