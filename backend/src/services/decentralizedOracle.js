@@ -58,8 +58,8 @@ const ORACLE_ADDRESSES = {
  * @throws {Error} When oracle queries fail or data is invalid
  */
 export async function fetchDecentralizedAPYData(network = 'sepolia', provider = null) {
-  console.log(`🔒 Fetching data from DECENTRALIZED oracles on ${network}...`);
-  console.log(`🛡️  SECURITY: Node.js server only provides oracle addresses - TEE fetches data directly`);
+  console.log(`SECURITY Fetching data from DECENTRALIZED oracles on ${network}...`);
+  console.log(`SAFEGUARDS  SECURITY: Node.js server only provides oracle addresses - TEE fetches data directly`);
 
   try {
     const oracles = ORACLE_ADDRESSES[network];
@@ -74,14 +74,14 @@ export async function fetchDecentralizedAPYData(network = 'sepolia', provider = 
     // Calculate APY from price feeds and protocol-specific metrics
     const protocols = calculateProtocolYields(oracleData);
     
-    console.log(`✅ Oracle Sync Complete: ${protocols.length} protocols verified by decentralized oracles`);
+    console.log(`COMPLETED Oracle Sync Complete: ${protocols.length} protocols verified by decentralized oracles`);
     return protocols;
 
   } catch (error) {
-    console.error("❌ Decentralized oracle fetch failed:", error.message);
+    console.error("FAILED Decentralized oracle fetch failed:", error.message);
     
     // Fallback to safe, hardcoded values only during testing
-    console.log("🔄 Engaging emergency fallback (safe protocols only)...");
+    console.log("ROTATION Engaging emergency fallback (safe protocols only)...");
     return getSafeFallbackProtocols();
   }
 }
@@ -242,25 +242,25 @@ export function verifyOracleData(protocols) {
   for (const protocol of protocols) {
     // Must have oracle verification
     if (!protocol.verified || !protocol.source) {
-      console.warn(`❌ Protocol ${protocol.name} lacks oracle verification`);
+      console.warn(`FAILED Protocol ${protocol.name} lacks oracle verification`);
       return false;
     }
     
     // Must have recent update (within 5 minutes)
     const age = Math.floor(Date.now() / 1000) - protocol.lastUpdate;
     if (age > 300) {
-      console.warn(`❌ Protocol ${protocol.name} data is stale (${age}s old)`);
+      console.warn(`FAILED Protocol ${protocol.name} data is stale (${age}s old)`);
       return false;
     }
     
     // Must meet minimum safety requirements
     if (protocol.risk > 80 || protocol.tvl < 1000000) {
-      console.warn(`❌ Protocol ${protocol.name} fails safety checks`);
+      console.warn(`FAILED Protocol ${protocol.name} fails safety checks`);
       return false;
     }
   }
   
-  console.log(`✅ All ${protocols.length} protocols verified by decentralized oracles`);
+  console.log(`COMPLETED All ${protocols.length} protocols verified by decentralized oracles`);
   return true;
 }
 

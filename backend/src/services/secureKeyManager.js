@@ -1,5 +1,5 @@
 /**
- * 🔒 Enterprise Key Management Service (Production V2)
+ * SECURITY Enterprise Key Management Service (Production V2)
  * Replaces raw PRIVATE_KEY storage with secure AWS KMS integration
  * Fixes critical security vulnerability identified in audit.
  * 
@@ -47,7 +47,7 @@ const KMS_CONFIG = {
  * @throws {Error} When signing fails or unauthorized
  */
 export async function signTransactionSecurely(transactionData) {
-  console.log("🔒 SECURE: Signing transaction with enterprise KMS (not raw private key)");
+  console.log("SECURITY SECURE: Signing transaction with enterprise KMS (not raw private key)");
   
   try {
     // Validate transaction data before signing
@@ -78,7 +78,7 @@ export async function signTransactionSecurely(transactionData) {
     return signature;
     
   } catch (error) {
-    console.error("❌ Secure signing failed:", error.message);
+    console.error("FAILED Secure signing failed:", error.message);
     await logTransactionFailure(transactionData, error);
     throw error;
   }
@@ -95,7 +95,7 @@ async function signWithAWSKMS(transactionData) {
   // PRODUCTION: Use AWS SDK v3 for KMS operations
   // DEMO: Simulate KMS signing process
   
-  console.log("🔐 Using AWS KMS for secure signing...");
+  console.log("PRODUCTION Using AWS KMS for secure signing...");
   
   // In production, this would be:
   // const { KMSClient, SignCommand } = require("@aws-sdk/client-kms");
@@ -123,7 +123,7 @@ async function signWithAWSKMS(transactionData) {
  * @returns {Promise<string>} Fireblocks signature
  */
 async function signWithFireblocks(transactionData) {
-  console.log("🔐 Using Fireblocks MPC wallet...");
+  console.log("PRODUCTION Using Fireblocks MPC wallet...");
   
   // PRODUCTION: Use Fireblocks SDK
   // const fireblocks = require('fireblocks-sdk');
@@ -154,7 +154,7 @@ async function signWithFireblocks(transactionData) {
  * @returns {Promise<string>} Turnkey signature
  */
 async function signWithTurnkey(transactionData) {
-  console.log("🔐 Using Turnkey enterprise wallet...");
+  console.log("PRODUCTION Using Turnkey enterprise wallet...");
   
   // PRODUCTION: Use Turnkey SDK
   // DEMO: Return mock signature
@@ -189,7 +189,7 @@ function validateTransactionData(transactionData) {
     throw new Error("Transaction value exceeds security limit");
   }
   
-  console.log("✅ Transaction validation passed");
+  console.log("COMPLETED Transaction validation passed");
 }
 
 /**
@@ -210,7 +210,7 @@ async function logTransactionAttempt(transactionData) {
     serverId: process.env.SERVER_ID || 'unknown'
   };
   
-  console.log("📊 AUDIT: Transaction attempt logged", logEntry);
+  console.log("ASSESSMENT AUDIT: Transaction attempt logged", logEntry);
   
   // PRODUCTION: Send to secure logging service
   // await auditLogger.log(logEntry);
@@ -235,7 +235,7 @@ async function logTransactionSuccess(transactionData, signature) {
     serverId: process.env.SERVER_ID || 'unknown'
   };
   
-  console.log("✅ AUDIT: Transaction signed successfully", logEntry);
+  console.log("COMPLETED AUDIT: Transaction signed successfully", logEntry);
   
   // PRODUCTION: Send to secure logging service
   // await auditLogger.log(logEntry);
@@ -260,7 +260,7 @@ async function logTransactionFailure(transactionData, error) {
     serverId: process.env.SERVER_ID || 'unknown'
   };
   
-  console.error("❌ AUDIT: Transaction signing failed", logEntry);
+  console.error("FAILED AUDIT: Transaction signing failed", logEntry);
   
   // PRODUCTION: Send to security monitoring
   // await securityAlert.alert(logEntry);

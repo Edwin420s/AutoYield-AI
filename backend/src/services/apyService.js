@@ -1,7 +1,7 @@
 import { fetchDecentralizedAPYData, verifyOracleData } from './decentralizedOracle.js';
 
 /**
- * 🔒 PRODUCTION V2: DECENTRALIZED ORACLE SERVICE
+ * PRODUCTION V2: DECENTRALIZED ORACLE SERVICE
  * ==========================================================
  * SECURITY VULNERABILITY FIXED: Centralized Data Ingress
  * 
@@ -21,8 +21,8 @@ import { fetchDecentralizedAPYData, verifyOracleData } from './decentralizedOrac
  * @throws {Error} When decentralized oracles fail or data is invalid
  */
 export async function fetchAPYData(network = 'sepolia') {
-  console.log("🔒 SECURITY: Fetching from DECENTRALIZED oracles (not DefiLlama)");
-  console.log("🛡️  Node.js server only provides oracle addresses - TEE fetches data directly");
+  console.log("SECURITY: Fetching from DECENTRALIZED oracles (not DefiLlama)");
+  console.log("Node.js server only provides oracle addresses - TEE fetches data directly");
 
   try {
     // Fetch data from decentralized on-chain oracles
@@ -34,13 +34,13 @@ export async function fetchAPYData(network = 'sepolia') {
       throw new Error("Oracle data verification failed - potential tampering detected");
     }
     
-    console.log(`✅ Decentralized Oracle Sync: ${protocols.length} protocols verified by Chainlink/PYTH`);
+    console.log(`Oracle Sync Complete: ${protocols.length} protocols verified by Chainlink/PYTH`);
     return protocols;
 
   } catch (error) {
-    console.error("❌ Decentralized oracle failed:", error.message);
-    console.log("🔄 Engaging SAFE fallback protocols only...");
-
+    console.error("Decentralized oracle failed:", error.message);
+    console.log("Engaging SAFE fallback protocols only...");
+    
     // CRITICAL: Fallback only to well-audited, high-TVL protocols
     // Never use unknown or unaudited protocols in fallback
     return getSafeFallbackProtocols();
@@ -51,7 +51,7 @@ export async function fetchAPYData(network = 'sepolia') {
  * Safe fallback protocols for emergency situations
  * Only includes battle-tested, high-TVL protocols with proven security
  * 
- * @returns {Array<Array>} Array of ultra-safe fallback protocols
+ * @returns {Array} Safe protocol data for fallback
  */
 function getSafeFallbackProtocols() {
   return [

@@ -38,7 +38,7 @@ async function initializeWallet() {
     
     // Use secure key manager instead of raw private keys
     walletAddress = await secureKeyManager.getWalletAddress();
-    console.log(`🔐 Secure wallet initialized: ${walletAddress}`);
+    console.log(`PRODUCTION Secure wallet initialized: ${walletAddress}`);
   } catch (error) {
     console.error('Failed to initialize secure wallet:', error);
     throw error;
@@ -267,7 +267,7 @@ export async function proposeStrategy(decision) {
  * @throws {Error} When secure transaction fails
  */
 export async function executeProposal(proposalId) {
-  console.log(`🔒 Executing proposal ${proposalId} with enterprise security...`);
+  console.log(`SECURITY Executing proposal ${proposalId} with enterprise security...`);
   
   try {
     const walletAddr = await initializeWallet();

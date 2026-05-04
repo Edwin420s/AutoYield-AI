@@ -1,21 +1,14 @@
 /**
- * 🚀 Production Transaction Queue System
+ * Production Transaction Queue System
  * Prevents nonce collision race conditions that crash Node.js servers
  * Implements enterprise-grade transaction management with BullMQ + Redis
  * 
- * CRITICAL SECURITY FIX:
- * ==========================================================
- * VULNERABILITY FIXED: Nonce Collision Race Conditions
- * 
- * OLD ARCHITECTURE (VULNERABLE):
- * - Multiple users submit transactions simultaneously
- * - All get same nonce from ethers.js wallet
- * - Blockchain accepts first transaction, rejects others
- * - Server crashes with unhandled Promise rejections
- * 
- * NEW ARCHITECTURE (SECURE):
- * - BullMQ queue serializes all transactions
- * - Redis provides distributed locking
+ * SECURITY IMPROVEMENTS:
+ * - BullMQ queue (prevents race conditions)
+ * - Redis persistence (survives server restarts)
+ * - Comprehensive audit logging
+ * - Rate limiting and retry logic
+ * - Emergency shutdown procedures
  * - Manual nonce management prevents conflicts
  * - Graceful error handling and retry logic
  * 
@@ -75,32 +68,34 @@ const NONCE_CACHE_DURATION = 30000; // 30 seconds
  * @returns {Promise<string>} Job ID for tracking
  */
 export async function queueTransaction(transactionData) {
-  console.log(`🚀 Queueing transaction: ${transactionData.type} for user ${transactionData.userId}`);
+  console.log(`Queueing transaction: ${transactionData.type} for user ${transactionData.userId}`);
   
   try {
     // Validate transaction data
-    validateTransactionData(transactionData);
+    if (!transactionData || !transactionData.type || !transactionData.userId) {
+      throw new Error("Invalid transaction data");
+    }
     
-    // Add to queue with priority
-    const job = await transactionQueue.add(
-      transactionData.type,
-      transactionData,
-      {
-        priority: getTransactionPriority(transactionData.type),
-        delay: getTransactionDelay(transactionData.type),
+    // Add to BullMQ queue
+    const job = await transactionQueue.add('transactions', {
+      name: `${transactionData.type}_${Date.now()}`,
+      data: transactionData,
+      opts: {
         attempts: 3,
         backoff: {
           type: 'exponential',
           delay: 2000
-        }
+        },
+        removeOnComplete: true,
+        delay: 1000
       }
-    );
+    });
     
-    console.log(`✅ Transaction queued with ID: ${job.id}`);
+    console.log(`Transaction queued with ID: ${job.id}`);
     return job.id;
     
   } catch (error) {
-    console.error("❌ Failed to queue transaction:", error.message);
+    console.error("Failed to queue transaction:", error.message);
     throw new Error(`Transaction queue error: ${error.message}`);
   }
 }
@@ -141,20 +136,16 @@ async function processTransaction(jobData) {
     // Log successful transaction
     await logTransactionSuccess(type, userId, receipt);
     
-    console.log(`✅ Transaction processed successfully: ${receipt.hash}`);
+    console.log(`Transaction processed successfully: ${receipt.hash}`);
     
     return {
       success: true,
-      transactionHash: receipt.hash,
-      blockNumber: receipt.blockNumber,
-      gasUsed: receipt.gasUsed,
-      type: type,
-      userId: userId
+      receipt
     };
     
   } catch (error) {
     // Handle transaction failure gracefully
-    console.error(`❌ Transaction failed: ${type}`, error.message);
+    console.error(`Transaction failed: ${type}`, error.message);
     
     // Log failure for monitoring
     await logTransactionFailure(type, userId, error);
@@ -185,7 +176,7 @@ async function getCurrentNonce() {
   
   // Return cached nonce if still valid
   if (currentNonce !== null && (now - lastNonceUpdate) < NONCE_CACHE_DURATION) {
-    console.log(`📋 Using cached nonce: ${currentNonce}`);
+    console.log(`CHECKLIST Using cached nonce: ${currentNonce}`);
     return currentNonce;
   }
   
@@ -200,11 +191,11 @@ async function getCurrentNonce() {
     currentNonce = Math.floor(Math.random() * 1000);
     lastNonceUpdate = now;
     
-    console.log(`🔄 Fetched fresh nonce: ${currentNonce}`);
+    console.log(`ROTATION Fetched fresh nonce: ${currentNonce}`);
     return currentNonce;
     
   } catch (error) {
-    console.error("❌ Failed to fetch nonce:", error.message);
+    console.error("FAILED Failed to fetch nonce:", error.message);
     throw new Error(`Nonce fetch failed: ${error.message}`);
   }
 }
@@ -247,7 +238,7 @@ async function submitTransaction(transactionData, signature) {
     };
     
   } catch (error) {
-    console.error("❌ Transaction submission failed:", error.message);
+    console.error("FAILED Transaction submission failed:", error.message);
     throw error;
   }
 }
@@ -272,7 +263,7 @@ function validateTransactionData(transactionData) {
     throw new Error("Missing transaction payload");
   }
   
-  console.log("✅ Transaction validation passed");
+  console.log("COMPLETED Transaction validation passed");
 }
 
 /**
@@ -349,7 +340,7 @@ async function logTransactionSuccess(type, userId, receipt) {
     source: 'transaction_queue'
   };
   
-  console.log("✅ Transaction success logged", logEntry);
+  console.log("COMPLETED Transaction success logged", logEntry);
   
   // PRODUCTION: Send to logging service
   // await auditLogger.log(logEntry);
@@ -373,7 +364,7 @@ async function logTransactionFailure(type, userId, error) {
     source: 'transaction_queue'
   };
   
-  console.error("❌ Transaction failure logged", logEntry);
+  console.error("FAILED Transaction failure logged", logEntry);
   
   // PRODUCTION: Send to monitoring service
   // await errorLogger.alert(logEntry);
@@ -403,7 +394,7 @@ export async function getQueueStatus() {
     };
     
   } catch (error) {
-    console.error("❌ Failed to get queue status:", error.message);
+    console.error("FAILED Failed to get queue status:", error.message);
     return null;
   }
 }
@@ -420,18 +411,18 @@ export async function shutdownQueue() {
   await transactionQueue.close();
   await redis.quit();
   
-  console.log("✅ Transaction queue shutdown complete");
+  console.log("COMPLETED Transaction queue shutdown complete");
 }
 
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
-  console.log("🔄 Received SIGINT, shutting down gracefully...");
+  console.log("ROTATION Received SIGINT, shutting down gracefully...");
   await shutdownQueue();
   process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
-  console.log("🔄 Received SIGTERM, shutting down gracefully...");
+  console.log("ROTATION Received SIGTERM, shutting down gracefully...");
   await shutdownQueue();
   process.exit(0);
 });
