@@ -3,9 +3,10 @@ pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title AutoYieldVault
@@ -139,7 +140,7 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
      * @param _symbol Symbol for the vault shares token
      */
     constructor(
-        IERC20 _underlyingAsset, 
+        IERC20Metadata _underlyingAsset, 
         string memory _name, 
         string memory _symbol
     ) ERC20(_name, _symbol) {
@@ -363,12 +364,12 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
         }
         require(totalPercentage == 10000, "Percentages must sum to 10000 BPS (100%)");
 
-        uint256 totalAssets = totalAssets();
+        uint256 totalVaultAssets = totalAssets();
         
         // Step 1: Calculate target amounts for each protocol
         uint256[] memory targetAmounts = new uint256[](_protocols.length);
         for (uint256 i = 0; i < _protocols.length; i++) {
-            targetAmounts[i] = (totalAssets * _percentages[i]) / 10000;
+            targetAmounts[i] = (totalVaultAssets * _percentages[i]) / 10000;
         }
         
         // Step 2: Execute delta rebalancing - only move differences
@@ -424,7 +425,7 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
             currentAllocations.push(Allocation(_protocols[i], _percentages[i]));
         }
 
-        emit Rebalanced(_protocols, _percentages, totalAssets);
+        emit Rebalanced(_protocols, _percentages, totalVaultAssets);
     }
 
     // ========================================

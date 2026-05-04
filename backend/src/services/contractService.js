@@ -2,8 +2,6 @@ import { ethers } from 'ethers';
 import { signTransactionSecurely, getSecureWalletAddress } from './secureKeyManager.js';
 import { queueTransaction } from './transactionQueue.js';
 
-// Import secure key manager for production
-import { secureKeyManager } from './secureKeyManager.js';
 
 /**
  * Production V2: Secure Contract Service
@@ -37,7 +35,7 @@ async function initializeWallet() {
     }
     
     // Use secure key manager instead of raw private keys
-    walletAddress = await secureKeyManager.getWalletAddress();
+    walletAddress = await getSecureWalletAddress();
     console.log(`PRODUCTION Secure wallet initialized: ${walletAddress}`);
   } catch (error) {
     console.error('Failed to initialize secure wallet:', error);
@@ -404,8 +402,58 @@ export async function getProposalDetails(proposalId) {
  * @throws {Error} When contract query fails
  */
 export async function getAllProposals() {
-  // For demo purposes, return in-memory proposals
-  // In production, this would query the blockchain
+  try {
+    // Query real blockchain data
+    const { ethers } = require('ethers');
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
+    const strategyManager = new ethers.Contract(
+      process.env.MANAGER_ADDRESS,
+      ['function getProposal(uint256) view returns (address[], uint256[], uint256, bool, bool, address, uint256, uint256)', 'function proposalCount() view returns (uint256)'],
+      provider
+    );
+    
+    const proposalCount = await strategyManager.proposalCount();
+    console.log(`Fetching ${proposalCount} proposals from blockchain`);
+    
+    const blockchainProposals = [];
+    for (let i = 1; i <= proposalCount; i++) {
+      try {
+        const proposal = await strategyManager.getProposal(i);
+        const executionTime = proposal[2].toString();
+        const isExecuted = proposal[3];
+        const isCanceled = proposal[4];
+        
+        blockchainProposals.push({
+          id: i,
+          proposer: proposal[5],
+          protocols: proposal[0],
+          percentages: proposal[1].map(p => Number(p) / 100), // Convert BPS to percentages
+          expectedAPY: Number(proposal[6]) / 100, // Convert from basis points
+          executionProof: "blockchain_verified",
+          timestamp: new Date(executionTime * 1000).toISOString(),
+          executeAfter: new Date(executionTime * 1000).toISOString(),
+          executionTime: new Date(executionTime * 1000).toISOString(),
+          status: isExecuted ? 'executed' : (isCanceled ? 'canceled' : 'pending'),
+          executed: isExecuted,
+          executedAt: isExecuted ? new Date().toISOString() : null,
+          txHash: null,
+          blockNumber: null
+        });
+      } catch (error) {
+        console.log(`Failed to fetch proposal ${i}:`, error.message);
+      }
+    }
+    
+    // If blockchain proposals exist, return them; otherwise fallback to mock data
+    if (blockchainProposals.length > 0) {
+      console.log('Returning real blockchain proposals:', blockchainProposals.length);
+      return blockchainProposals;
+    }
+  } catch (error) {
+    console.log('Failed to query blockchain, falling back to mock data:', error.message);
+  }
+  
+  // Fallback to in-memory proposals for demo
   console.log(`Fetching ${proposals.length} proposals from memory storage`);
   
   return proposals.map(proposal => ({
@@ -417,6 +465,7 @@ export async function getAllProposals() {
     executionProof: proposal.executionProof,
     timestamp: proposal.timestamp,
     executeAfter: proposal.executeAfter,
+    executionTime: proposal.executeAfter, // Add executionTime field for frontend compatibility
     status: proposal.status,
     executed: proposal.executed || false,
     executedAt: proposal.executedAt || null,

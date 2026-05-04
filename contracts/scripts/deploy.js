@@ -119,8 +119,8 @@ async function main() {
   console.log("\nSeeding Vault with Initial Capital...");
   
   // 1. Define seed amount (e.g., 50,000 Mock USDC)
-  // Note: We use 18 decimals assuming standard ERC20 default in your MockERC20
-  const seedAmount = hre.ethers.parseUnits("50000", 18); 
+  // Note: Mock USDC uses 6 decimals like real USDC
+  const seedAmount = hre.ethers.parseUnits("50000", 6); 
   
   // 2. Approve Vault to take deployer's money
   console.log("   Approving Vault...");

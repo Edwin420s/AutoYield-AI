@@ -386,10 +386,9 @@ class BlockchainService {
       
       console.log(`Converting percentages ${proposal.percentages} to BPS: ${percentagesBPS}`);
       
-      // Submit transaction to blockchain with BPS percentages
+      // Submit transaction to blockchain (percentages are already stored in proposal)
       const tx = await this.strategyManagerContract.executeProposedStrategy(
-        proposalId,
-        percentagesBPS
+        proposalId
       );
       
       // Wait for transaction to be mined and get receipt

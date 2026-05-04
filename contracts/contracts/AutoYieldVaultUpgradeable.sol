@@ -37,7 +37,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
  * - UUPS upgradeability for security patches
  * 
  * @author AutoYield AI Team
- * @version 2.0.0 - Enterprise Grade
  */
 contract AutoYieldVaultUpgradeable is 
     Initializable,
@@ -88,8 +87,7 @@ contract AutoYieldVaultUpgradeable is
     event Deposit(address indexed sender, address indexed receiver, uint256 assets, uint256 shares);
     event Withdraw(address indexed sender, address indexed receiver, address indexed owner, uint256 assets, uint256 shares);
     event EmergencyPaused(bool paused, address indexed pausedBy, string reason);
-    event Upgraded(address indexed implementation);
-
+    
     // ========================================
     // MODIFIERS
     // ========================================
@@ -363,9 +361,9 @@ contract AutoYieldVaultUpgradeable is
      * @dev Upgrade function for emergency security patches
      * @param newImplementation Address of the new implementation
      */
-    function upgradeTo(address newImplementation) external onlyOwner {
+    function upgradeTo(address newImplementation) public override onlyProxy {
         _authorizeUpgrade(newImplementation);
-        _upgradeToAndCallUUPS(newImplementation, "");
+        _upgradeToAndCallUUPS(newImplementation, "", false);
     }
     
     /**
@@ -373,9 +371,9 @@ contract AutoYieldVaultUpgradeable is
      * @param newImplementation Address of the new implementation
      * @param data Calldata for the upgrade
      */
-    function upgradeToAndCall(address newImplementation, bytes memory data) external onlyOwner {
+    function upgradeToAndCall(address newImplementation, bytes memory data) public payable override onlyProxy {
         _authorizeUpgrade(newImplementation);
-        _upgradeToAndCallUUPS(newImplementation, data);
+        _upgradeToAndCallUUPS(newImplementation, data, false);
     }
 
     // ========================================
