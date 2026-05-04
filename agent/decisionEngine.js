@@ -136,10 +136,21 @@ export function decideStrategy(protocols, protocolLimits = {}) {
   const blendedApy = allocations.reduce((sum, a) => sum + (a.apy * (a.percentageBps / 10000)), 0);
 
   if (blendedRisk > MAX_PORTFOLIO_RISK) {
-    // If our best mathematical guess is still too risky, fallback to single safest protocol
-    console.warn(`Calculated risk (${blendedRisk.toFixed(2)}) exceeds max threshold. Engaging safety fallback.`);
-    const safest = [...protocols].sort((a, b) => a.risk - b.risk)[0];
-    return generateOutput([safest], [10000]); // 10000 BPS = 100%
+    // If our best mathematical guess is still too risky, exit to base asset (USDC) for capital preservation
+    console.warn(`Calculated risk (${blendedRisk.toFixed(2)}) exceeds max threshold. Engaging safety fallback - exiting to base asset.`);
+    
+    // PRODUCTION UPGRADE: Exit entirely to base asset (USDC) instead of allocating to safest protocol
+    // This guarantees capital preservation during extreme market volatility
+    return {
+      protocols: [], // Empty array means exit to base asset
+      protocolNames: ['Base Asset (USDC)'],
+      percentages: [], // No allocations - stay in base asset
+      expectedAPY: 0, // No yield when in base asset
+      riskScore: 0, // Zero risk in base asset
+      nonce: Date.now(),
+      executionTimestamp: Math.floor(Date.now() / 1000),
+      isEmergencyExit: true // Flag for UI display
+    };
   }
 
   // ========================================

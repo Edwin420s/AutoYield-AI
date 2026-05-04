@@ -44,6 +44,16 @@ const transactionQueue = new BullMQ.Queue('transaction-queue', {
   }
 });
 
+// Dead Letter Queue for permanently failed transactions
+const deadLetterQueue = new BullMQ.Queue('dead-letter-queue', {
+  connection: redis,
+  defaultJobOptions: {
+    removeOnComplete: 10,  // Keep fewer dead letter jobs
+    removeOnFail: 100,    // Keep more failed jobs for analysis
+    attempts: 0,           // No retries for dead letter queue
+  }
+});
+
 // Worker for processing transactions
 const worker = new BullMQ.Worker('transaction-queue', async (job) => {
   return await processTransaction(job.data);
@@ -155,12 +165,15 @@ async function processTransaction(jobData) {
       throw error; // Let BullMQ handle retry
     }
     
-    // Non-retryable error
+    // Non-retryable error - move to dead letter queue
+    await moveToDeadLetterQueue(type, userId, error, jobData);
+    
     return {
       success: false,
       error: error.message,
       type: type,
-      userId: userId
+      userId: userId,
+      movedToDLQ: true
     };
   }
 }
@@ -371,17 +384,51 @@ async function logTransactionFailure(type, userId, error) {
 }
 
 /**
+ * Move permanently failed transaction to dead letter queue
+ * 
+ * @param {string} type - Transaction type
+ * @param {string} userId - User ID
+ * @param {Error} error - Error that occurred
+ * @param {Object} jobData - Original job data
+ */
+async function moveToDeadLetterQueue(type, userId, error, jobData) {
+  try {
+    console.log(`📋 Moving transaction to dead letter queue: ${type} for user ${userId}`);
+    
+    await deadLetterQueue.add('dead-transactions', {
+      originalJobData: jobData,
+      failureReason: error.message,
+      errorCode: error.code,
+      failedAt: new Date().toISOString(),
+      transactionType: type,
+      userId: userId,
+      retryAttempts: 3 // Max attempts already exhausted
+    }, {
+      // Keep dead letter jobs longer for analysis
+      removeOnComplete: 5,
+      removeOnFail: 50,
+      delay: 0 // Process immediately
+    });
+    
+    console.log(`✅ Transaction moved to dead letter queue: ${type}`);
+  } catch (dlqError) {
+    console.error("FAILED Failed to move transaction to dead letter queue:", dlqError.message);
+  }
+}
+
+/**
  * Get queue status for monitoring
  * 
  * @returns {Promise<Object>} Queue statistics
  */
 export async function getQueueStatus() {
   try {
-    const [waiting, active, completed, failed] = await Promise.all([
+    const [waiting, active, completed, failed, deadLetter] = await Promise.all([
       transactionQueue.getWaiting(),
       transactionQueue.getActive(),
       transactionQueue.getCompleted(),
-      transactionQueue.getFailed()
+      transactionQueue.getFailed(),
+      deadLetterQueue.getWaiting()
     ]);
     
     return {
@@ -389,6 +436,7 @@ export async function getQueueStatus() {
       active: active.length,
       completed: completed.length,
       failed: failed.length,
+      deadLetterQueue: deadLetter.length,
       currentNonce: currentNonce,
       lastNonceUpdate: new Date(lastNonceUpdate).toISOString()
     };
@@ -409,6 +457,7 @@ export async function shutdownQueue() {
   
   await worker.close();
   await transactionQueue.close();
+  await deadLetterQueue.close();
   await redis.quit();
   
   console.log("COMPLETED Transaction queue shutdown complete");

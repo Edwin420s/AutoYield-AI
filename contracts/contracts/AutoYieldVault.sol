@@ -344,7 +344,7 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
     
     /**
      * @dev DELTA REBALANCING - Only move the difference between current and target allocations
-     * Prevents MEV sandwich attacks by avoiding large 100% withdraw/redeposit transactions
+     * Prevents MEV sandwich attacks and liquidity traps by avoiding large 100% withdraw/redeposit transactions
      * @param _protocols Array of protocol addresses to allocate to
      * @param _percentages Array of percentages in Basis Points (10000 = 100%)
      * @param _receiver Address to receive vault shares (usually vault itself)
@@ -392,10 +392,13 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
                 // Need to deploy more funds (delta deposit)
                 uint256 deltaAmount = targetAmount - currentAmount;
                 if (deltaAmount > 0) {
+                    // CRITICAL: Approve before deposit
+                    underlyingAsset.forceApprove(protocol, deltaAmount);
                     try IERC4626(protocol).deposit(deltaAmount, _receiver) {
                         // Success - funds deployed
                     } catch {
                         // Protocol failed - skip and continue with next protocol
+                        // This prevents vault bricking from illiquid protocols
                         continue;
                     }
                 }
@@ -408,6 +411,7 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
                         // Success - excess withdrawn
                     } catch {
                         // Protocol failed - skip and continue with next protocol
+                        // This prevents vault bricking from illiquid protocols
                         continue;
                     }
                 }
@@ -480,80 +484,6 @@ contract AutoYieldVault is ERC20, ReentrancyGuard {
     // 3. AUTONOMOUS PHYSICAL REBALANCING
     // ========================================
     
-    /**
-     * @dev The core engine. Called by StrategyManager after Time-Lock expires.
-     * Implements DELTA REBALANCING to prevent vault bricking from illiquid protocols.
-     * Only withdraws what's necessary and uses try/catch for graceful failure handling.
-     * @param _protocols Array of new protocol addresses
-     * @param _percentagesBps Array of allocation percentages in Basis Points
-     */
-    function rebalance(address[] memory _protocols, uint256[] memory _percentagesBps) external onlyStrategyManager {
-        require(_protocols.length == _percentagesBps.length, "Arrays length mismatch");
-        require(_protocols.length <= 10, "Gas Limit Protection: Max 10 protocols");
-        
-        uint256 totalPercentage = 0;
-        for (uint256 i = 0; i < _percentagesBps.length; i++) {
-            totalPercentage += _percentagesBps[i];
-        }
-        require(totalPercentage == 10000, "Percentages must sum to 10000 BPS (100%)");
-        
-        // Step 1: Calculate current allocations and target allocations
-        uint256 totalAssets = underlyingAsset.balanceOf(address(this));
-        
-        // Add value of current positions
-        for (uint i = 0; i < currentAllocations.length; i++) {
-            address protocol = currentAllocations[i].protocol;
-            uint256 sharesBalance = IERC20(protocol).balanceOf(address(this));
-            if (sharesBalance > 0) {
-                totalAssets += IERC4626(protocol).previewRedeem(sharesBalance);
-            }
-        }
-        
-        // Step 2: DELTA REBALANCING - Calculate target allocations using storage
-        // Clear previous target allocations
-        for (uint i = 0; i < _protocols.length; i++) {
-            address protocol = _protocols[i];
-            uint256 targetAmount = (totalAssets * _percentagesBps[i]) / 10000;
-            
-            // Get current allocation to this protocol
-            uint256 currentAllocation = 0;
-            uint256 sharesBalance = IERC20(protocol).balanceOf(address(this));
-            if (sharesBalance > 0) {
-                currentAllocation = IERC4626(protocol).previewRedeem(sharesBalance);
-            }
-            
-            // Store difference for later use
-            if (targetAmount > currentAllocation) {
-                // Need to deploy more funds
-                uint256 amountToDeploy = targetAmount - currentAllocation;
-                if (amountToDeploy > 0) {
-                    underlyingAsset.forceApprove(protocol, amountToDeploy);
-                    try IERC4626(protocol).deposit(amountToDeploy, address(this)) {
-                        // Deployment succeeded
-                    } catch {
-                        // PRODUCTION: Log failed deployment and continue
-                        continue;
-                    }
-                }
-            } else if (currentAllocation > targetAmount) {
-                // Need to withdraw excess
-                uint256 excessValue = currentAllocation - targetAmount;
-                uint256 sharesToRedeem = (excessValue * sharesBalance) / currentAllocation;
-                
-                try IERC4626(protocol).redeem(sharesToRedeem, address(this), address(this)) {
-                    // Withdrawal succeeded
-                } catch {
-                    // PRODUCTION: Log failed withdrawal and continue
-                    continue;
-                }
-            }
-            
-            // Save state with BPS values
-            currentAllocations.push(Allocation(protocol, _percentagesBps[i]));
-        }
-
-        emit Rebalanced(_protocols, _percentagesBps, totalAssets);
-    }
 
     /**
      * @dev Get total vault shares (convenience function)
