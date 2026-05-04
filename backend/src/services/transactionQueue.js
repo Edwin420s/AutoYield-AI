@@ -120,7 +120,7 @@ export async function queueTransaction(transactionData) {
 async function processTransaction(jobData) {
   const { type, payload, userId, jobId } = jobData;
   
-  console.log(`⚡ Processing transaction: ${type} (Job ID: ${jobId})`);
+  console.log(`Processing transaction: ${type} (Job ID: ${jobId})`);
   
   try {
     // Get current nonce with caching
@@ -221,7 +221,7 @@ async function getCurrentNonce() {
  * @returns {Promise<Object>} Transaction receipt
  */
 async function submitTransaction(transactionData, signature) {
-  console.log(`📤 Submitting transaction to blockchain...`);
+  console.log(`Submitting transaction to blockchain...`);
   
   try {
     // PRODUCTION: Submit to blockchain
@@ -393,7 +393,7 @@ async function logTransactionFailure(type, userId, error) {
  */
 async function moveToDeadLetterQueue(type, userId, error, jobData) {
   try {
-    console.log(`📋 Moving transaction to dead letter queue: ${type} for user ${userId}`);
+    console.log(`Moving transaction to dead letter queue: ${type} for user ${userId}`);
     
     await deadLetterQueue.add('dead-transactions', {
       originalJobData: jobData,
@@ -410,7 +410,7 @@ async function moveToDeadLetterQueue(type, userId, error, jobData) {
       delay: 0 // Process immediately
     });
     
-    console.log(`✅ Transaction moved to dead letter queue: ${type}`);
+    console.log(`Transaction moved to dead letter queue: ${type}`);
   } catch (dlqError) {
     console.error("FAILED Failed to move transaction to dead letter queue:", dlqError.message);
   }
@@ -453,7 +453,7 @@ export async function getQueueStatus() {
  * @returns {Promise<void>}
  */
 export async function shutdownQueue() {
-  console.log("🛑 Shutting down transaction queue...");
+  console.log("Shutting down transaction queue...");
   
   await worker.close();
   await transactionQueue.close();

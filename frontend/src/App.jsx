@@ -80,13 +80,15 @@ function App() {
         // Initialize blockchain service with user's Web3 provider
         await blockchainService.initialize(result.provider, result.signer);
         
-        // Check if on correct network (Local Hardhat)
-        const LOCALHARDHAT_CHAIN_ID = `0x${parseInt(import.meta.env.VITE_CHAIN_ID).toString(16)}`;
-        if (!walletService.isCorrectNetwork(LOCALHARDHAT_CHAIN_ID)) {
-          console.log('Wrong network detected, switching to Local Hardhat...');
-          const switched = await walletService.switchNetwork(LOCALHARDHAT_CHAIN_ID);
+        // Check if on correct network using enforced configuration
+        const enforcedNetwork = walletService.getEnforcedNetwork();
+        const expectedChainId = enforcedNetwork.chainId;
+        
+        if (!walletService.isCorrectNetwork(expectedChainId)) {
+          console.log(`Wrong network detected, switching to ${enforcedNetwork.networkName}...`);
+          const switched = await walletService.switchNetwork(expectedChainId);
           if (!switched) {
-            setNetworkError('Please switch to Local Hardhat (localhost:8545) to use AutoYield AI');
+            setNetworkError(`Please switch to ${enforcedNetwork.networkName} to use AutoYield AI`);
             return;
           }
           
@@ -195,8 +197,9 @@ function App() {
       return;
     }
     
-    if (!walletService.isCorrectNetwork('0x7a69')) {
-      alert('Please switch to Localhost 8545 to execute AI strategies!');
+    const enforcedNetwork = walletService.getEnforcedNetwork();
+    if (!walletService.isCorrectNetwork(enforcedNetwork.chainId)) {
+      alert(`Please switch to ${enforcedNetwork.networkName} to execute AI strategies!`);
       return;
     }
     

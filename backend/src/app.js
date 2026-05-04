@@ -34,8 +34,42 @@ const PORT = process.env.PORT || 3000;
 
 /**
  * Enable Cross-Origin Resource Sharing for frontend integration
+ * PRODUCTION: Lock down CORS to specific frontend domain only
  */
-app.use(cors());
+const corsOptions = {
+  origin: function (origin, callback) {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:5173', // Development Vite default
+      'http://localhost:3000'  // Backend development
+    ];
+    
+    // In development, allow localhost origins
+    if (isDevelopment && allowedOrigins.some(allowed => origin?.startsWith(allowed))) {
+      return callback(null, true);
+    }
+    
+    // In production, only allow exact frontend domain
+    if (!isDevelopment) {
+      const productionFrontend = process.env.FRONTEND_URL;
+      if (origin === productionFrontend) {
+        return callback(null, true);
+      }
+      console.warn(`CORS blocked: Origin ${origin} not in allowed list`);
+      return callback(new Error('Not allowed by CORS'));
+    }
+    
+    // Default deny
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true, // Allow cookies/auth headers
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Some legacy browsers choke on 204
+};
+
+app.use(cors(corsOptions));
 
 /**
  * Apply global rate limiting to prevent DoS attacks

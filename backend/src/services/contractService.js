@@ -437,6 +437,33 @@ export async function getProposal(proposalId) {
   console.log(`Current proposals in memory: ${proposals.length}`);
   console.log(`Proposal IDs: ${proposals.map(p => p.id).join(', ')}`);
   
+  // Convert proposalId to number to handle string inputs from frontend
+  const numericId = Number(proposalId);
+  const proposal = proposals.find(p => p.id === numericId);
+  
+  if (!proposal) {
+    return null;
+  }
+  
+  return {
+    id: proposal.id,
+    proposer: proposal.proposer,
+    protocols: proposal.protocols,
+    percentages: proposal.percentages,
+    expectedAPY: proposal.expectedAPY,
+    executionProof: proposal.executionProof,
+    timestamp: proposal.timestamp,
+    executeAfter: proposal.executeAfter,
+    status: proposal.status,
+    executed: proposal.executed || false,
+    executedAt: proposal.executedAt || null,
+    txHash: proposal.txHash,
+    blockNumber: proposal.blockNumber
+  };
+}
+
+/**
+ * Encode proposeStrategy function call for blockchain transaction
  * @param {Object} decision - AI decision object
  * @returns {string} Encoded transaction data
  */

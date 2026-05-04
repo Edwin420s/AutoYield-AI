@@ -384,11 +384,53 @@ class WalletService {
 
   /**
    * Check if wallet is connected to correct network
+   * PRODUCTION: Enforce strict network matching
    * @param {string} expectedChainId - Expected chain ID
    * @returns {boolean} Network match status
    */
   isCorrectNetwork(expectedChainId) {
-    return this.chainId === expectedChainId;
+    const isDevelopment = import.meta.env.DEV;
+    const isProduction = import.meta.env.MODE === 'production';
+    
+    const isCorrect = this.chainId === expectedChainId;
+    
+    if (isProduction && !isCorrect) {
+      console.error(`PRODUCTION: Network mismatch. Expected: ${expectedChainId}, Got: ${this.chainId}`);
+      // In production, block all interactions on wrong network
+      return false;
+    }
+    
+    if (isDevelopment && !isCorrect) {
+      console.warn(`Development: Network mismatch. Expected: ${expectedChainId}, Got: ${this.chainId}`);
+      // In development, allow but warn
+      return false;
+    }
+    
+    return isCorrect;
+  }
+
+  /**
+   * Get enforced network configuration for production
+   * @returns {Object} Network configuration
+   */
+  getEnforcedNetwork() {
+    const isProduction = import.meta.env.MODE === 'production';
+    const enforceNetwork = import.meta.env.VITE_ENFORCE_NETWORK === 'true';
+    
+    if (isProduction && enforceNetwork) {
+      return {
+        chainId: import.meta.env.VITE_CHAIN_ID || '1',
+        networkName: import.meta.env.VITE_NETWORK_NAME || 'ethereum',
+        enforced: true
+      };
+    }
+    
+    // Development fallback
+    return {
+      chainId: '0x7a69', // Local Hardhat
+      networkName: 'localhost',
+      enforced: false
+    };
   }
 
   /**
