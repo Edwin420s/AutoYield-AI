@@ -45,9 +45,9 @@ User Wallet → Smart Contracts → TEE Decision Engine → Keeper Agent → Str
 ### 0G Ecosystem Integration
 | Component | Usage | Status |
 |-----------|-------|---------|
-| **0G Chain** | Smart contracts for vault operations | **Deployed** |
-| **0G Storage** | Audit logs and decision records | **Simulated** |
-| **0G Compute** | TEE-based AI execution | **Simulated** |
+| 0G Chain | Smart contracts for vault operations | Deployed |
+| 0G Storage | Audit logs and decision records | Simulated |
+| 0G Compute | TEE-based AI execution | Simulated |
 
 ### Security Implementation
 **Current**: Uses ECDSA signature verification as a cryptographic proxy for Intel SGX hardware attestation.
@@ -79,13 +79,13 @@ Comprehensive protocol assessment using 5-category scoring:
 | 0-39 | F | 5% |
 
 ### Security Considerations
-**Current Limitations:**
+Current Limitations:
 - Oracle dependency on centralized data sources
 - Simple rebalancing mechanics (100% withdrawal/redeposit)
 - ECDSA signature verification (proxy for hardware attestation)
 - Manual execution requirement for time-locked strategies
 
-**Production Roadmap:**
+Production Roadmap:
 - Direct on-chain oracle integration with ZK proofs
 - Delta-rebalancing to minimize slippage
 - Intel SGX DCAP hardware attestation
@@ -93,12 +93,12 @@ Comprehensive protocol assessment using 5-category scoring:
 
 ## Technology Stack
 
-- **Frontend**: React, Tailwind CSS, ethers.js
-- **Backend**: Node.js, Express, 0G SDKs
-- **Smart Contracts**: Solidity, Hardhat
-- **Security**: Intel SGX TEEs, cryptographic proofs
-- **Storage**: 0G Storage for audit trails
-- **Network**: 0G Chain deployment
+- Frontend: React, Tailwind CSS, ethers.js
+- Backend: Node.js, Express, 0G SDKs
+- Smart Contracts: Solidity, Hardhat
+- Security: Intel SGX TEEs, cryptographic proofs
+- Storage: 0G Storage for audit trails
+- Network: 0G Chain deployment
 
 ## Installation
 
@@ -149,10 +149,10 @@ npm run dev
 6. Verify execution on 0G Explorer
 
 ## Verification
-All on‑chain activity can be viewed on the **0G Explorer**:  
-`https://explorer.0g.ai/address/<contract-address>`  
+All on-chain activity can be viewed on the 0G Explorer:
+`https://explorer.0g.ai/address/<contract-address>`
 
-Every rebalance emits a `StrategyExecuted` event with:
+Every rebalance emits a StrategyExecuted event with:
 - APY and risk metrics
 - TEE attestation proof
 - Link to full reasoning stored in 0G Storage
@@ -161,15 +161,15 @@ Every rebalance emits a `StrategyExecuted` event with:
 ## API Reference
 
 ### Agent Endpoints
-- `POST /api/agent/run` - Execute AI strategy with TEE verification
-- `GET /api/agent/proposals` - Get pending and executed proposals
+- POST /api/agent/run - Execute AI strategy with TEE verification
+- GET /api/agent/proposals - Get pending and executed proposals
 
 ### Vault Endpoints
-- `GET /api/vault/balance/:userAddress` - Get user balance and shares
-- `POST /api/vault/deposit` - Deposit funds into vault
+- GET /api/vault/balance/:userAddress - Get user balance and shares
+- POST /api/vault/deposit - Deposit funds into vault
 
 ### Protocol Endpoints
-- `GET /api/protocols` - Get whitelisted protocols with risk scores
+- GET /api/protocols - Get whitelisted protocols with risk scores
 
 ## Testing
 
@@ -186,10 +186,10 @@ cd frontend && npm test
 
 ## Troubleshooting
 
-**Common Issues:**
-- **Transaction failures**: Restart both Hardhat node and backend server
-- **MetaMask connection**: Add 0G Testnet (Chain ID: 16600, RPC: https://rpc.0g.ai)
-- **Backend connection**: Verify API is running at http://localhost:3000/health
+Common Issues:
+- Transaction failures: Restart both Hardhat node and backend server
+- MetaMask connection: Add 0G Testnet (Chain ID: 16600, RPC: https://rpc.0g.ai)
+- Backend connection: Verify API is running at http://localhost:3000/health
 
 ## Project Structure
 
@@ -204,8 +204,8 @@ AutoYield-AI/
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License - see LICENSE for details.
 
 ---
 
-**AutoYield AI** demonstrates TEE-based yield optimization with comprehensive security considerations and a clear production roadmap.
+AutoYield AI demonstrates TEE-based yield optimization with comprehensive security considerations and a clear production roadmap.
