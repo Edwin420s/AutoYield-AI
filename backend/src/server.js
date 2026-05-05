@@ -20,8 +20,12 @@ import dotenv from 'dotenv';
 import agentRoutes from './routes/agentRoutes.js';
 import contractRoutes from './routes/contractRoutes.js';
 import { rateLimit } from './middleware/auth.js';
+import { initializeEnvironment, PRODUCTION_MODE } from './config/productionMode.js';
 
 dotenv.config();
+
+// Initialize environment configuration
+initializeEnvironment();
 
 // ========================================
 // APPLICATION CONFIGURATION

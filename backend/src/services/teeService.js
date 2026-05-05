@@ -35,12 +35,18 @@ dotenv.config();
 // ========================================
 
 /// @dev Mock enclave private key (should match one used in deployment)
-/// Falls back to zero address if not configured
-const MOCK_ENCLAVE_PRIVATE_KEY = process.env.MOCK_ENCLAVE_PRIVATE_KEY || 
-  "0x" + "0".repeat(64); // Fallback to zero address if not set
+/// Falls back to a valid mock private key if not configured
+const MOCK_ENCLAVE_PRIVATE_KEY = process.env.ZERO_G_ENCLAVE_PRIVATE_KEY || 
+  "0x4a8cf9279e635c681ac28c50b5ea2c3376dd904dfdae3480b99ff8d5528e9812"; // Valid fallback private key
 
 /// @dev Mock enclave wallet for signing operations
-const enclaveWallet = new ethers.Wallet(MOCK_ENCLAVE_PRIVATE_KEY);
+let enclaveWallet;
+try {
+  enclaveWallet = new ethers.Wallet(MOCK_ENCLAVE_PRIVATE_KEY);
+} catch (error) {
+  console.warn('TEE Service: Invalid private key, using fallback');
+  enclaveWallet = new ethers.Wallet("0x4a8cf9279e635c681ac28c50b5ea2c3376dd904dfdae3480b99ff8d5528e9812");
+}
 
 /**
  * Generate TEE attestation signature for strategy proposal

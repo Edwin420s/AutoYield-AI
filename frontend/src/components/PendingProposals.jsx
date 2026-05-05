@@ -69,10 +69,10 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
       );
     }
 
-    // Set up polling for TEE-created proposals (every 30 seconds)
+    // Set up polling for TEE-created proposals (every 60 seconds to reduce spam)
     const pollInterval = setInterval(() => {
       fetchProposals();
-    }, 30000);
+    }, 60000);
 
     return () => {
       if (blockchainService) {
@@ -159,6 +159,24 @@ Status: ACTIVE & GENERATING YIELD
           }
         } catch (backendError) {
           console.warn('Backend update failed, but blockchain execution succeeded:', backendError);
+        }
+        
+        // Refresh proposals list to show updated status
+        setProposals(prev => prev.map(p => 
+          p.id === id ? { ...p, executed: true, executedAt: new Date().toISOString() } : p
+        ));
+        
+        console.log('Proposal execution completed successfully');
+        
+        // Trigger parent component to refresh vault data
+        if (onExecutionComplete) {
+          onExecutionComplete({
+            proposalId: id,
+            protocols: protocolNames,
+            percentages: proposal.percentages,
+            expectedAPY: proposal.expectedAPY,
+            ...result // Include transaction result for verification
+          });
         }
         
         // Call parent callback to update vault data

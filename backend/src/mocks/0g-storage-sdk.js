@@ -186,6 +186,57 @@ export function getFlowContract(address, wallet) {
 }
 
 // Additional utility functions for enhanced integration
+// Main SDK class that combines all functionality
+export class Sdk {
+  constructor(options = {}) {
+    this.indexerUrl = options.indexerUrl || 'https://indexer.0g.ai';
+    this.flowContractAddress = options.flowContractAddress || '0x0000000000000000000000000000000000000000';
+    this.wallet = options.wallet;
+    
+    // Initialize components
+    this.indexer = new IndexerClient(this.indexerUrl);
+  }
+
+  async upload(data, metadata = {}) {
+    console.log("0G Storage SDK: Starting upload...");
+    
+    try {
+      // Convert data to buffer if needed
+      let buffer;
+      if (typeof data === 'string') {
+        buffer = Buffer.from(data);
+      } else if (Buffer.isBuffer(data)) {
+        buffer = data;
+      } else {
+        buffer = Buffer.from(JSON.stringify(data));
+      }
+      
+      // Create ZgFile
+      const zgFile = await ZgFile.fromBuffer(buffer, metadata);
+      
+      // Upload using indexer
+      const result = await this.indexer.upload(zgFile);
+      
+      console.log(`0G Storage SDK: Upload completed! CID: ${result.cid}`);
+      return result;
+      
+    } catch (error) {
+      console.error("0G Storage SDK upload failed:", error.message);
+      throw error;
+    }
+  }
+
+  async retrieve(cid) {
+    console.log(`0G Storage SDK: Retrieving CID: ${cid}`);
+    return await this.indexer.retrieve(cid);
+  }
+
+  async verifyIntegrity(cid) {
+    console.log(`0G Storage SDK: Verifying CID: ${cid}`);
+    return await this.indexer.verifyIntegrity(cid);
+  }
+}
+
 export class StorageManager {
   constructor(indexerUrl, flowContractAddress, wallet) {
     this.indexer = new IndexerClient(indexerUrl);

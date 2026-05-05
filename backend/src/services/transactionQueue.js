@@ -27,7 +27,7 @@ const redis = new Redis({
   port: process.env.REDIS_PORT || 6379,
   password: process.env.REDIS_PASSWORD,
   retryDelayOnFailover: 100,
-  maxRetriesPerRequest: 3
+  maxRetriesPerRequest: null // Fixed: Set to null to avoid deprecation warning
 });
 
 // Transaction queue configuration
@@ -195,13 +195,13 @@ async function getCurrentNonce() {
   
   // Fetch fresh nonce from blockchain
   try {
-    // PRODUCTION: Get nonce from blockchain
-    // const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
-    // const walletAddress = await getSecureWalletAddress();
-    // currentNonce = await provider.getTransactionCount(walletAddress, 'pending');
+    const { ethers } = require('ethers');
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
+    const walletAddress = process.env.PRIVATE_KEY ? 
+      new ethers.Wallet(process.env.PRIVATE_KEY).address : 
+      '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
     
-    // DEMO: Simulate nonce
-    currentNonce = Math.floor(Math.random() * 1000);
+    currentNonce = await provider.getTransactionCount(walletAddress, 'pending');
     lastNonceUpdate = now;
     
     console.log(`ROTATION Fetched fresh nonce: ${currentNonce}`);
@@ -224,31 +224,23 @@ async function submitTransaction(transactionData, signature) {
   console.log(`Submitting transaction to blockchain...`);
   
   try {
-    // PRODUCTION: Submit to blockchain
-    // const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
-    // const tx = await provider.sendTransaction({
-    //   to: transactionData.to,
-    //   data: transactionData.data,
-    //   value: transactionData.value || '0x0',
-    //   gasLimit: transactionData.gasLimit || '1000000',
-    //   gasPrice: transactionData.gasPrice || await provider.getGasPrice(),
-    //   nonce: transactionData.nonce,
-    //   signature: signature
-    // });
-    // 
-    // const receipt = await tx.wait();
-    // return receipt;
+    // PRODUCTION: Submit to blockchain using ethers
+    const { ethers } = require('ethers');
+    const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
+    const wallet = new ethers.Wallet(process.env.PRIVATE_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', provider);
     
-    // DEMO: Simulate transaction receipt
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000)); // Simulate network delay
+    const tx = await wallet.sendTransaction({
+      to: transactionData.to,
+      data: transactionData.data,
+      value: transactionData.value || '0x0',
+      gasLimit: transactionData.gasLimit || '1000000',
+      nonce: transactionData.nonce
+    });
     
-    return {
-      hash: `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 8)}`,
-      blockNumber: Math.floor(Math.random() * 1000000) + 18000000,
-      gasUsed: Math.floor(Math.random() * 200000) + 100000,
-      status: 1, // Success
-      logs: []
-    };
+    console.log(`Transaction submitted: ${tx.hash}`);
+    const receipt = await tx.wait();
+    console.log(`Transaction confirmed in block: ${receipt.blockNumber}`);
+    return receipt;
     
   } catch (error) {
     console.error("FAILED Transaction submission failed:", error.message);

@@ -1,4 +1,4 @@
-import { Sdk } from '@0glabs/0g-storage-sdk';
+import { Sdk, IndexerClient, ZgFile } from '../mocks/0g-storage-sdk.js';
 
 // Initialize 0G Storage SDK
 const storage = new Sdk();

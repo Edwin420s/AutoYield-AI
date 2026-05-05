@@ -118,9 +118,10 @@ async function main() {
   // ==========================================
   console.log("\nSeeding Vault with Initial Capital...");
   
-  // 1. Define seed amount (e.g., 50,000 Mock USDC)
+  // 1. Define seed amount (flexible - can be overridden by environment)
   // Note: Mock USDC uses 6 decimals like real USDC
-  const seedAmount = hre.ethers.parseUnits("50000", 6); 
+  const seedAmountStr = process.env.VAULT_SEED_AMOUNT || "50000";
+  const seedAmount = hre.ethers.parseUnits(seedAmountStr, 6); 
   
   // 2. Approve Vault to take deployer's money
   console.log("   Approving Vault...");
@@ -132,7 +133,7 @@ async function main() {
   const depositTx = await vault.deposit(seedAmount, deployer.address);
   await depositTx.wait();
   
-  console.log(`Vault successfully seeded! Total TVL: $50,000`);
+  console.log(`Vault successfully seeded! Total TVL: $${seedAmountStr}`);
 
   console.log("\nDEPLOYMENT COMPLETE!");
   console.log("==========================================");
@@ -160,6 +161,9 @@ UNDERLYING_ASSET="${usdcAddress}"
 MOCK_AAVE_ADDRESS="${mockAaveAddress}"
 MOCK_BENQI_ADDRESS="${mockBenqiAddress}"
 MOCK_COMPOUND_ADDRESS="${mockCompoundAddress}"
+
+# Vault Configuration (flexible seeding)
+VAULT_SEED_AMOUNT="${process.env.VAULT_SEED_AMOUNT || '50000'}"
 
 # 0G Network Configuration
 ZERO_G_RPC_URL="https://rpc.0g.ai"

@@ -18,8 +18,12 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import apiRoutes from './routes/api.js';
 import { rateLimit } from './middleware/auth.js';
+import { initializeEnvironment, PRODUCTION_MODE } from './config/productionMode.js';
 
 dotenv.config();
+
+// Initialize environment configuration
+initializeEnvironment();
 
 // ========================================
 // APPLICATION CONFIGURATION
@@ -37,31 +41,25 @@ const PORT = process.env.PORT || 3000;
  * PRODUCTION: Lock down CORS to specific frontend domain only
  */
 const corsOptions = {
-  origin: function (origin, callback) {
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:5173',
-      'http://localhost:5173', // Development Vite default
-      'http://localhost:3000'  // Backend development
-    ];
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    const productionFrontend = process.env.FRONTEND_URL || 'http://localhost:5173';
     
     // In development, allow localhost origins
-    if (isDevelopment && allowedOrigins.some(allowed => origin?.startsWith(allowed))) {
-      return callback(null, true);
-    }
-    
-    // In production, only allow exact frontend domain
-    if (!isDevelopment) {
-      const productionFrontend = process.env.FRONTEND_URL;
-      if (origin === productionFrontend) {
+    if (process.env.NODE_ENV === 'development') {
+      if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:') || origin.startsWith('http://localhost:3000')) {
         return callback(null, true);
       }
-      console.warn(`CORS blocked: Origin ${origin} not in allowed list`);
-      return callback(new Error('Not allowed by CORS'));
     }
     
-    // Default deny
-    callback(new Error('Not allowed by CORS'));
+    // In production, only allow specific frontend
+    if (origin === productionFrontend) {
+      return callback(null, true);
+    }
+    console.warn(`CORS blocked: Origin ${origin} not in allowed list`);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true, // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

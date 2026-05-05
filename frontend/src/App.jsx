@@ -109,7 +109,6 @@ function App() {
         console.error('Wallet connection failed:', result.error);
         setNetworkError(result.error);
       }
-      
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       setNetworkError('Failed to connect wallet. Please try again.');
@@ -167,6 +166,7 @@ function App() {
     }
   };
 
+  
   /**
    * Refresh vault data periodically and when account changes
    * Fetches directly from blockchain, not fake backend

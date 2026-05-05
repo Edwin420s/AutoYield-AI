@@ -274,8 +274,8 @@ async function logTransactionFailure(transactionData, error) {
  */
 export async function getSecureWalletAddress() {
   // PRODUCTION: Derive from KMS public key
-  // DEMO: Return environment variable or mock address
-  return process.env.SECURE_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4Db45';
+  // DEMO: Return environment variable or mock address with proper checksum
+  return process.env.SECURE_WALLET_ADDRESS || '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266';
 }
 
 /**

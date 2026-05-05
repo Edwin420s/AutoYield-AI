@@ -1,8 +1,8 @@
 import { fetchAPYData } from './apyService.js';
-import { decideStrategy, testAgenticMath } from '../../agent/decisionEngine.js';
-import { executeStrategy, proposeStrategy } from './contractService.js';
+import { decideStrategy, testAgenticMath } from '../../../agent/decisionEngine.js';
+import { executeProposal, proposeStrategy } from './contractService.js';
 import { createProtocolMetadata, uploadTo0GStorageWithPayment } from './0gStorageService.js';
-import { runComputeLogic } from './ogComputeService.js';
+import { executeVerifiableAI } from './ogComputeService.js';
 import { generateTEEAttestation } from './teeService.js';
 import fs from 'fs';
 import path from 'path';
@@ -12,7 +12,7 @@ export async function runAgent() {
   const decision = decideStrategy(apyData);
   
   // Optionally run compute logic (mock)
-  await runComputeLogic(decision);
+  await executeVerifiableAI(apyData);
 
   // Use time-lock for major decisions, immediate execution for minor ones
   const isMajorDecision = decision.riskScore > 50 || decision.expectedAPY > 10;
@@ -22,8 +22,8 @@ export async function runAgent() {
     // Use time-lock for high-risk decisions
     result = await proposeStrategy(decision);
   } else {
-    // Use immediate execution for low-risk decisions
-    result = await executeStrategy(decision);
+    // For demo purposes, all strategies go through proposal for consistency
+    result = await proposeStrategy(decision);
   }
 
   // Store full reasoning off-chain on 0G Storage
@@ -102,7 +102,7 @@ export async function runAgentWithMathValidation() {
         ...decision,
         executionProof: teeAttestation.signature
       }) : 
-      await executeStrategy(decision);
+      await proposeStrategy(decision);
 
     // Store reasoning off-chain
     const mathematicalProof = {
