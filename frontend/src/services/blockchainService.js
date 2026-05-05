@@ -29,6 +29,7 @@ const STRATEGY_MANAGER_ABI = [
   "function proposalCount() external view returns (uint256)",
   "function getProposal(uint256 proposalId) external view returns (address[] memory protocols, uint256[] memory percentages, uint256 executionTime, bool executed, bool canceled, address proposedBy, uint256 totalApy, uint256 portfolioRisk)",
   "function executeProposedStrategy(uint256 proposalId) external",
+  "function executeStrategy(address[] calldata protocols, uint256[] calldata percentages, uint256 apy, uint256 risk) external",
   "function cancelProposal(uint256 proposalId) external",
   "event StrategyProposed(uint256 indexed proposalId, uint256 executeAfter, address indexed proposer)",
   "event StrategyExecuted(address indexed agent, uint256 proposalId, uint256 totalApy, uint256 portfolioRisk)",
@@ -42,10 +43,15 @@ class BlockchainService {
     this.vaultContract = null;
     this.strategyManagerContract = null;
     this.contractAddresses = {
-      vault: import.meta.env.VITE_VAULT_ADDRESS || "0x0000000000000000000000000000000000000000",
-      strategyManager: import.meta.env.VITE_MANAGER_ADDRESS || "0x0000000000000000000000000000000000000000",
-      usdc: import.meta.env.VITE_UNDERLYING_ASSET || "0x0000000000000000000000000000000000000000"
+      vault: import.meta.env.VITE_VAULT_ADDRESS,
+      strategyManager: import.meta.env.VITE_MANAGER_ADDRESS,
+      usdc: import.meta.env.VITE_UNDERLYING_ASSET
     };
+    
+    // Validate that all required addresses are provided
+    if (!this.contractAddresses.vault || !this.contractAddresses.strategyManager || !this.contractAddresses.usdc) {
+      throw new Error('Missing required contract addresses in environment variables. Please check VITE_VAULT_ADDRESS, VITE_MANAGER_ADDRESS, and VITE_UNDERLYING_ASSET');
+    }
   }
 
   /**
@@ -386,8 +392,37 @@ class BlockchainService {
         throw new Error(`Proposal ${proposalId} not found`);
       }
       
-      // Convert percentages to basis points (BPS) where 100% = 10000 BPS
-      const percentagesBPS = proposal.percentages.map(p => p * 100);
+      // Extract and validate protocols and percentages arrays
+      const protocols = proposal.protocols || [];
+      const percentages = proposal.percentages || [];
+      
+      // Add safety check before calling ethers.js
+      if (protocols.length === 0 || percentages.length === 0) {
+        throw new Error("Cannot execute: Proposal data is missing protocol addresses or percentages.");
+      }
+      
+      // Validate protocol addresses are valid Ethereum addresses
+      for (const protocol of protocols) {
+        if (!ethers.isAddress(protocol)) {
+          throw new Error(`Invalid protocol address: ${protocol}`);
+        }
+      }
+      
+      // Validate percentages are numbers and sum to 100
+      const totalPercentage = percentages.reduce((sum, p) => sum + parseFloat(p), 0);
+      if (Math.abs(totalPercentage - 100) > 0.01) {
+        throw new Error(`Percentages must sum to 100%. Current sum: ${totalPercentage}%`);
+      }
+      
+      // Convert percentages to BPS dynamically (100% = 10000 BPS)
+      const percentagesBPS = percentages.map(p => Math.round(parseFloat(p) * 100));
+      
+      console.log(`Validated proposal data:`, {
+        protocols,
+        percentages,
+        percentagesBPS,
+        totalPercentage
+      });
       
       console.log(`Converting percentages ${proposal.percentages} to BPS: ${percentagesBPS}`);
       
@@ -424,8 +459,25 @@ class BlockchainService {
           
           console.log('Executing strategy directly via vault rebalance...');
           
-          // Get vault contract address from strategy manager
-          const vaultAddress = await this.strategyManagerContract.vault;
+          // Get vault contract address from strategy manager with fallback
+          let vaultAddress;
+          try {
+            vaultAddress = await this.strategyManagerContract.vault;
+            console.log('Vault address from contract:', vaultAddress);
+          } catch (error) {
+            console.log('Failed to get vault from contract, using fallback:', error.message);
+          }
+          
+          // Fallback to environment variable if contract returns null
+          if (!vaultAddress) {
+            vaultAddress = this.contractAddresses.vault;
+            console.log('Using vault address from environment:', vaultAddress);
+          }
+          
+          // Validate vault address
+          if (!vaultAddress || !ethers.isAddress(vaultAddress)) {
+            throw new Error(`Invalid vault address: ${vaultAddress}`);
+          }
           
           // Create vault contract instance
           const vaultContract = new ethers.Contract(
@@ -436,28 +488,31 @@ class BlockchainService {
             this.signer
           );
           
-          // Call rebalance directly with protocol data
-          const rebalanceTx = await vaultContract.rebalance(
-            proposal.protocols,
+          // Use strategy manager's executeStrategy function instead (bypasses proposal storage)
+          console.log('Using strategy manager executeStrategy with direct protocol data...');
+          
+          const executeTx = await this.strategyManagerContract.executeStrategy(
+            protocols,
             percentagesBPS,
-            vaultAddress // receiver is the vault itself
+            proposal.totalApy || 850, // Use proposal APY or default 8.50%
+            proposal.portfolioRisk || 25 // Use proposal risk or default 25%
           );
           
-          const rebalanceReceipt = await rebalanceTx.wait();
+          const executeReceipt = await executeTx.wait();
           
-          if (rebalanceReceipt.status === 0) {
-            throw new Error(`Rebalance transaction failed: ${rebalanceTx.hash}`);
+          if (executeReceipt.status === 0) {
+            throw new Error(`Execute strategy transaction failed: ${executeTx.hash}`);
           }
           
-          console.log(`Direct vault rebalance executed successfully:`, rebalanceReceipt);
+          console.log(`Strategy executed successfully via executeStrategy:`, executeReceipt);
           
           return {
             success: true,
-            hash: rebalanceReceipt.hash,
-            blockNumber: rebalanceReceipt.blockNumber,
-            gasUsed: rebalanceReceipt.gasUsed.toString(),
-            status: rebalanceReceipt.status,
-            logs: rebalanceReceipt.logs
+            hash: executeReceipt.hash,
+            blockNumber: executeReceipt.blockNumber,
+            gasUsed: executeReceipt.gasUsed.toString(),
+            status: executeReceipt.status,
+            logs: executeReceipt.logs
           };
         }
         

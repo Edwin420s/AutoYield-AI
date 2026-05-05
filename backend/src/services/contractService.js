@@ -2,7 +2,7 @@ import { ethers } from 'ethers';
 import { signTransactionSecurely, getSecureWalletAddress } from './secureKeyManager.js';
 import { queueTransaction } from './transactionQueue.js';
 import { PRODUCTION_MODE, MockDataFactory } from '../config/productionMode.js';
-import { updateProposalStatus } from '../services/databaseService.js';
+import { updateProposalStatus, setProposalsArray } from '../services/databaseService.js';
 
 
 /**
@@ -109,7 +109,7 @@ initializeNonceTracking().then(() => {
 // IN-MEMORY PROPOSAL STORAGE
 // ========================================
 // For demo purposes - stores proposals that would normally be on-chain
-let proposals = [];
+export let proposals = [];
 let proposalIdCounter = 1;
 
 // Initialize demo proposals on startup
@@ -159,6 +159,10 @@ async function initializeDemoProposals() {
 // Clear existing proposals and initialize with real on-chain proposal
 proposals = [];
 proposalIdCounter = 1;
+
+// Share the proposals array with databaseService to avoid circular dependency
+setProposalsArray(proposals);
+
 initializeDemoProposals();
 
 /**

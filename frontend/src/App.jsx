@@ -207,7 +207,7 @@ function App() {
       console.log('Initiating AI strategy execution (demo mode)...');
       
       // Use Server-Sent Events for real-time execution monitoring
-      const eventSource = new EventSource(`${import.meta.env.VITE_API_URL}/agent/stream-tee`);
+      const eventSource = new EventSource(`${import.meta.env.VITE_API_URL}/api/agent/stream-tee`);
       
       eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);

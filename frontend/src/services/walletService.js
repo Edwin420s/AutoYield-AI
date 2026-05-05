@@ -71,6 +71,12 @@ class WalletService {
     window.ethereum.on('chainChanged', (chainId) => {
       console.log('Wallet chain changed:', chainId);
       this.chainId = chainId;
+      
+      // CRITICAL: Reload page to reset blockchain service with correct chain
+      // This ensures contract addresses and provider are properly reset
+      console.log('Reloading page to reset blockchain service for new network...');
+      window.location.reload();
+      
       if (this.onChainChanged) {
         this.onChainChanged(chainId);
       }

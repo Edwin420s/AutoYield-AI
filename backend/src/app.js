@@ -63,7 +63,7 @@ const corsOptions = {
   },
   credentials: true, // Allow cookies/auth headers
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key'],
   optionsSuccessStatus: 200 // Some legacy browsers choke on 204
 };
 

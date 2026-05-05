@@ -112,9 +112,14 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
   const handleExecute = async (id) => {
     if (!window.confirm("Are you sure you want to execute this proposal?")) return;
     
+    // Check if proposal is already executed
+    const proposal = proposals.find(p => p.id === id);
+    if (proposal?.executed) {
+      alert('This proposal has already been executed and cannot be executed again.');
+      return;
+    }
+    
     try {
-      // Show detailed execution feedback
-      const proposal = proposals.find(p => p.id === id);
       const protocolNames = proposal.protocols.map(addr => getProtocolName(addr));
       
       console.log(`Executing proposal ${id} on blockchain...`);
@@ -148,22 +153,35 @@ Status: ACTIVE & GENERATING YIELD
           const backendResponse = await fetch(`http://localhost:3000/api/proposals/${id}/execute`, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': 'demo-key-1-change-in-production'
+              'Content-Type': 'application/json'
             }
           });
           
           if (backendResponse.ok) {
             console.log('Backend updated successfully');
-            const response = await backendResponse.json();
-            console.log('Backend update response:', response);
           } else {
             console.warn('Failed to update backend, but blockchain execution succeeded');
-            const errorText = await backendResponse.text();
-            console.warn('Backend error response:', errorText);
           }
         } catch (backendError) {
           console.warn('Backend update failed, but blockchain execution succeeded:', backendError);
+        }
+        
+        // Refresh proposals list to show updated status
+        setProposals(prev => prev.map(p => 
+          p.id === id ? { ...p, executed: true, executedAt: new Date().toISOString() } : p
+        ));
+        
+        console.log('Proposal execution completed successfully');
+        
+        // Trigger parent component to refresh vault data
+        if (onExecutionComplete) {
+          onExecutionComplete({
+            proposalId: id,
+            protocols: protocolNames,
+            percentages: proposal.percentages,
+            expectedAPY: proposal.expectedAPY,
+            ...result // Include transaction result for verification
+          });
         }
         
         // Call parent callback to update vault data
@@ -177,15 +195,10 @@ Status: ACTIVE & GENERATING YIELD
           });
         }
         
-        // Force immediate refresh to update the UI
-        console.log('Refreshing proposals to update UI...');
-        await fetchProposals();
-        
-        // Additional refresh after a delay to ensure backend is fully updated
+        // Refresh proposals to update the UI
         setTimeout(() => {
-          console.log('Secondary refresh to ensure UI is updated...');
           fetchProposals();
-        }, 2000);
+        }, 1000); // Small delay to ensure backend is updated
       } else {
         throw new Error('Execution transaction failed');
       }
@@ -237,15 +250,12 @@ Status: ACTIVE & GENERATING YIELD
               let isReady = false;
               let timeRemaining = 0;
               
-              // Debug: Log the proposal object to see what fields we have (only once per proposal)
-              if (!prop._debugLogged) {
-                console.log(`Proposal #${prop.id} fields:`, {
-                  executeAfter: prop.executeAfter,
-                  executionTime: prop.executionTime,
-                  allKeys: Object.keys(prop)
-                });
-                prop._debugLogged = true; // Mark as logged to avoid spam
-              }
+              // Debug: Log the proposal object to see what fields we have
+              console.log(`Proposal #${prop.id} fields:`, {
+                executeAfter: prop.executeAfter,
+                executionTime: prop.executionTime,
+                allKeys: Object.keys(prop)
+              });
               
               if (prop.executeAfter) {
                 // Use executeAfter field from backend API
@@ -268,20 +278,14 @@ Status: ACTIVE & GENERATING YIELD
                 isReady = false;
               }
               
-              // Verify on-chain time-lock is respected (reduce console spam)
-              const now = Date.now();
-              const shouldLog = isReady || !prop._lastLogTime || (now - prop._lastLogTime > 10000); // Log every 10 seconds or when ready
-              
-              if (shouldLog) {
-                console.log(`Proposal #${prop.id} time-lock check:`, {
-                  executionTime: prop.executionTime,
-                  currentTime: now,
-                  timeRemaining: Math.max(0, Math.floor(timeRemaining / 1000)),
-                  isReady,
-                  enforcedByContract: 'Smart contract will reject if time-lock not expired'
-                });
-                prop._lastLogTime = now;
-              }
+              // Verify on-chain time-lock is respected
+              console.log(`Proposal #${prop.id} time-lock check:`, {
+                executionTime: prop.executionTime,
+                currentTime: Date.now(),
+                timeRemaining: Math.max(0, Math.floor(timeRemaining / 1000)),
+                isReady,
+                enforcedByContract: 'Smart contract will reject if time-lock not expired'
+              });
               
               // Debug logging (commented out to reduce console noise)
               // console.log('Time calculation:', {
@@ -341,7 +345,64 @@ Status: ACTIVE & GENERATING YIELD
                       Emergency Cancel
                     </button>
                     
-                    {/* Execute - Only active if on-chain time-lock has expired */}
+                    {/* Execute - Only active if on-chain time-lock has expired and not executed */}
+                    {prop.executed ? (
+                      <button 
+                        disabled
+                        className="flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded cursor-not-allowed opacity-75"
+                        title="Proposal already executed"
+                      >
+                        ✅ Executed
+                      </button>
+                    ) : (
+                      <button 
+                        onClick={() => handleExecute(prop.id)}
+                        disabled={!isReady}
+                        className={`flex-1 font-bold py-2 px-4 rounded transition-all transform ${
+                          isReady 
+                            ? 'bg-green-600 hover:bg-green-700 text-white scale-105 shadow-lg shadow-green-600/30 animate-pulse' 
+                            : 'bg-gray-600 text-gray-500 cursor-not-allowed'
+                        }`}
+                        title={isReady ? 'Execute strategy (time-lock expired)' : 'Wait for time-lock to expire'}
+                      >
+                        <span className="flex items-center justify-center gap-2">
+                          {isReady && <span className="w-2 h-2 bg-green-300 rounded-full animate-ping"></span>}
+                    )}
+                  </span>
+                </div>
+                
+                <div className="mb-4">
+                  <p className="text-sm text-gray-400 mb-1">Proposed Allocation:</p>
+                  {prop.protocols.map((addr, idx) => (
+                    <div key={addr} className="flex justify-between font-mono text-sm mb-1">
+                      <span className="flex items-center gap-2">
+                        <span className="text-blue-400">{getProtocolName(addr)}</span>
+                        <span className="text-gray-500 text-xs">({addr.substring(0, 8)}...{addr.substring(38)})</span>
+                      </span>
+                      <span className="text-green-400 font-bold">{prop.percentages[idx]}%</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  {/* Emergency Stop - Available to all users for demo */}
+                  <button 
+                    onClick={() => handleCancel(prop.id)}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded transition-colors"
+                  >
+                    Emergency Cancel
+                  </button>
+                  
+                  {/* Execute - Only active if on-chain time-lock has expired and not executed */}
+                  {prop.executed ? (
+                    <button 
+                      disabled
+                      className="flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded cursor-not-allowed opacity-75"
+                      title="Proposal already executed"
+                    >
+                      ✅ Executed
+                    </button>
+                  ) : (
                     <button 
                       onClick={() => handleExecute(prop.id)}
                       disabled={!isReady}
@@ -352,33 +413,36 @@ Status: ACTIVE & GENERATING YIELD
                       }`}
                       title={isReady ? 'Execute strategy (time-lock expired)' : 'Wait for time-lock to expire'}
                     >
-                      {isReady ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="w-2 h-2 bg-green-300 rounded-full animate-ping"></span>
-                          Execute Strategy
-                        </span>
-                      ) : (
-                        <span className="flex items-center justify-center gap-2">
-                          <span className="w-2 h-2 bg-yellow-300 rounded-full"></span>
-                          Time-Locked
-                        </span>
-                      )}
+                      <span className="flex items-center justify-center gap-2">
+                        {isReady && <span className="w-2 h-2 bg-green-300 rounded-full animate-ping"></span>}
+                        {isReady ? 'Execute Strategy' : 'Time-Locked'}
+                      </span>
                     </button>
-                  </div>
+                  )}
                 </div>
-              );
-            })}
-                {!loading && proposals.filter(p => !p.executed && !p.canceled).length === 0 && (
-                  <p className="text-center text-gray-500 py-8">No pending strategies in the queue.</p>
+                
+                {timeRemaining > 0 && (
+                  <div className="mt-2 text-center">
+                    <span className="text-xs text-yellow-400">
+                      Time-Lock: {Math.max(0, Math.floor(timeRemaining / 1000))}s
+                    </span>
+                  </div>
                 )}
               </div>
-            </div>
+            );
+          })}
+          
+          {!loading && proposals.filter(p => !p.executed && !p.canceled).length === 0 && (
+            <p className="text-center text-gray-500 py-8">No pending strategies in the queue.</p>
+          )}
+        </div>
+      )}
 
-            {/* Executed Proposals Section */}
-            <div>
-              <h3 className="text-lg font-semibold mb-3 text-green-400">Active Strategies</h3>
-              <div className="space-y-4">
-                {proposals.filter(prop => prop.executed).map((prop) => {
+      {/* Executed Proposals Section */}
+      <div>
+        <h3 className="text-lg font-semibold mb-3 text-green-400">Active Strategies</h3>
+        <div className="space-y-4">
+          {proposals.filter(prop => prop.executed).map((prop) => {
                   const protocolNames = prop.protocols.map(addr => getProtocolName(addr));
                   return (
                     <div key={prop.id.toString()} className="bg-gray-800 p-4 rounded-lg border border-green-700/30">

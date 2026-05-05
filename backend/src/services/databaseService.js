@@ -4,6 +4,11 @@
 // In-memory storage for demo
 let proposals = [];
 
+// Function to set proposals array (called by contractService to avoid circular dependency)
+export function setProposalsArray(proposalsArray) {
+  proposals = proposalsArray;
+}
+
 /**
  * Update proposal status in database
  * @param {number} proposalId - Proposal ID
