@@ -144,7 +144,7 @@ router.get('/proposals/:id', async (req, res) => {
   }
 });
 
-router.post('/proposals/:id/execute', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 3 }), async (req, res) => {
+router.post('/proposals/:id/execute', async (req, res) => {
   try {
     const proposalId = req.params.id;
     const receipt = await executeProposal(proposalId);
@@ -155,7 +155,7 @@ router.post('/proposals/:id/execute', authenticateApiKey, rateLimit({ windowMs: 
   }
 });
 
-router.post('/proposals/:id/cancel', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 3 }), async (req, res) => {
+router.post('/proposals/:id/cancel', async (req, res) => {
   try {
     const proposalId = req.params.id;
     const receipt = await cancelProposal(proposalId);

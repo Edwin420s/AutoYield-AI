@@ -15,6 +15,7 @@
 import { executeVerifiableAI } from '../services/ogComputeService.js';
 import { fetchAPYData } from '../services/apyService.js';
 import { proposeStrategy } from '../services/contractService.js';
+import { addProposal } from '../services/databaseService.js';
 import { ethers } from 'ethers';
 
 /**
@@ -56,6 +57,26 @@ export async function runAgentController(req, res) {
     console.log("Strategy proposal submitted successfully!");
     console.log(`Expected APY: ${(decision.expectedAPY / 100).toFixed(2)}%`);
     console.log(`Portfolio Risk: ${decision.riskScore}/100`);
+
+    // Save proposal to database
+    const newProposal = {
+      id: txHash,
+      protocols: decision.protocols,
+      percentages: decision.percentages,
+      expectedAPY: decision.expectedAPY,
+      riskScore: decision.riskScore,
+      status: 'pending',
+      timestamp: Date.now(),
+      executed: false
+    };
+
+    try {
+      await addProposal(newProposal);
+      console.log("Proposal saved to database:", newProposal.id);
+    } catch (dbError) {
+      console.error("Failed to save proposal to database:", dbError);
+      // Continue with response even if DB save fails
+    }
 
     res.json({
       success: true,

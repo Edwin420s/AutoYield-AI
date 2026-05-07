@@ -120,8 +120,20 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
       
       console.log(`Executing proposal ${id} on blockchain...`);
       
-      // Execute on blockchain with transaction verification
-      const result = await blockchainService.executeProposal(id, proposal.protocols, proposal.percentages);
+      // Execute on blockchain via backend API
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE}/api/proposals/${id}/execute`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Execution failed');
+      }
       
       if (result.success) {
         const executionDetails = `

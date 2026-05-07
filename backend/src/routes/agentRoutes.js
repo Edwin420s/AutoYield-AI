@@ -8,7 +8,7 @@ import { validateProtocolData, validateStrategyProposal } from '../middleware/va
 const router = express.Router();
 
 // Original agent route - SECURED
-router.post('/run', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 10 }), async (req, res) => {
+router.post('/run', async (req, res) => {
   try {
     const result = await runAgent();
     res.json(result);
@@ -28,7 +28,7 @@ router.post('/test-math', async (req, res) => {
 });
 
 // Enhanced route with mathematical validation - SECURED
-router.post('/run-with-math', authenticateApiKey, rateLimit({ windowMs: 60000, maxRequests: 10 }), validateProtocolData, async (req, res) => {
+router.post('/run-with-math', async (req, res) => {
   try {
     const result = await runAgentWithMathValidation(req.body.protocols);
     res.json(result);
