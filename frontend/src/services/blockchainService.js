@@ -42,16 +42,30 @@ class BlockchainService {
     this.signer = null;
     this.vaultContract = null;
     this.strategyManagerContract = null;
+    
+    // 1. DYNAMIC ADDRESS INJECTION WITH CORRECT VARIABLE NAMES
+    this.vaultAddress = import.meta.env.VITE_VAULT_ADDRESS;
+    this.strategyManagerAddress = import.meta.env.VITE_STRATEGY_MANAGER_ADDRESS;
+    this.usdcAddress = import.meta.env.VITE_UNDERLYING_ASSET;
+    
     this.contractAddresses = {
-      vault: import.meta.env.VITE_VAULT_ADDRESS,
-      strategyManager: import.meta.env.VITE_MANAGER_ADDRESS,
-      usdc: import.meta.env.VITE_UNDERLYING_ASSET
+      vault: this.vaultAddress,
+      strategyManager: this.strategyManagerAddress,
+      usdc: this.usdcAddress
     };
     
     // Validate that all required addresses are provided
-    if (!this.contractAddresses.vault || !this.contractAddresses.strategyManager || !this.contractAddresses.usdc) {
-      throw new Error('Missing required contract addresses in environment variables. Please check VITE_VAULT_ADDRESS, VITE_MANAGER_ADDRESS, and VITE_UNDERLYING_ASSET');
+    if (!this.vaultAddress || !this.strategyManagerAddress || !this.usdcAddress) {
+      console.error("CRITICAL: Smart contract addresses are missing in .env!");
+      console.error("Required: VITE_VAULT_ADDRESS, VITE_STRATEGY_MANAGER_ADDRESS, VITE_UNDERLYING_ASSET");
+      throw new Error('Missing required contract addresses in environment variables');
     }
+    
+    console.log('BlockchainService initialized with addresses:', {
+      vault: this.vaultAddress,
+      strategyManager: this.strategyManagerAddress,
+      usdc: this.usdcAddress
+    });
   }
 
   /**
@@ -373,9 +387,11 @@ class BlockchainService {
   /**
    * Execute proposal on blockchain with transaction verification
    * @param {number} proposalId - Proposal ID to execute
+   * @param {Array} protocols - Protocol addresses (optional, fetched from backend if not provided)
+   * @param {Array} percentages - Percentage allocations (optional, fetched from backend if not provided)
    * @returns {Promise<Object>} Transaction receipt with status verification
    */
-  async executeProposal(proposalId) {
+  async executeProposal(proposalId, protocols = null, percentages = null) {
     try {
       if (!this.strategyManagerContract || !this.signer) {
         throw new Error('Strategy manager contract or signer not initialized');
@@ -383,23 +399,33 @@ class BlockchainService {
       
       console.log(`Executing proposal ${proposalId} on blockchain...`);
       
-      // Get proposal data from backend API
-      const proposalResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/proposals`);
-      const proposalData = await proposalResponse.json();
-      const proposal = proposalData.proposals.find(p => p.id === proposalId);
-      
-      if (!proposal) {
-        throw new Error(`Proposal ${proposalId} not found`);
+      // Get proposal data from backend API if protocols/percentages not provided
+      if (!protocols || !percentages) {
+        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const proposalResponse = await fetch(`${API_BASE}/api/proposals`);
+        const proposalData = await proposalResponse.json();
+        const proposal = proposalData.proposals.find(p => p.id === proposalId);
+        
+        if (!proposal) {
+          throw new Error(`Proposal ${proposalId} not found`);
+        }
+        
+        protocols = proposal.protocols || [];
+        percentages = proposal.percentages || [];
       }
       
-      // Extract and validate protocols and percentages arrays
-      const protocols = proposal.protocols || [];
-      const percentages = proposal.percentages || [];
-      
-      // Add safety check before calling ethers.js
-      if (protocols.length === 0 || percentages.length === 0) {
-        throw new Error("Cannot execute: Proposal data is missing protocol addresses or percentages.");
+      // Safety check: Ensure data actually arrived from the backend
+      if (!protocols || protocols.length === 0) {
+        throw new Error("Cannot execute: No protocols provided by the backend.");
       }
+      
+      if (!percentages || percentages.length === 0) {
+        throw new Error("Cannot execute: No percentages provided by the backend.");
+      }
+      
+      console.log(`Executing Proposal ${proposalId}`);
+      console.log(`Target Protocols:`, protocols);
+      console.log(`Target Percentages:`, percentages);
       
       // Validate protocol addresses are valid Ethereum addresses
       for (const protocol of protocols) {
@@ -414,33 +440,35 @@ class BlockchainService {
         throw new Error(`Percentages must sum to 100%. Current sum: ${totalPercentage}%`);
       }
       
-      // Convert percentages to BPS dynamically (100% = 10000 BPS)
-      const percentagesBPS = percentages.map(p => Math.round(parseFloat(p) * 100));
+      // Convert percentages to BPS (Basis Points) for the smart contract (e.g., 60 -> 6000)
+      const percentagesBps = percentages.map(p => Math.round(parseFloat(p) * 100));
       
       console.log(`Validated proposal data:`, {
         protocols,
         percentages,
-        percentagesBPS,
+        percentagesBps,
         totalPercentage
       });
       
-      console.log(`Converting percentages ${proposal.percentages} to BPS: ${percentagesBPS}`);
+      console.log(`Converting percentages ${percentages} to BPS: ${percentagesBps}`);
       
       try {
-        // First try to execute using the contract's stored proposal data
-        const tx = await this.strategyManagerContract.executeProposedStrategy(
-          proposalId
+        // Execute the transaction via MetaMask using the executeStrategy function
+        const tx = await this.strategyManagerContract.executeStrategy(
+          protocols,
+          percentagesBps,
+          850, // Default 8.50% APY in BPS (8.50 * 100)
+          25  // Default 25% risk score
         );
-        
-        // Wait for transaction to be mined and get receipt
+
+        console.log("Transaction submitted:", tx.hash);
         const receipt = await tx.wait();
+        console.log("Transaction confirmed:", receipt);
         
         // CRITICAL: Verify transaction status
         if (receipt.status === 0) {
           throw new Error(`Transaction failed: ${tx.hash}`);
         }
-        
-        console.log(`Proposal ${proposalId} executed successfully via contract:`, receipt);
         
         return {
           success: true,
@@ -450,74 +478,9 @@ class BlockchainService {
           status: receipt.status,
           logs: receipt.logs
         };
-      } catch (contractError) {
-        console.log(`Contract execution failed, trying direct vault call:`, contractError.message);
-        
-        // If contract execution fails due to missing proposal data, call vault directly
-        if (contractError.message.includes('No protocols specified') || 
-            contractError.message.includes('execution reverted')) {
-          
-          console.log('Executing strategy directly via vault rebalance...');
-          
-          // Get vault contract address from strategy manager with fallback
-          let vaultAddress;
-          try {
-            vaultAddress = await this.strategyManagerContract.vault;
-            console.log('Vault address from contract:', vaultAddress);
-          } catch (error) {
-            console.log('Failed to get vault from contract, using fallback:', error.message);
-          }
-          
-          // Fallback to environment variable if contract returns null
-          if (!vaultAddress) {
-            vaultAddress = this.contractAddresses.vault;
-            console.log('Using vault address from environment:', vaultAddress);
-          }
-          
-          // Validate vault address
-          if (!vaultAddress || !ethers.isAddress(vaultAddress)) {
-            throw new Error(`Invalid vault address: ${vaultAddress}`);
-          }
-          
-          // Create vault contract instance
-          const vaultContract = new ethers.Contract(
-            vaultAddress,
-            [
-              "function rebalance(address[] memory _protocols, uint256[] memory _percentages, address _receiver) external"
-            ],
-            this.signer
-          );
-          
-          // Use strategy manager's executeStrategy function instead (bypasses proposal storage)
-          console.log('Using strategy manager executeStrategy with direct protocol data...');
-          
-          const executeTx = await this.strategyManagerContract.executeStrategy(
-            protocols,
-            percentagesBPS,
-            proposal.totalApy || 850, // Use proposal APY or default 8.50%
-            proposal.portfolioRisk || 25 // Use proposal risk or default 25%
-          );
-          
-          const executeReceipt = await executeTx.wait();
-          
-          if (executeReceipt.status === 0) {
-            throw new Error(`Execute strategy transaction failed: ${executeTx.hash}`);
-          }
-          
-          console.log(`Strategy executed successfully via executeStrategy:`, executeReceipt);
-          
-          return {
-            success: true,
-            hash: executeReceipt.hash,
-            blockNumber: executeReceipt.blockNumber,
-            gasUsed: executeReceipt.gasUsed.toString(),
-            status: executeReceipt.status,
-            logs: executeReceipt.logs
-          };
-        }
-        
-        // If it's a different error, re-throw it
-        throw contractError;
+      } catch (error) {
+        console.error("Execution failed:", error);
+        throw error;
       }
     } catch (error) {
       console.error(`Failed to execute proposal ${proposalId}:`, error);

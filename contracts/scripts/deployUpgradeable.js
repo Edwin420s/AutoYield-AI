@@ -13,8 +13,8 @@
  * @version 2.0.0 - Enterprise Grade
  */
 
-import { ethers } from "hardhat";
-import { upgrades } from "hardhat-upgrade";
+const { ethers } = require("hardhat");
+const { upgrades } = require("@openzeppelin/hardhat-upgrades");
 
 // Deployment configuration
 const DEPLOYMENT_CONFIG = {

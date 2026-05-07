@@ -14,7 +14,8 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
     
     try {
       console.log('Fetching proposals from backend API...');
-      const response = await fetch('http://localhost:3000/api/proposals');
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE}/api/proposals`);
       const data = await response.json();
       console.log('Backend proposals:', data.proposals);
       setProposals(data.proposals || []);
@@ -120,7 +121,7 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
       console.log(`Executing proposal ${id} on blockchain...`);
       
       // Execute on blockchain with transaction verification
-      const result = await blockchainService.executeProposal(id);
+      const result = await blockchainService.executeProposal(id, proposal.protocols, proposal.percentages);
       
       if (result.success) {
         const executionDetails = `
@@ -145,7 +146,8 @@ Status: ACTIVE & GENERATING YIELD
         // Update backend to mark proposal as executed
         try {
           console.log(`Updating backend to mark proposal ${id} as executed...`);
-          const backendResponse = await fetch(`http://localhost:3000/api/proposals/${id}/execute`, {
+          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+          const backendResponse = await fetch(`${API_BASE}/api/proposals/${id}/execute`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
