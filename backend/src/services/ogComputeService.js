@@ -140,8 +140,9 @@ class ZeroGComputeService {
    */
   getAIDecisionCode() {
     return `
+import crypto from 'crypto';
+
 // AutoYield AI Decision Engine - TEE Version
-const crypto = require('crypto');
 
 function executeDecision(marketData, constraints) {
   // Import decision logic (same as agent/decisionEngine.js)

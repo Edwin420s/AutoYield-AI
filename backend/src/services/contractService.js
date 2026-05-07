@@ -552,7 +552,6 @@ export async function getProposal(proposalId) {
  */
 function encodeProposeStrategyCall(decision) {
   // Use ethers.js to encode function call properly
-  const { ethers } = require('ethers');
   const iface = new ethers.utils.Interface([
     "function proposeStrategy(address[] calldata _protocols, uint256[] calldata _percentagesBps, uint256 _reportedApy, bytes calldata _sgxAttestationProof)"
   ]);
@@ -575,7 +574,6 @@ function encodeProposeStrategyCall(decision) {
  */
 function encodeExecuteProposalCall(proposalId) {
   // Use ethers.js to encode function call properly
-  const { ethers } = require('ethers');
   const iface = new ethers.utils.Interface([
     "function executeProposedStrategy(uint256 _proposalId)"
   ]);

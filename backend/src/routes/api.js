@@ -113,20 +113,16 @@ router.get('/oracle/live', async (req, res) => {
   }
 });
 
-// Market data endpoint for frontend
+// Market data endpoint for frontend - Show all 15+ protocols
 router.get('/market-data', async (req, res) => {
   try {
-    const data = await fetchAPYData();
-    res.json({ success: true, protocols: data, timestamp: new Date().toISOString() });
+    // Fetch ALL protocols from apyService for UI display
+    const liveData = await fetchAPYData();
+    console.log(`Oracle Sync: Fetching ${liveData.length} live protocols for UI`);
+    res.json({ success: true, protocols: liveData, timestamp: new Date().toISOString() });
   } catch (error) {
-    console.error("Market data fetch failed:", error);
-    // Return fallback data for demo
-    const fallbackData = [
-      { name: "Aave V3 (USDC)", asset: "USDC", tvl: 8500000000, apy: 4.50, risk: 15 },
-      { name: "Compound V3 (USDC)", asset: "USDC", tvl: 4200000000, apy: 5.10, risk: 25 },
-      { name: "Morpho (USDC)", asset: "USDC", tvl: 1100000000, apy: 6.20, risk: 35 }
-    ];
-    res.json({ success: true, protocols: fallbackData, timestamp: new Date().toISOString() });
+    console.error("Oracle fetch error:", error);
+    res.status(500).json({ error: "Failed to fetch live oracle data" });
   }
 });
 

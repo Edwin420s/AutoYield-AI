@@ -1,3 +1,5 @@
+import { ethers } from 'ethers';
+
 /**
  * Production Transaction Queue System
  * Prevents nonce collision race conditions that crash Node.js servers
@@ -195,7 +197,6 @@ async function getCurrentNonce() {
   
   // Fetch fresh nonce from blockchain
   try {
-    const { ethers } = require('ethers');
     const provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
     const walletAddress = process.env.PRIVATE_KEY ? 
       new ethers.Wallet(process.env.PRIVATE_KEY).address : 
