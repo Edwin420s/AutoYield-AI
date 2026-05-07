@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Agent Routes - OPEN FOR DEMO
 router.post('/agent/run', runAgentController);
+router.post('/agent/trigger-analysis', runAgentController);
 router.get('/agent/status', getAgentStatus);
 router.get('/agent/tee-performance', getTEEPerformance);
 

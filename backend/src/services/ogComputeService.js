@@ -18,13 +18,28 @@ dotenv.config();
 
 class ZeroGComputeService {
   constructor() {
-    this.provider = new ethers.JsonRpcProvider(process.env.ZERO_G_RPC_URL || process.env.RPC_URL);
-    this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+    // For demo purposes, use local blockchain provider
+    const rpcUrl = process.env.ZERO_G_RPC_URL || process.env.RPC_URL || "http://127.0.0.1:8545";
+    console.log(`TEE Service connecting to RPC: ${rpcUrl}`);
+    this.provider = new ethers.JsonRpcProvider(rpcUrl);
     
-    // Initialize 0G Compute Client with TEE support
+    // Only create wallet if valid private key is available
+    if (process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== 'undefined' && process.env.PRIVATE_KEY.length > 10) {
+      try {
+        this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+      } catch (error) {
+        console.warn("Invalid private key, using demo mode without wallet:", error.message);
+        this.wallet = null;
+      }
+    } else {
+      console.log("DEMO MODE: No valid private key found, using simulation mode");
+      this.wallet = null;
+    }
+    
+    // Initialize 0G Compute Client with TEE support (demo mode)
     this.computeClient = new ZeroGComputeClient({
       rpcUrl: process.env.ZERO_G_RPC_URL,
-      privateKey: process.env.PRIVATE_KEY,
+      privateKey: this.wallet ? process.env.PRIVATE_KEY : null,
       computeUrl: process.env.ZERO_G_COMPUTE_URL || "https://compute.0g.ai",
       teeEnabled: true, // Enable Trusted Execution Environment
       enclaveType: 'sgx' // Intel SGX enclave
