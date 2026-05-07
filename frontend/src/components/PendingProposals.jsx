@@ -155,31 +155,6 @@ Status: ACTIVE & GENERATING YIELD
         alert(executionDetails);
         console.log('Execution transaction successful:', result);
         
-        // Update backend to mark proposal as executed
-        try {
-          console.log(`Updating backend to mark proposal ${id} as executed...`);
-          const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-          const backendResponse = await fetch(`${API_BASE}/api/proposals/${id}/execute`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': 'demo-key-1-change-in-production'
-            }
-          });
-          
-          if (backendResponse.ok) {
-            console.log('Backend updated successfully');
-            const response = await backendResponse.json();
-            console.log('Backend update response:', response);
-          } else {
-            console.warn('Failed to update backend, but blockchain execution succeeded');
-            const errorText = await backendResponse.text();
-            console.warn('Backend error response:', errorText);
-          }
-        } catch (backendError) {
-          console.warn('Backend update failed, but blockchain execution succeeded:', backendError);
-        }
-        
         // Call parent callback to update vault data
         if (onExecutionComplete) {
           onExecutionComplete({

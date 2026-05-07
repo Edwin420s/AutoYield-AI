@@ -281,46 +281,60 @@ export async function proposeStrategy(decision) {
 }
 
 /**
- * Execute proposal using enterprise security
- * Uses secure key management and transaction queue
+ * Execute proposal using simplified demo mode
+ * Bypasses complex enterprise security for hackathon demo
  * 
  * @param {number} proposalId - Unique identifier of the proposal to execute
- * @returns {Promise<string>} Transaction hash for tracking
- * @throws {Error} When secure transaction fails
+ * @returns {Promise<Object>} Mock transaction receipt
+ * @throws {Error} When proposal not found
  */
 export async function executeProposal(proposalId) {
-  console.log(`SECURITY Executing proposal ${proposalId} with enterprise security...`);
+  console.log(`DEMO: Executing proposal ${proposalId} in simplified mode...`);
   
   try {
-    const walletAddr = await initializeWallet();
+    // Convert proposalId to number to handle string inputs from frontend
+    const numericId = Number(proposalId);
     
-    // Queue transaction for serial processing
-    const jobId = await queueTransaction({
-      type: 'execute',
-      userId: 'system',
-      payload: {
-        to: process.env.MANAGER_ADDRESS,
-        data: encodeExecuteProposalCall(proposalId),
-        value: '0x0',
-        gasLimit: '300000'
-      }
-    });
+    // Find proposal in memory storage
+    const proposal = proposals.find(p => p.id === numericId);
+    if (!proposal) {
+      throw new Error(`Proposal ${proposalId} not found`);
+    }
     
-    console.log(`Proposal execution queued with job ID: ${jobId}`);
+    // Check if proposal is ready for execution (time-lock passed)
+    const now = Date.now();
+    const executeAfter = new Date(proposal.executeAfter || proposal.executionTime).getTime();
     
-    // Wait for transaction to complete and get actual receipt
-    const receipt = await waitForTransaction(jobId);
+    if (now < executeAfter) {
+      const timeRemaining = Math.ceil((executeAfter - now) / 1000);
+      throw new Error(`Time-lock not expired. Please wait ${timeRemaining} seconds.`);
+    }
     
-    // Update proposal status to executed in database
-    const { updateProposalStatus } = await import('../services/databaseService.js');
-    await updateProposalStatus(proposalId, {
-      executed: true,
-      executedAt: new Date().toISOString(),
-      transactionHash: receipt.hash
-    });
+    // Mark proposal as executed
+    proposal.executed = true;
+    proposal.executedAt = new Date().toISOString();
     
-    console.log(`Proposal ${proposalId} executed successfully with hash: ${receipt.hash}`);
-    return receipt;
+    // Return mock transaction receipt for demo
+    const mockReceipt = {
+      success: true,
+      hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`,
+      blockNumber: Math.floor(Math.random() * 1000000) + 8000000,
+      gasUsed: "125000",
+      cumulativeGasUsed: "125000",
+      effectiveGasPrice: "20000000000",
+      from: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      to: process.env.MANAGER_ADDRESS,
+      contractAddress: null,
+      transactionIndex: 1,
+      logs: [],
+      blockHash: `0x${Math.random().toString(16).slice(2)}`,
+      status: 1
+    };
+    
+    console.log(`Proposal ${proposalId} executed successfully (demo mode)`);
+    console.log(`Mock transaction hash: ${mockReceipt.hash}`);
+    
+    return mockReceipt;
     
   } catch (error) {
     console.error("Failed to execute proposal:", error.message);
