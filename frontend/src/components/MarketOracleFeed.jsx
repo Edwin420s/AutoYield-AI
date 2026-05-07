@@ -6,26 +6,38 @@ export default function MarketOracleFeed() {
   const [lastUpdate, setLastUpdate] = useState(new Date().toLocaleTimeString());
 
   // Fetch live data from backend oracle
-  const fetchLiveOracleData = async () => {
+  const fetchOracleData = async () => {
     setIsUpdating(true);
-
     try {
       // Call the real backend market data API
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/market-data`);
-      const result = await response.json();
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await fetch(`${API_BASE}/api/market-data`);
       
-      if (result.success) {
-        // Map the live protocols data correctly
-        const formattedProtocols = result.protocols.map(p => ({
-          name: p.name || p.pool || 'Unknown Protocol',
-          asset: p.asset || p.symbol || 'USDC',
-          tvl: p.tvlUsd ? `$${(p.tvlUsd / 1000000).toFixed(1)}M` : `$${(p.tvl / 1000000).toFixed(1)}M`,
-          apy: p.apy ? `${p.apy.toFixed(2)}%` : '0.00%',
-          risk: p.risk || Math.floor(Math.random() * 40) + 10
-        }));
+      if (response.ok) {
+        const data = await response.json();
+        
+        // BULLETPROOF MAPPING: Safely parse every variable
+        const formattedProtocols = data.protocols.map(p => {
+          // 1. Safe APY Parsing (Convert to Float, default to 0 if missing)
+          const safeApy = p.apy ? parseFloat(p.apy) : 0;
+          
+          // 2. Safe TVL Parsing (Check both p.tvl and p.tvlUsd, convert to Number)
+          const rawTvl = p.tvl || p.tvlUsd || 0;
+          const formattedTvl = rawTvl > 0 ? `$${(Number(rawTvl) / 1000000).toFixed(1)}M` : "N/A";
+
+          return {
+            name: p.name || p.pool || 'Unknown Protocol',
+            asset: p.asset || p.symbol || 'USDC',
+            tvl: formattedTvl,
+            apy: `${safeApy.toFixed(2)}%`,
+            risk: p.risk || Math.floor(Math.random() * 40) + 10 // Fallback risk
+          };
+        });
+
         setMarketData(formattedProtocols);
-        setLastUpdate(new Date(result.timestamp).toLocaleTimeString());
+        setLastUpdate(new Date(data.timestamp).toLocaleTimeString());
       } else {
+        console.error("Backend returned error for market data");
         // Fallback to demo data if backend fails
         console.warn('Backend oracle failed, using fallback data');
         const dynamicTVL = Math.floor(Math.random() * 1000000) + 1000000;
@@ -47,9 +59,9 @@ export default function MarketOracleFeed() {
 
   // Poll every 15 seconds
   useEffect(() => {
-    fetchLiveOracleData();
+    fetchOracleData();
 
-    const interval = setInterval(fetchLiveOracleData, 15000);
+    const interval = setInterval(fetchOracleData, 15000);
 
     return () => clearInterval(interval);
 
@@ -131,9 +143,7 @@ export default function MarketOracleFeed() {
                 </td>
 
                 <td className="py-4 px-4 text-right font-bold text-blue-400">
-
-                  {pool.apy.toFixed(2)}%
-
+                  {typeof pool.apy === 'number' ? pool.apy.toFixed(2) : parseFloat(pool.apy).toFixed(2)}%
                 </td>
 
                 <td className="py-4 px-4 text-center">
