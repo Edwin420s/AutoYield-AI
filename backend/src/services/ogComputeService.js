@@ -176,8 +176,15 @@ function executeDecision(marketData, constraints) {
   // Calculate portfolio metrics
   const portfolioMetrics = calculatePortfolioMetrics(strategy.allocations, sorted);
 
+  // CRITICAL FIX: Extract addresses properly
+  const protocolAddresses = strategy.allocations.map(a => {
+    const addr = a.protocol.address || a.protocol;
+    console.log('TEE DEBUG: Extracting address:', addr, 'Type:', typeof addr);
+    return addr;
+  });
+  
   return {
-    protocols: strategy.allocations.map(a => a.protocol),
+    protocols: protocolAddresses,
     percentages: strategy.allocations.map(a => a.percentage),
     expectedAPY: portfolioMetrics.expectedAPY,
     portfolioRisk: portfolioMetrics.portfolioRisk,
@@ -191,13 +198,38 @@ function executeDecision(marketData, constraints) {
 }
 
 function calculateOptimalAllocation(sortedProtocols, maxRisk, maxProtocols) {
-  // Implementation matching decisionEngine.js
-  // ... (same logic as in decisionEngine.js)
+  // Simple allocation strategy - take top protocols
+  const selectedProtocols = sortedProtocols.slice(0, maxProtocols);
+  
+  // Calculate equal allocation percentages
+  const allocationPercentage = Math.floor(10000 / selectedProtocols.length); // BPS
+  
+  const allocations = selectedProtocols.map((protocol, index) => ({
+    protocol: protocol, // Keep full protocol object
+    percentage: allocationPercentage,
+    risk: protocol.risk,
+    apy: protocol.apy
+  }));
+  
+  return {
+    type: 'equal_allocation',
+    allocations: allocations,
+    reasoning: "Equal allocation across " + selectedProtocols.length + " top protocols",
+    confidence: 0.85
+  };
 }
 
 function calculatePortfolioMetrics(allocations, protocols) {
-  // Implementation matching decisionEngine.js
-  // ... (same logic as in decisionEngine.js)
+  const totalBps = allocations.reduce((sum, a) => sum + a.percentage, 0);
+  const avgApy = allocations.reduce((sum, a) => sum + (a.apy * (a.percentage / 10000)), 0);
+  const avgRisk = allocations.reduce((sum, a) => sum + (a.risk * (a.percentage / 10000)), 0);
+  
+  return {
+    expectedAPY: avgApy,
+    portfolioRisk: avgRisk,
+    riskAdjustedApy: avgApy / (1 + avgRisk / 100),
+    totalAllocationBps: totalBps
+  };
 }
 
 // Execute with sealed input

@@ -23,7 +23,9 @@ export default function MarketOracleFeed() {
           
           // 2. Safe TVL Parsing (Check both p.tvl and p.tvlUsd, convert to Number)
           const rawTvl = p.tvl || p.tvlUsd || 0;
-          const formattedTvl = rawTvl > 0 ? `$${(Number(rawTvl) / 1000000).toFixed(1)}M` : "N/A";
+          // CRITICAL FIX: Safely parse the TVL to avoid NaN
+          const parsedTvl = parseFloat(String(rawTvl).replace(/[^0-9.]/g, ''));
+          const formattedTvl = parsedTvl > 0 ? `$${(parsedTvl / 1000000).toFixed(1)}M` : "N/A";
 
           return {
             name: p.name || p.pool || 'Unknown Protocol',
@@ -138,7 +140,7 @@ export default function MarketOracleFeed() {
 
                 <td className="py-4 px-4 font-mono text-gray-300">
 
-                  {formatTVL(pool.tvl)}
+                  {pool.tvl}
 
                 </td>
 

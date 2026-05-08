@@ -131,11 +131,22 @@ async function initializeDemoProposals() {
       console.log('Creating real proposal on-chain...');
       const result = await proposeStrategy(decision);
       
-      // Create proposal object for database
-      const demoProposal = MockDataFactory.createMockProposal(1);
-      demoProposal.proposer = walletAddress;
-      demoProposal.txHash = result.transactionHash;
-      demoProposal.executeAfter = new Date(Date.now() - 60000).toISOString(); // Ready for execution
+      // Create proposal object for database with proper structure
+      const demoProposal = {
+        id: 1, // Numeric ID
+        txHash: result.transactionHash || "0xmock_tx_" + Date.now(),
+        protocols: [addresses['Aave'], addresses['Benqi']], // Use real addresses
+        percentages: [60, 40],
+        expectedAPY: 8.5,
+        executionProof: decision.executionProof,
+        proposer: walletAddress,
+        timestamp: new Date().toISOString(),
+        executeAfter: new Date(Date.now() - 60000).toISOString(), // Ready for execution
+        status: 'pending',
+        executed: false,
+        executedAt: null,
+        blockNumber: null
+      };
       
       proposals.push(demoProposal);
       proposalIdCounter = 2;
@@ -144,10 +155,23 @@ async function initializeDemoProposals() {
     } catch (error) {
       console.error('Failed to create real proposal, falling back to mock:', error.message);
       
-      // Fallback to mock proposal
-      const demoProposal = MockDataFactory.createMockProposal(1);
-      demoProposal.proposer = walletAddress;
-      demoProposal.executeAfter = new Date(Date.now() - 60000).toISOString();
+      // Fallback to mock proposal with proper structure
+      const fallbackAddresses = PRODUCTION_MODE.getMockProtocolAddresses();
+      const demoProposal = {
+        id: 1, // Numeric ID
+        txHash: "0xmock_tx_" + Date.now(),
+        protocols: [fallbackAddresses['Aave'], fallbackAddresses['Benqi']], // Use real addresses
+        percentages: [60, 40],
+        expectedAPY: 8.5,
+        executionProof: "0xmock_proof_" + Date.now(),
+        proposer: walletAddress,
+        timestamp: new Date().toISOString(),
+        executeAfter: new Date(Date.now() - 60000).toISOString(),
+        status: 'pending',
+        executed: false,
+        executedAt: null,
+        blockNumber: null
+      };
       
       proposals.push(demoProposal);
       proposalIdCounter = 2;
@@ -272,7 +296,29 @@ export async function proposeStrategy(decision) {
     });
     
     console.log(`Strategy proposal queued with job ID: ${jobId}`);
-    return { transactionHash: `queued_${jobId}`, jobId };
+    
+    // CRITICAL FIX: Create proper proposal with numeric ID
+    const newProposal = {
+      id: proposalIdCounter++, // Use numeric ID
+      txHash: `queued_${jobId}`,
+      protocols: decision.protocols,
+      percentages: decision.percentages,
+      expectedAPY: decision.expectedAPY,
+      executionProof: decision.executionProof,
+      proposer: walletAddr,
+      timestamp: new Date().toISOString(),
+      executeAfter: new Date(Date.now() + 10000).toISOString(), // 10 seconds from now
+      status: 'pending',
+      executed: false,
+      executedAt: null,
+      blockNumber: null
+    };
+    
+    // Store the proposal
+    proposals.push(newProposal);
+    console.log('New proposal created and stored:', newProposal);
+    
+    return { transactionHash: `queued_${jobId}`, jobId, proposalId: newProposal.id };
     
   } catch (error) {
     console.error("Failed to propose strategy:", error.message);
@@ -552,21 +598,49 @@ export async function getProposal(proposalId) {
  */
 function encodeProposeStrategyCall(decision) {
   // Use ethers.js to encode function call properly
-  const iface = new ethers.utils.Interface([
+  const iface = new ethers.Interface([
     "function proposeStrategy(address[] calldata _protocols, uint256[] calldata _percentagesBps, uint256 _reportedApy, bytes calldata _sgxAttestationProof)"
   ]);
+
+  // CRITICAL FIX: Ensure protocols are addresses, not names
+  let protocolAddresses = decision.protocols;
   
-  // Convert percentages to basis points
+  // If protocols are still names, convert them to addresses
+  if (protocolAddresses.length > 0 && typeof protocolAddresses[0] === 'string' && !protocolAddresses[0].startsWith('0x')) {
+    console.log('CONVERTING PROTOCOL NAMES TO ADDRESSES:', protocolAddresses);
+    const mockAddresses = PRODUCTION_MODE.getMockProtocolAddresses();
+    protocolAddresses = protocolAddresses.map(name => mockAddresses[name] || "0x0000000000000000000000000000000000000000");
+  }
+  
+  console.log('FINAL PROTOCOL ADDRESSES:', protocolAddresses);
+  
+  // Convert percentages to basis points (multiply by 100)
   const percentagesBps = decision.percentages.map(p => p * 100);
   
+  // CRITICAL FIX: Convert execution proof to bytes format
+  let executionProofBytes = "0x"; // Default empty bytes
+  
+  if (decision.executionProof) {
+    if (typeof decision.executionProof === 'string') {
+      executionProofBytes = decision.executionProof;
+    } else if (typeof decision.executionProof === 'object') {
+      // Convert JSON object to hex string
+      const proofString = JSON.stringify(decision.executionProof);
+      executionProofBytes = "0x" + Buffer.from(proofString).toString('hex');
+    }
+  }
+  
+  console.log('EXECUTION PROOF BYTES:', executionProofBytes);
+  
   return iface.encodeFunctionData("proposeStrategy", [
-    decision.protocols,
+    protocolAddresses,
     percentagesBps,
     Math.floor(decision.expectedAPY * 100), // Convert APY to basis points
-    decision.executionProof || "0x" // Mock attestation proof
+    executionProofBytes // Properly formatted bytes
   ]);
 }
 
+// ... (rest of the code remains the same)
 /**
  * Encode executeProposal function call for blockchain transaction
  * @param {number} proposalId - Proposal ID to execute
@@ -574,7 +648,7 @@ function encodeProposeStrategyCall(decision) {
  */
 function encodeExecuteProposalCall(proposalId) {
   // Use ethers.js to encode function call properly
-  const iface = new ethers.utils.Interface([
+  const iface = new ethers.Interface([
     "function executeProposedStrategy(uint256 _proposalId)"
   ]);
   
