@@ -292,21 +292,24 @@ function App() {
         return;
       }
 
-      // Prompt user for withdrawal amount
-      const amount = prompt(`Enter amount of shares to withdraw (max: ${userShares}):`);
-      if (!amount || parseFloat(amount) <= 0) {
-        return;
-      }
-
-      if (parseFloat(amount) > parseFloat(userShares)) {
-        alert('Insufficient shares balance!');
-        return;
-      }
-
-      console.log('Withdrawing shares:', amount);
+      // Calculate user's USDC value for reference
+      const userValue = parseFloat(vaultData.userValue || '0');
       
-      // Call the withdraw function from blockchain service
-      const result = await blockchainService.withdraw(account, amount, signer);
+      // Prompt user for USDC withdrawal amount
+      const usdcAmount = prompt(`Enter USDC amount to withdraw (max: ${userValue.toFixed(2)} USDC):`);
+      if (!usdcAmount || parseFloat(usdcAmount) <= 0) {
+        return;
+      }
+
+      if (parseFloat(usdcAmount) > userValue) {
+        alert('Insufficient USDC value!');
+        return;
+      }
+
+      console.log('Withdrawing USDC amount:', usdcAmount);
+      
+      // Call the withdraw function with USDC amount (it will convert to shares internally)
+      const result = await blockchainService.withdrawUSDC(account, usdcAmount, signer);
       
       console.log('Withdrawal successful:', result);
       alert(`Successfully withdrawn ${result.sharesWithdrawn} shares! You received ${result.usdcReceived} USDC.`);

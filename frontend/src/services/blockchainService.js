@@ -489,6 +489,102 @@ class BlockchainService {
   }
 
   /**
+   * Withdraw USDC from the vault by converting USDC amount to shares first
+   * @param {string} userAddress - User's wallet address
+   * @param {string} usdcAmount - Amount of USDC to withdraw (human-readable format)
+   * @param {ethers.Signer} signer - User's signer for transaction
+   * @returns {Promise<Object>} Transaction result
+   */
+  async withdrawUSDC(userAddress, usdcAmount, signer) {
+    try {
+      if (!this.vaultContract) {
+        throw new Error('Vault contract not initialized');
+      }
+
+      // Convert USDC amount to 18 decimals
+      const usdcAmount18 = ethers.parseUnits(usdcAmount, 18);
+      console.log('Withdrawing USDC amount (human):', usdcAmount);
+      console.log('Withdrawing USDC amount (18 decimals):', usdcAmount18.toString());
+
+      // Get current vault state
+      const totalAssets = await this.vaultContract.totalAssets(); // 18 decimals (use contract's actual value)
+      const totalShares = await this.vaultContract.getTotalShares(); // 18 decimals
+      
+      console.log('Using contract totalAssets for withdrawal calculation:', totalAssets.toString());
+      
+      // Calculate shares needed for the requested USDC amount
+      // Use the same formula as getUserValue but reversed: shares = (usdcAmount * totalShares) / totalAssets
+      // Convert to BigInt for precise calculation
+      const totalAssetsBigInt = BigInt(totalAssets);
+      const totalSharesBigInt = BigInt(totalShares);
+      const usdcAmountBigInt = BigInt(usdcAmount18);
+      
+      const sharesNeeded = (usdcAmountBigInt * totalSharesBigInt) / totalAssetsBigInt;
+      
+      console.log('Shares needed for withdrawal:', sharesNeeded.toString());
+
+      // Get user's current shares to validate
+      const userShares = await this.vaultContract.balanceOf(userAddress);
+      console.log('User current shares:', userShares.toString());
+
+      // Check if user has all shares (common in demo scenarios)
+      const userHasAllShares = userShares >= BigInt(totalShares);
+      console.log('User has all shares:', userHasAllShares);
+
+      // Convert contract's totalAssets to USDC for comparison
+      const availableUSDC = Number(ethers.formatUnits(totalAssets, 18));
+      
+      // If user has all shares, they can withdraw any amount up to total assets
+      if (userHasAllShares) {
+        const requestedUSDC = Number(usdcAmount);
+        
+        if (requestedUSDC > availableUSDC) {
+          throw new Error(`Insufficient assets. Available: ${availableUSDC.toFixed(2)} USDC, Requested: ${requestedUSDC.toFixed(2)} USDC`);
+        }
+        
+        console.log('User has all shares, withdrawal approved');
+      } else {
+        // Normal shares validation for multi-user scenarios
+        if (userShares < sharesNeeded) {
+          throw new Error('Insufficient shares balance for this withdrawal amount');
+        }
+      }
+
+      // Execute withdrawal transaction with calculated shares amount
+      // Always use the calculated shares needed, regardless of ownership
+      const sharesToWithdraw = sharesNeeded.toString();
+      const tx = await this.vaultContract.connect(signer).withdraw(sharesToWithdraw, userAddress);
+      console.log('Withdrawal transaction submitted:', tx.hash);
+
+      const receipt = await tx.wait();
+      console.log('Withdrawal confirmed:', receipt.hash);
+
+      // Calculate actual withdrawal amount (should match requested amount)
+      const actualAssets = (BigInt(sharesToWithdraw) * BigInt(totalAssets)) / BigInt(totalShares);
+      const usdcAmountReceived = Number(ethers.formatUnits(actualAssets.toString(), 18));
+      const formattedAssets = usdcAmountReceived.toLocaleString('en-US', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+      });
+
+      console.log('Actual USDC received:', usdcAmountReceived.toString());
+
+      return {
+        success: true,
+        hash: receipt.hash,
+        blockNumber: receipt.blockNumber,
+        gasUsed: receipt.gasUsed.toString(),
+        status: receipt.status,
+        sharesWithdrawn: ethers.formatUnits(sharesToWithdraw, 18),
+        usdcReceived: formattedAssets
+      };
+    } catch (error) {
+      console.error('Withdrawal failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Withdraw USDC from the vault (burn shares + get assets + yield)
    * @param {string} userAddress - User's wallet address
    * @param {string} sharesAmount - Amount of shares to withdraw (human-readable format)
@@ -514,6 +610,22 @@ class BlockchainService {
         throw new Error('Insufficient shares balance');
       }
 
+      // Calculate expected withdrawal amount to validate minimum
+      const totalAssets = await this.vaultContract.totalAssets();
+      const totalSharesVault = await this.vaultContract.getTotalShares();
+      const expectedAssets = (BigInt(shares) * BigInt(totalAssets)) / BigInt(totalSharesVault);
+      const usdcAmount = Number(ethers.formatUnits(expectedAssets.toString(), 18));
+      
+      // Require minimum withdrawal of 1 USDC
+      if (usdcAmount < 1) {
+        // Calculate minimum shares needed for 1 USDC
+        const oneUSDC = BigInt('1000000000000000000000'); // 1 USDC in 18 decimals
+        const minShares = (oneUSDC * BigInt(totalSharesVault)) / BigInt(totalAssets);
+        const minSharesHuman = ethers.formatUnits(minShares.toString(), 18);
+        
+        throw new Error(`Withdrawal amount too small. Minimum withdrawal is 1 USDC. You need at least ${parseFloat(minSharesHuman).toFixed(0)} shares to withdraw 1 USDC.`);
+      }
+
       // Execute withdrawal transaction
       const tx = await this.vaultContract.connect(signer).withdraw(shares, userAddress);
       console.log('Withdrawal transaction submitted:', tx.hash);
@@ -521,29 +633,26 @@ class BlockchainService {
       const receipt = await tx.wait();
       console.log('Withdrawal confirmed:', receipt.hash);
 
-      // Calculate expected withdrawal amount using vault's formula
-      const totalAssets = await this.vaultContract.totalAssets(); // 18 decimals
-      const totalShares = await this.vaultContract.getTotalShares(); // 18 decimals
-      
       // Vault formula: (shares * totalAssets) / totalShares = assets in 18 decimals
-      const expectedAssets = (shares * totalAssets) / totalShares;
+      // Use BigInt for precise calculation with large numbers
+      const expectedAssetsFinal = (BigInt(shares) * BigInt(totalAssets)) / BigInt(totalShares);
       
       console.log('Withdrawal calculation debug:');
       console.log('- Total assets (18 decimals):', totalAssets.toString());
       console.log('- Total shares (18 decimals):', totalShares.toString());
       console.log('- Shares to withdraw (18 decimals):', shares.toString());
-      console.log('- Expected assets (18 decimals):', expectedAssets.toString());
+      console.log('- Expected assets (18 decimals):', expectedAssetsFinal.toString());
       
       // Convert from 18 decimals to readable USDC amount
       // The vault formula gives us the correct USDC amount in 18 decimals
       // We just need to format it properly for display
-      const usdcAmount = Number(ethers.formatUnits(expectedAssets, 18));
-      const formattedAssets = usdcAmount.toLocaleString('en-US', { 
+      const usdcAmountFinal = Number(ethers.formatUnits(expectedAssetsFinal.toString(), 18));
+      const formattedAssets = usdcAmountFinal.toLocaleString('en-US', { 
         minimumFractionDigits: 2, 
         maximumFractionDigits: 2 
       });
       
-      console.log('- USDC amount (6 decimals):', usdcAmount.toString());
+      console.log('- USDC amount (6 decimals):', usdcAmountFinal.toString());
       console.log('- Formatted USDC:', formattedAssets);
 
       return {
