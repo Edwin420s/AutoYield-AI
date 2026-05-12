@@ -1,9 +1,10 @@
+require('dotenv').config();
 const hre = require("hardhat");
 const fs = require('fs');
 const path = require('path');
 
 async function main() {
-  const [deployer] = await hre.ethers.getSigners();
+  const deployer = new hre.ethers.Wallet(process.env.PRIVATE_KEY, hre.ethers.provider);
   console.log("Starting AutoYield AI Deployment Sequence on 0G Network...");
   console.log("Deployer Address:", deployer.address);
   console.log("Account Balance:", hre.ethers.formatEther(await hre.ethers.provider.getBalance(deployer.address)));
@@ -12,7 +13,7 @@ async function main() {
   // 1. DEPLOY MOCK ASSET (For Hackathon Testing)
   // ==========================================
   console.log("\nDeploying Mock USDC (Underlying Asset)...");
-  const MockUSDC = await hre.ethers.getContractFactory("MockUSDC");
+  const MockUSDC = await hre.ethers.getContractFactory("MockUSDC", deployer);
   const usdc = await MockUSDC.deploy();
   await usdc.waitForDeployment();
   const usdcAddress = await usdc.getAddress();
@@ -22,7 +23,7 @@ async function main() {
   // 2. DEPLOY AGENT REGISTRY
   // ==========================================
   console.log("\nDeploying Agent Registry...");
-  const Registry = await hre.ethers.getContractFactory("AgentRegistry");
+  const Registry = await hre.ethers.getContractFactory("AgentRegistry", deployer);
   const registry = await Registry.deploy();
   await registry.waitForDeployment();
   const registryAddress = await registry.getAddress();
@@ -33,7 +34,7 @@ async function main() {
   // ==========================================
   console.log("\nDeploying Mock ERC-4626 Vaults on 0G Network...");
   
-  const MockERC4626 = await hre.ethers.getContractFactory("MockERC4626");
+  const MockERC4626 = await hre.ethers.getContractFactory("MockERC4626", deployer);
   
   // Deploy Mock Aave Vault
   const mockAave = await MockERC4626.deploy(usdcAddress, "Mock Aave USDC", "maUSDC");
@@ -57,7 +58,7 @@ async function main() {
   // 4. DEPLOY AUTOYIELD VAULT (ERC-4626)
   // ==========================================
   console.log("\nDeploying AutoYield Vault...");
-  const Vault = await hre.ethers.getContractFactory("AutoYieldVault");
+  const Vault = await hre.ethers.getContractFactory("AutoYieldVault", deployer);
   const vault = await Vault.deploy(usdcAddress, "AutoYield AI Shares", "ayUSDC");
   await vault.waitForDeployment();
   const vaultAddress = await vault.getAddress();
@@ -76,7 +77,7 @@ async function main() {
   console.log("Generated Mock Enclave Key (Simulates SGX Enclave):", mockEnclaveKey);
   console.log("NOTE: In production, this would be Intel SGX enclave public key");
   
-  const Manager = await hre.ethers.getContractFactory("StrategyManager");
+  const Manager = await hre.ethers.getContractFactory("StrategyManager", deployer);
   const manager = await Manager.deploy(vaultAddress, registryAddress, mockEnclaveKey, 10); // 10 seconds for hackathon demo
   await manager.waitForDeployment();
   const managerAddress = await manager.getAddress();

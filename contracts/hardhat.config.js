@@ -20,6 +20,11 @@ module.exports = {
       url: "http://127.0.0.1:8545",
       chainId: 31337,
     },
+    "0gTestnet": {
+      url: process.env.RPC_URL || "https://evmrpc-testnet.0g.ai",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 16602,
+    },
     og: {
       url: process.env.ZERO_G_RPC_URL || "https://rpc.0g.ai",
       chainId: 1666600000,
