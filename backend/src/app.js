@@ -170,11 +170,14 @@ app.use((req, res) => {
 /**
  * Server startup and configuration logging
  * Starts Express server and displays important URLs for development
- * 
- * @returns {void} Server listening on configured port
+ * When running in Vercel, it skips app.listen() and exports the app.
  */
-app.listen(PORT, () => {
-  console.log(`AutoYield AI Backend Server running on port ${PORT}`);
-  console.log(`API available at: http://localhost:${PORT}/api`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`AutoYield AI Backend Server running on port ${PORT}`);
+    console.log(`API available at: http://localhost:${PORT}/api`);
+    console.log(`Health check: http://localhost:${PORT}/health`);
+  });
+}
+
+export default app;
