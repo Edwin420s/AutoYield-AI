@@ -401,7 +401,7 @@ class BlockchainService {
       
       // Get proposal data from backend API if protocols/percentages not provided
       if (!protocols || !percentages) {
-        const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
         const proposalResponse = await fetch(`${API_BASE}/api/proposals`);
         const proposalData = await proposalResponse.json();
         const proposal = proposalData.proposals.find(p => p.id === proposalId);

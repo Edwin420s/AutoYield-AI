@@ -14,7 +14,7 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
     
     try {
       console.log('Fetching proposals from backend API...');
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
       const response = await fetch(`${API_BASE}/api/proposals`);
       const data = await response.json();
       console.log('Backend proposals:', data.proposals);
@@ -121,7 +121,7 @@ export default function PendingProposals({ account, onExecutionComplete, blockch
       console.log(`Executing proposal ${id} on blockchain...`);
       
       // Execute on blockchain via backend API
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
       const response = await fetch(`${API_BASE}/api/proposals/${id}/execute`, {
         method: 'POST',
         headers: {

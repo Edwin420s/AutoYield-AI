@@ -10,7 +10,7 @@ export default function MarketOracleFeed() {
     setIsUpdating(true);
     try {
       // Call the real backend market data API
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000').replace(/\/$/, '');
       const response = await fetch(`${API_BASE}/api/market-data`);
       
       if (response.ok) {

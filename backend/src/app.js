@@ -54,10 +54,17 @@ const corsOptions = {
       }
     }
     
-    // In production, only allow specific frontend
-    if (origin === productionFrontend) {
+    // In production, allow specific frontend OR Netlify deployment
+    const allowedOrigins = [
+      productionFrontend,
+      'https://autoyield-ai.netlify.app',
+      'https://auto-yield-ai.vercel.app'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    
     console.warn(`CORS blocked: Origin ${origin} not in allowed list`);
     return callback(new Error('Not allowed by CORS'));
   },
